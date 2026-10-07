@@ -59,6 +59,25 @@ The original docs used "age" for two different things. The UI needs three distin
 
 Row display rule: show **carry** when it is ≥ 1 (e.g. `↻3`), otherwise show nothing. Age shows in the detail panel and tooltip.
 
+### 2.1 The in-app guide
+
+This vocabulary is only useful if the app teaches it. Noto carries a **Guide** page (`AppPage.Help`) and two lightweight affordances that point at it:
+
+| Affordance | Where | Behaviour |
+| ---------- | ----- | --------- |
+| Short tooltip | Every control a new user cannot guess | One sentence. Never a paragraph — depth belongs in the guide. |
+| ⓘ button | Next to a confusing label (mode controls, capacity, age/carry/defers, review, shutdown, weekly, insights) | Opens the Guide at the matching topic. |
+
+The guide is one page: a searchable topic rail plus a document pane of titled sections, each a short paragraph and an optional label/description list. Its topics are `start`, `workspaces`, `modes`, `layouts`, `order`, `pressure`, `carry`, `review`, `shutdown`, `weekly`, `today-all`, `capture`, `shortcuts` and `connected`.
+
+Three rules keep it honest as the app changes:
+
+- **Ids are constants.** `HelpTopicIds` is the single source; XAML deep-links via `x:Static`, so a tooltip pointing at a topic that does not exist is a compile error, not a dead link.
+- **The words match.** `ModeLabels` gives every mode enum its human phrase, and the settings dropdowns, the command bar and the guide all use it. A test asserts that every choice a dropdown offers is described in the guide using the same words.
+- **It is reachable.** Sidebar → Guide, ⌘K → "Guide: …" (the topics are searchable), and a link from the `?` shortcuts overlay. Pressing `?` still opens the shortcuts sheet; the guide is the depth behind it.
+
+Modes get the most space, because the three independent controls (layout × order × pressure) and the six presets over them are the least guessable part of the model — see [03](03-modes-and-workspaces.md).
+
 ---
 
 ## 3. App Shell (Desktop, macOS-first)
@@ -332,6 +351,8 @@ The day strip and `[` / `]` navigate days. Past days are a **read-only log** (wh
 Modes are three independent controls (**Layout × Order × Pressure**), and the six named modes are presets over them. The presets, pressure thresholds and switching guarantees are specified in [03-modes-and-workspaces.md](03-modes-and-workspaces.md); this section covers only how they look.
 
 The mode switcher (⌘⇧M, or click the mode name in the header) shows the preset and a one-line "what changes" preview, e.g. _"Accountability: sorts by carry, pins your 3 most-carried items, Morning Review can't be skipped."_ Users can tweak any control; the preset name then shows "Sprint (custom)".
+
+Controls are labelled in words, never enum names: **Priority + carry**, not `PriorityCarry`. Each control carries a one-sentence tooltip and an ⓘ that opens the Guide at the matching topic (§2.1), because the three-control model is the least guessable part of the app.
 
 Switching is instant and **never writes to items**. Items that lack the layout's natural field get a visible lane instead of being hidden ("No date", "Not habits (12)").
 

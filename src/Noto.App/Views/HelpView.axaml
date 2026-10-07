@@ -1,0 +1,172 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.HelpView"
+  x:DataType="vm:HelpViewModel"
+>
+  <Grid Margin="24,16,24,16" RowDefinitions="Auto,*">
+    <!-- Header: what this page is, plus a search box over the whole guide -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="16" Margin="0,0,0,16">
+      <StackPanel Spacing="3">
+        <TextBlock Text="Guide" Classes="title" />
+        <TextBlock
+          Text="What every mode, number and button means. Search it, or open a topic from the ⓘ next to a control."
+          Classes="secondary"
+          TextWrapping="Wrap"
+        />
+      </StackPanel>
+      <TextBox
+        Grid.Column="1"
+        Width="230"
+        VerticalAlignment="Top"
+        Text="{Binding Filter, Mode=TwoWay}"
+        Watermark="Search the guide"
+        AutomationProperties.Name="Search the guide"
+      />
+    </Grid>
+
+    <Grid Grid.Row="1" ColumnDefinitions="232,*" ColumnSpacing="20">
+      <!-- Topic rail (wide windows) -->
+      <ScrollViewer IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsCompact, Converter={x:Static v:RowConverters.InverseBool}}">
+        <StackPanel Spacing="1">
+          <TextBlock Text="TOPICS" Classes="section" Margin="8,0,0,6" />
+          <ListBox
+            ItemsSource="{Binding Topics}"
+            SelectedItem="{Binding Selected, Mode=TwoWay}"
+            Background="Transparent"
+            Padding="0"
+            AutomationProperties.Name="Guide topics"
+          >
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:HelpTopic">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                  <PathIcon
+                    Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}"
+                    Width="15"
+                    Height="15"
+                    VerticalAlignment="Center"
+                  />
+                  <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding Title}"
+                    VerticalAlignment="Center"
+                    TextTrimming="CharacterEllipsis"
+                  />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Column 1 is a Grid, not a StackPanel: a StackPanel measures its children with unbounded
+           height, which would stop the document pane from ever scrolling. -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+        <!-- Topic strip (narrow windows): the rail becomes a scrollable row -->
+        <ScrollViewer
+          Grid.Row="0"
+          HorizontalScrollBarVisibility="Auto"
+          VerticalScrollBarVisibility="Disabled"
+          IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsCompact}"
+        >
+          <ListBox
+            ItemsSource="{Binding Topics}"
+            SelectedItem="{Binding Selected, Mode=TwoWay}"
+            Background="Transparent"
+            Padding="0"
+          >
+            <ListBox.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4" />
+              </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:HelpTopic">
+                <TextBlock Text="{Binding Title}" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </ScrollViewer>
+
+        <TextBlock
+          Grid.Row="1"
+          Text="Nothing matches that search."
+          Classes="hint"
+          IsVisible="{Binding NoMatches}"
+        />
+
+        <ScrollViewer Grid.Row="2" x:Name="DocScroll">
+          <ContentControl Content="{Binding Selected}">
+            <ContentControl.ContentTemplate>
+              <DataTemplate x:DataType="vm:HelpTopic">
+                <StackPanel Spacing="16" MaxWidth="720" HorizontalAlignment="Left">
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <PathIcon
+                        Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}"
+                        Width="20"
+                        Height="20"
+                        VerticalAlignment="Center"
+                        Foreground="{DynamicResource AccentBrush}"
+                      />
+                      <TextBlock
+                        Text="{Binding Title}"
+                        Classes="title"
+                        TextWrapping="Wrap"
+                        VerticalAlignment="Center"
+                      />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Summary}" Classes="secondary" TextWrapping="Wrap" />
+                  </StackPanel>
+
+                  <ItemsControl ItemsSource="{Binding Sections}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:HelpSection">
+                        <Border Classes="card" Margin="0,0,0,12">
+                          <StackPanel Spacing="8">
+                            <TextBlock
+                              Text="{Binding Heading}"
+                              FontSize="14"
+                              FontWeight="SemiBold"
+                              TextWrapping="Wrap"
+                            />
+                            <TextBlock
+                              Text="{Binding Body}"
+                              Classes="secondary"
+                              TextWrapping="Wrap"
+                            />
+                            <ItemsControl ItemsSource="{Binding Points}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:HelpPoint">
+                                  <Grid ColumnDefinitions="150,*" ColumnSpacing="14" Margin="0,4">
+                                    <TextBlock
+                                      Text="{Binding Label}"
+                                      FontWeight="SemiBold"
+                                      TextWrapping="Wrap"
+                                    />
+                                    <TextBlock
+                                      Grid.Column="1"
+                                      Text="{Binding Text}"
+                                      Classes="secondary"
+                                      TextWrapping="Wrap"
+                                    />
+                                  </Grid>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ContentControl.ContentTemplate>
+          </ContentControl>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

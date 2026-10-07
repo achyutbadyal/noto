@@ -51,5 +51,8 @@
     <DataTemplate DataType="vm:WeeklyReviewViewModel">
       <views:WeeklyReviewView />
     </DataTemplate>
+    <DataTemplate DataType="vm:HelpViewModel">
+      <views:HelpView />
+    </DataTemplate>
   </Application.DataTemplates>
 </Application>

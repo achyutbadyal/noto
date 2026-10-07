@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Noto.App.Logic;
 using Noto.App.Services;
 using Noto.Core.Models;
 using Noto.Core.Presets;
@@ -10,6 +11,15 @@ namespace Noto.App.ViewModels;
 public sealed record CapabilityRow(string Name, bool IsSupported, string? Reason)
 {
     public string Text => IsSupported ? "Available" : Reason ?? "Not available";
+}
+
+// A dropdown entry: the value we store plus the words a person reads. The label is deliberately the
+// same phrase the in-app guide uses, so the control and its documentation say the same thing
+// (HelpTests asserts the two stay in sync).
+public sealed record EnumOption<T>(T Value, string Label)
+    where T : struct, Enum
+{
+    public override string ToString() => Label;
 }
 
 // Per-workspace controls (preset, layout × order × pressure, capacity, day) plus device-level appearance.
@@ -91,10 +101,26 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<CapabilityRow> Capabilities { get; }
     public IReadOnlyList<Preset> Presets => BuiltInPresets.All;
-    public IReadOnlyList<Layout> Layouts { get; } = Enum.GetValues<Layout>();
-    public IReadOnlyList<SortOrderMode> Orders { get; } = Enum.GetValues<SortOrderMode>();
-    public IReadOnlyList<Pressure> Pressures { get; } = Enum.GetValues<Pressure>();
-    public IReadOnlyList<CapacityUnit> Units { get; } = Enum.GetValues<CapacityUnit>();
+
+    // Friendly labels, not enum names: "PriorityCarry" tells a new user nothing.
+    public IReadOnlyList<EnumOption<Layout>> LayoutOptions { get; } =
+    [.. Enum.GetValues<Layout>().Select(v => new EnumOption<Layout>(v, ModeLabels.Of(v)))];
+
+    public IReadOnlyList<EnumOption<SortOrderMode>> OrderOptions { get; } =
+    [
+        .. Enum.GetValues<SortOrderMode>()
+            .Select(v => new EnumOption<SortOrderMode>(v, ModeLabels.Of(v))),
+    ];
+
+    public IReadOnlyList<EnumOption<Pressure>> PressureOptions { get; } =
+    [.. Enum.GetValues<Pressure>().Select(v => new EnumOption<Pressure>(v, ModeLabels.Of(v)))];
+
+    public IReadOnlyList<EnumOption<CapacityUnit>> UnitOptions { get; } =
+    [
+        .. Enum.GetValues<CapacityUnit>()
+            .Select(v => new EnumOption<CapacityUnit>(v, ModeLabels.Of(v))),
+    ];
+
     public IReadOnlyList<ThemeChoice> Themes { get; } = Enum.GetValues<ThemeChoice>();
     public IReadOnlyList<Density> Densities { get; } = Enum.GetValues<Density>();
 
@@ -105,16 +131,16 @@ public sealed partial class SettingsViewModel : ObservableObject
     Preset? _selectedPreset;
 
     [ObservableProperty]
-    Layout _layout;
+    EnumOption<Layout>? _layoutChoice;
 
     [ObservableProperty]
-    SortOrderMode _order;
+    EnumOption<SortOrderMode>? _orderChoice;
 
     [ObservableProperty]
-    Pressure _pressure;
+    EnumOption<Pressure>? _pressureChoice;
 
     [ObservableProperty]
-    CapacityUnit _unit;
+    EnumOption<CapacityUnit>? _unitChoice;
 
     [ObservableProperty]
     int _capacity;
@@ -144,10 +170,10 @@ public sealed partial class SettingsViewModel : ObservableObject
             ?? throw new InvalidOperationException("Workspace not found");
         _loading = true;
         Name = ws.Name;
-        Layout = ws.Layout;
-        Order = ws.SortOrderMode;
-        Pressure = ws.Pressure;
-        Unit = ws.CapacityUnit;
+        LayoutChoice = LayoutOptions.First(o => o.Value == ws.Layout);
+        OrderChoice = OrderOptions.First(o => o.Value == ws.SortOrderMode);
+        PressureChoice = PressureOptions.First(o => o.Value == ws.Pressure);
+        UnitChoice = UnitOptions.First(o => o.Value == ws.CapacityUnit);
         Capacity = ws.DailyCapacity;
         DayBoundary = ws.DayBoundary.ToString("HH:mm");
         FollowsDevice = ws.TzFollowsDevice;
@@ -164,28 +190,28 @@ public sealed partial class SettingsViewModel : ObservableObject
             _ = SaveAsync(ws => value.ApplyTo(ws));
     }
 
-    partial void OnLayoutChanged(Layout value)
+    partial void OnLayoutChoiceChanged(EnumOption<Layout>? value)
     {
-        if (!_loading)
-            _ = SaveAsync(ws => ws.Layout = value);
+        if (!_loading && value is not null)
+            _ = SaveAsync(ws => ws.Layout = value.Value);
     }
 
-    partial void OnOrderChanged(SortOrderMode value)
+    partial void OnOrderChoiceChanged(EnumOption<SortOrderMode>? value)
     {
-        if (!_loading)
-            _ = SaveAsync(ws => ws.SortOrderMode = value);
+        if (!_loading && value is not null)
+            _ = SaveAsync(ws => ws.SortOrderMode = value.Value);
     }
 
-    partial void OnPressureChanged(Pressure value)
+    partial void OnPressureChoiceChanged(EnumOption<Pressure>? value)
     {
-        if (!_loading)
-            _ = SaveAsync(ws => ws.Pressure = value);
+        if (!_loading && value is not null)
+            _ = SaveAsync(ws => ws.Pressure = value.Value);
     }
 
-    partial void OnUnitChanged(CapacityUnit value)
+    partial void OnUnitChoiceChanged(EnumOption<CapacityUnit>? value)
     {
-        if (!_loading)
-            _ = SaveAsync(ws => ws.CapacityUnit = value);
+        if (!_loading && value is not null)
+            _ = SaveAsync(ws => ws.CapacityUnit = value.Value);
     }
 
     partial void OnCapacityChanged(int value)

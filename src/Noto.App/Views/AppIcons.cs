@@ -69,6 +69,12 @@ public static class AppIcons
             "M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
         ["help"] =
             "M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16zm-.9 12.6h1.8V18h-1.8zm1.8-1.5h-1.8v-.5c0-.9.5-1.4 1.2-1.9.6-.4 1-.7 1-1.3 0-.7-.6-1.2-1.4-1.2-.8 0-1.4.4-1.5 1.2H9.6c.1-1.6 1.3-2.7 3-2.7 1.7 0 2.9 1 2.9 2.5 0 1.1-.6 1.7-1.4 2.2-.7.4-1.2.7-1.2 1.4z",
+        // Circle-i, used by the ⓘ "learn more" affordances that deep-link into the guide.
+        ["info"] =
+            "M11 7h2v2h-2zm0 4h2v6h-2zm1-9a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z",
+        // Open book: the guide's own section icon.
+        ["book"] =
+            "M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5z",
         ["chevron-left"] = "M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z",
         ["chevron-right"] = "M9.4 6 8 7.4 12.6 12 8 16.6 9.4 18l6-6z",
         ["chevron-down"] = "M7.4 8.6 6 10l6 6 6-6-1.4-1.4L12 13.2z",
@@ -107,6 +113,10 @@ public static class AppIcons
     };
 
     static readonly Dictionary<string, Geometry> Cache = new(StringComparer.OrdinalIgnoreCase);
+
+    // True when the name resolves to a real icon (used by tests to catch typo'd icon names).
+    public static bool Has(string? name) =>
+        name is not null && (Paths.ContainsKey(name) || Aliases.ContainsKey(name));
 
     // Resolves a semantic name (or a legacy emoji / preset name) to a shared, theme-aware geometry.
     public static Geometry Get(string? name)

@@ -20,6 +20,7 @@ public enum AppPage
     Onboarding,
     TodayAll,
     WeeklyReview,
+    Help,
 }
 
 public sealed record WorkspaceRef(Guid Id, string Name);
@@ -39,6 +40,9 @@ public interface ICommandBarHost
     void ToggleInspector();
     void ToggleSidebar();
     void ShowHelp();
+
+    // Opens the in-app guide at a topic (deep link from tooltips, ⓘ buttons and the command bar).
+    Task ShowHelpTopicAsync(string topicId);
 }
 
 public enum ResultKind
@@ -277,6 +281,24 @@ public sealed partial class CommandBarViewModel : ObservableObject
                 return Task.CompletedTask;
             }
         );
+        yield return new(
+            ResultKind.Command,
+            "Open the guide",
+            "What every mode, number and button means",
+            null,
+            () => _host.ShowHelpTopicAsync(HelpTopicIds.Start)
+        );
+        foreach (var topic in HelpContent.Topics)
+        {
+            var id = topic.Id;
+            yield return new(
+                ResultKind.Command,
+                $"Guide: {topic.Title}",
+                topic.Summary,
+                null,
+                () => _host.ShowHelpTopicAsync(id)
+            );
+        }
 
         foreach (var preset in BuiltInPresets.All)
         {
@@ -284,7 +306,7 @@ public sealed partial class CommandBarViewModel : ObservableObject
             yield return new(
                 ResultKind.Command,
                 $"Switch preset: {p.Name}",
-                $"{p.Layout} · {p.Order} · {p.Pressure}",
+                $"{ModeLabels.Of(p.Layout)} · {ModeLabels.Of(p.Order)} · {ModeLabels.Of(p.Pressure)}",
                 null,
                 () => _host.ApplyPresetAsync(p)
             );

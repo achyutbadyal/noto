@@ -50,7 +50,8 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
             nameof(IsListPage),
             nameof(IsToday),
             nameof(IsBacklog),
-            nameof(IsTodayAll)
+            nameof(IsTodayAll),
+            nameof(IsHelp)
         )
     ]
     AppPage _page = AppPage.Today;
@@ -118,6 +119,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public bool IsToday => Page == AppPage.Today;
     public bool IsBacklog => Page == AppPage.Backlog;
     public bool IsTodayAll => Page == AppPage.TodayAll;
+    public bool IsHelp => Page == AppPage.Help;
 
     public TodayViewModel? TodayPage => Selected is { } s ? _today.GetValueOrDefault(s.Id) : null;
     public ReviewViewModel? Review { get; private set; }
@@ -128,6 +130,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public OnboardingViewModel? Onboarding { get; private set; }
     public TodayAllViewModel? TodayAllPage { get; private set; }
     public WeeklyReviewViewModel? WeeklyReview { get; private set; }
+    public HelpViewModel? Help { get; private set; }
     public IReadOnlyList<string> Templates { get; } =
         Noto.Core.Workspaces.WorkspaceTemplates.All.Select(t => t.Name).ToList();
 
@@ -346,6 +349,18 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     [RelayCommand]
     void CloseHelp() => IsHelpOpen = false;
 
+    // Deep link into the in-app guide: every tooltip's "learn more" and every ⓘ button lands here.
+    [RelayCommand]
+    Task OpenHelpAsync(string? topicId) => ShowHelpTopicAsync(topicId ?? HelpTopicIds.Start);
+
+    public async Task ShowHelpTopicAsync(string topicId)
+    {
+        Help ??= new HelpViewModel();
+        Help.Open(topicId);
+        IsHelpOpen = false;
+        await GoAsync(AppPage.Help);
+    }
+
     [RelayCommand]
     Task StartReviewFromUiAsync() => StartReviewAsync();
 
@@ -395,6 +410,11 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
                 Settings = new SettingsViewModel(_services, ws.Id, Appearance);
                 await Settings.LoadAsync();
                 Content = Settings;
+                break;
+            case AppPage.Help:
+                // Kept across visits so a search or a half-read topic survives navigation.
+                Help ??= new HelpViewModel();
+                Content = Help;
                 break;
             default:
                 return;
@@ -582,6 +602,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
             AppPage.DayLog => DayLog?.Title ?? "",
             AppPage.TodayAll => "Today · all workspaces",
             AppPage.WeeklyReview => "Weekly review",
+            AppPage.Help => "Guide",
             _ => "Welcome",
         };
 

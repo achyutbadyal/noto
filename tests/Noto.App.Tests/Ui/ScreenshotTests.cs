@@ -281,6 +281,78 @@ public sealed class ScreenshotTests : IDisposable
         workspaceIcon.ShouldBe(navIcon, 0.5, $"workspace vs nav icon centre [{report}]");
     }
 
+    // The in-app guide: topic rail plus the rendered document.
+    [AvaloniaFact]
+    public async Task Guide_renders_with_its_topic_rail_and_content()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        await shell.ShowHelpTopicAsync(HelpTopicIds.Modes);
+        Dispatcher.UIThread.RunJobs();
+
+        window.GetVisualDescendants().OfType<HelpView>().ShouldNotBeEmpty();
+        shell.Help!.Selected!.Id.ShouldBe(HelpTopicIds.Modes);
+        await SnapAsync(window, "guide-dark");
+
+        Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        await SnapAsync(window, "guide-light");
+
+        // Compact: the topic rail gives way to a horizontal strip rather than squeezing the document.
+        shell.ViewportWidth = 760;
+        await SnapAsync(window, "guide-compact-light");
+    }
+
+    // The document pane must actually scroll. It lives in a bounded Grid row; inside a StackPanel it
+    // would be measured with unbounded height and simply overflow, which is what it used to do.
+    [AvaloniaFact]
+    public async Task Guide_document_pane_scrolls()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.ShowHelpTopicAsync(HelpTopicIds.Modes);
+        await SettleAsync();
+
+        var doc = window
+            .GetVisualDescendants()
+            .OfType<ScrollViewer>()
+            .First(s => s.Name == "DocScroll");
+
+        doc.Extent.Height.ShouldBeGreaterThan(
+            doc.Viewport.Height,
+            "the topic is taller than the pane, so it must be scrollable"
+        );
+
+        doc.Offset = new Vector(0, 240);
+        await SettleAsync();
+        doc.Offset.Y.ShouldBeGreaterThan(0, "the pane moved when scrolled");
+        await SnapAsync(window, "guide-scrolled-dark");
+    }
+
+    // The sidebar must mark the page you are on, and only that page.
+    [AvaloniaFact]
+    public async Task Sidebar_marks_only_the_current_page()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Light);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        await SettleAsync();
+
+        var guide = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "GuideNav");
+        guide.Classes.Contains("selected").ShouldBeFalse("the guide is not the current page");
+
+        await shell.ShowHelpTopicAsync(HelpTopicIds.Start);
+        await SettleAsync();
+        guide.Classes.Contains("selected").ShouldBeTrue("the guide is the current page");
+
+        await shell.GoAsync(AppPage.Settings);
+        await SettleAsync();
+        guide.Classes.Contains("selected").ShouldBeFalse("navigating away clears the mark");
+    }
+
     // X of the row's icon centre, relative to the button.
     static double IconCentre(Button button)
     {

@@ -29,26 +29,63 @@
         </StackPanel>
 
         <!-- the three numbers -->
-        <Grid ColumnDefinitions="*,*,*" AutomationProperties.Name="Age, carry and defers">
-          <StackPanel Spacing="2">
-            <TextBlock Text="AGE" Classes="section" />
-            <TextBlock Text="{Binding AgeText}" FontSize="16" />
-          </StackPanel>
-          <StackPanel Grid.Column="1" Spacing="2">
-            <TextBlock Text="CARRY" Classes="section" />
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <PathIcon Data="{v:Icon carry}" Width="13" Height="13" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding CarryText}" FontSize="16" />
+        <StackPanel Spacing="6">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock
+              Text="THIS ITEM"
+              Classes="section"
+              VerticalAlignment="Center"
+              ToolTip.Tip="Age, carry and defers — the three honest numbers behind a row."
+            />
+            <Button
+              Grid.Column="1"
+              Classes="info"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Carry}"
+              AutomationProperties.Name="About age, carry and defers"
+              ToolTip.Tip="What age, carry, defers and the colours mean"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+          </Grid>
+          <Grid ColumnDefinitions="*,*,*" AutomationProperties.Name="Age, carry and defers">
+            <StackPanel Spacing="2">
+              <TextBlock
+                Text="AGE"
+                Classes="section"
+                ToolTip.Tip="Days since the item was created. A fact, not a judgement — nothing escalates on age alone."
+              />
+              <TextBlock Text="{Binding AgeText}" FontSize="16" />
             </StackPanel>
-          </StackPanel>
-          <StackPanel Grid.Column="2" Spacing="2">
-            <TextBlock Text="DEFERS" Classes="section" />
-            <TextBlock Text="{Binding DefersText}" FontSize="16" />
-          </StackPanel>
-        </Grid>
+            <StackPanel Grid.Column="1" Spacing="2">
+              <TextBlock
+                Text="CARRY"
+                Classes="section"
+                ToolTip.Tip="Days it was planned for and left undone. This is what pressure reacts to."
+              />
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <PathIcon Data="{v:Icon carry}" Width="13" Height="13" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding CarryText}" FontSize="16" />
+              </StackPanel>
+            </StackPanel>
+            <StackPanel Grid.Column="2" Spacing="2">
+              <TextBlock
+                Text="DEFERS"
+                Classes="section"
+                ToolTip.Tip="Times you deliberately pushed it to a later day."
+              />
+              <TextBlock Text="{Binding DefersText}" FontSize="16" />
+            </StackPanel>
+          </Grid>
+        </StackPanel>
 
         <!-- stuck prompt: intervention, not punishment -->
-        <Border Classes="raised" Padding="12" IsVisible="{Binding ShowStuckPrompt}">
+        <Border
+          Classes="raised"
+          Padding="12"
+          IsVisible="{Binding ShowStuckPrompt}"
+          ToolTip.Tip="A stuck item gets a question, not a scolding: why has this stalled, and what is the next small step?"
+        >
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
               <PathIcon

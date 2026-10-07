@@ -24,6 +24,7 @@
           Padding="12,4"
           VerticalAlignment="Center"
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}"
+          ToolTip.Tip="Decide what today holds. Carried items are shown one at a time."
         />
       </Grid>
     </Border>
@@ -34,6 +35,7 @@
       HorizontalScrollBarVisibility="Auto"
       VerticalScrollBarVisibility="Disabled"
       Margin="0,0,0,12"
+      ToolTip.Tip="The last 14 days. Bar height is how much you finished; click any day to open its log."
     >
       <ItemsControl ItemsSource="{Binding Strip.Bars}" AutomationProperties.Name="Last 14 days">
         <ItemsControl.ItemsPanel>
@@ -77,11 +79,16 @@
     <!-- capacity bar and pace forecast -->
     <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4">
       <Grid
-        ColumnDefinitions="Auto,*,Auto,Auto"
+        ColumnDefinitions="Auto,*,Auto,Auto,Auto"
         ColumnSpacing="12"
         IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}"
       >
-        <TextBlock Text="Capacity" Classes="secondary" VerticalAlignment="Center" />
+        <TextBlock
+          Text="Capacity"
+          Classes="secondary"
+          VerticalAlignment="Center"
+          ToolTip.Tip="Planned work against the workspace's daily capacity. Set the capacity in Settings."
+        />
         <ProgressBar
           Grid.Column="1"
           Minimum="0"
@@ -91,6 +98,7 @@
           Classes.over="{Binding Capacity.IsOver}"
           VerticalAlignment="Center"
           AutomationProperties.Name="{Binding Capacity.AutomationName}"
+          ToolTip.Tip="Planned work against the workspace's daily capacity."
         />
         <TextBlock
           Grid.Column="2"
@@ -104,6 +112,17 @@
           VerticalAlignment="Center"
           TextTrimming="CharacterEllipsis"
         />
+        <Button
+          Grid.Column="4"
+          Classes="info"
+          VerticalAlignment="Center"
+          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+          CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
+          AutomationProperties.Name="About capacity"
+          ToolTip.Tip="What capacity and the day boundary mean"
+        >
+          <PathIcon Data="{v:Icon info}" />
+        </Button>
       </Grid>
       <WrapPanel Orientation="Horizontal">
         <Button
@@ -167,6 +186,7 @@
         Watermark="+ Add to today…  (n)   ~30m  !2  tomorrow  @waiting:name"
         AutomationProperties.Name="Add to today"
         KeyDown="OnAddKeyDown"
+        ToolTip.Tip="Type a sentence. ~30m sets an estimate, !2 a priority, tomorrow a day, @waiting:name marks it as waiting on someone. Full list in the guide under Capture."
       />
       <TextBlock
         Text="{Binding Add.Error}"

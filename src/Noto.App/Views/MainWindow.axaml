@@ -41,7 +41,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="TodayAll"
               AutomationProperties.Name="Today, all workspaces"
-              ToolTip.Tip="Today (all)"
+              ToolTip.Tip="Today across every workspace (⌘0). Workspaces outside their focus hours stay quiet."
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -65,7 +65,7 @@
               Classes.collapsed="{Binding IsSidebarCollapsed}"
               Command="{Binding StartReviewFromUiCommand}"
               AutomationProperties.Name="Review"
-              ToolTip.Tip="Review"
+              ToolTip.Tip="Morning review — decide what today holds, one carried item at a time (⌘⇧R). Learn more from the ⓘ in the guide."
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -90,7 +90,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="WeeklyReview"
               AutomationProperties.Name="Weekly review"
-              ToolTip.Tip="Weekly review"
+              ToolTip.Tip="Weekly review — sweep what has gone quiet, once a week."
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -115,7 +115,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="Shutdown"
               AutomationProperties.Name="Shutdown"
-              ToolTip.Tip="Shutdown"
+              ToolTip.Tip="Shutdown — close the day deliberately: what got done, what carries (⌘⇧D)."
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon Data="{v:Icon moon}" Width="16" Height="16" VerticalAlignment="Center" />
@@ -160,7 +160,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="Settings"
               AutomationProperties.Name="Settings"
-              ToolTip.Tip="Settings"
+              ToolTip.Tip="Settings — the workspace's mode, capacity and day, plus this device's appearance."
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -172,6 +172,27 @@
                 <TextBlock
                   Grid.Column="1"
                   Text="Settings"
+                  Margin="10,0,0,0"
+                  VerticalAlignment="Center"
+                  IsVisible="{Binding EffectiveSidebarExpanded}"
+                  TextTrimming="CharacterEllipsis"
+                />
+              </Grid>
+            </Button>
+            <Button
+              x:Name="GuideNav"
+              Classes="nav"
+              Classes.collapsed="{Binding IsSidebarCollapsed}"
+              Classes.selected="{Binding IsHelp}"
+              Command="{Binding OpenHelpCommand}"
+              AutomationProperties.Name="Guide"
+              ToolTip.Tip="Guide — what every mode, number and button means."
+            >
+              <Grid ColumnDefinitions="Auto,*">
+                <PathIcon Data="{v:Icon book}" Width="16" Height="16" VerticalAlignment="Center" />
+                <TextBlock
+                  Grid.Column="1"
+                  Text="Guide"
                   Margin="10,0,0,0"
                   VerticalAlignment="Center"
                   IsVisible="{Binding EffectiveSidebarExpanded}"
@@ -611,6 +632,24 @@
             </Button>
           </Grid>
           <Border DockPanel.Dock="Top" Classes="hairline" Margin="0,0,0,12" />
+          <StackPanel
+            DockPanel.Dock="Bottom"
+            Orientation="Horizontal"
+            Spacing="8"
+            Margin="0,12,0,0"
+          >
+            <TextBlock
+              Text="Not sure what a mode or a number means?"
+              Classes="secondary"
+              VerticalAlignment="Center"
+            />
+            <Button
+              Classes="link"
+              Content="Open the guide"
+              Command="{Binding OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Start}"
+            />
+          </StackPanel>
           <ScrollViewer>
             <ItemsControl ItemsSource="{Binding Shortcuts}">
               <ItemsControl.ItemTemplate>

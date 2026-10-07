@@ -8,7 +8,19 @@
 >
   <ScrollViewer>
     <StackPanel MaxWidth="680" Margin="24" Spacing="14" HorizontalAlignment="Stretch">
-      <TextBlock Text="{Binding Heading}" Classes="section" />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding Heading}" Classes="section" VerticalAlignment="Center" />
+        <Button
+          Grid.Column="1"
+          Classes="info"
+          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+          CommandParameter="{x:Static vm:HelpTopicIds.Weekly}"
+          AutomationProperties.Name="About the weekly review"
+          ToolTip.Tip="What the five steps of the weekly review do"
+        >
+          <PathIcon Data="{v:Icon info}" />
+        </Button>
+      </Grid>
       <TextBlock Text="{Binding StepNumber, StringFormat='Step {0} of 5'}" Classes="hint" />
       <TextBlock Text="{Binding StepTitle}" Classes="title" TextWrapping="Wrap" />
 

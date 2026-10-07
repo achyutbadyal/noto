@@ -16,7 +16,7 @@
       HorizontalAlignment="Center"
     >
       <StackPanel Spacing="16">
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
           <TextBlock Text="{Binding Greeting}" FontSize="16" TextWrapping="Wrap" />
           <TextBlock
             Grid.Column="1"
@@ -24,6 +24,17 @@
             Classes="secondary"
             VerticalAlignment="Top"
           />
+          <Button
+            Grid.Column="2"
+            Classes="info"
+            VerticalAlignment="Top"
+            Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+            CommandParameter="{x:Static vm:HelpTopicIds.Review}"
+            AutomationProperties.Name="About the morning review"
+            ToolTip.Tip="Why these items are in front of you, and what each decision does"
+          >
+            <PathIcon Data="{v:Icon info}" />
+          </Button>
         </Grid>
         <TextBlock
           Text="{Binding DayNote, StringFormat='Yesterday you wrote: {0}'}"

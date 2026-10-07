@@ -395,7 +395,9 @@ public sealed class ShellTests : IDisposable
         );
         ws.Preset.ShouldBe("accountability");
 
-        settings.Pressure = Pressure.Gentle;
+        // The dropdown offers words, not enum names.
+        settings.PressureOptions.Select(o => o.Label).ShouldBe(["Gentle", "Honest", "Relentless"]);
+        settings.PressureChoice = settings.PressureOptions.Single(o => o.Value == Pressure.Gentle);
         await Task.Delay(150);
         (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Preset.ShouldBe(
             "accountability (custom)"
