@@ -368,6 +368,9 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     {
         if (Selected is not { } ws)
             return;
+        // Leaving a page closes its half-finished capture panel rather than restoring it later.
+        if (page != Page && Content is TodayViewModel leaving)
+            leaving.Add.Dismiss(keepTitle: true);
         Settings = null;
         switch (page)
         {
@@ -643,6 +646,15 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
                 IsHelpOpen = false;
             return true;
         }
+
+        // The detailed create panel is modal, so Escape must close it wherever focus happens to be
+        // (a dropdown inside it swallows the key otherwise).
+        if (chord.Key == "Escape" && Content is TodayViewModel { Add.IsDetailedOpen: true } detailed)
+        {
+            detailed.Add.Dismiss(keepTitle: true);
+            return true;
+        }
+
         if (Page == AppPage.Onboarding)
             return false;
 

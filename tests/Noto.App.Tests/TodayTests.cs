@@ -245,7 +245,7 @@ public sealed class TodayTests : IDisposable
 
         vm.Add.Text = "~15m";
         (await vm.Add.SubmitAsync()).ShouldBeFalse();
-        vm.Add.Error.ShouldBe("Add a title");
+        vm.Add.Error.ShouldBe("Give the task a name");
 
         vm.Add.Text = "x /nowhere";
         (await vm.Add.SubmitAsync()).ShouldBeFalse();

@@ -4,10 +4,47 @@
   xmlns:anim="using:Avalonia.Animation.Easings"
 >
   <Styles.Resources>
-    <!-- Motion tokens: exponential curves, never bounce/elastic (docs: motion-design). -->
-    <anim:CubicEaseOut x:Key="EaseOut" />
-    <anim:CubicEaseInOut x:Key="EaseInOut" />
-    <anim:ExponentialEaseOut x:Key="EaseOutExpo" />
+    <ResourceDictionary>
+      <!-- Motion tokens: exponential curves, never bounce/elastic (docs: motion-design). -->
+      <anim:CubicEaseOut x:Key="EaseOut" />
+      <anim:CubicEaseInOut x:Key="EaseInOut" />
+      <anim:ExponentialEaseOut x:Key="EaseOutExpo" />
+
+      <!--
+        Fluent's dropdown state brushes are translucent overlays, so a hovered dropdown went grey-on-white
+        in light and near-black in dark. A Styles block later in the collection wins the resource lookup,
+        so repoint every state at our own palette. The values mirror ThemeTokens (ControlStyleTests pins
+        the rendered hover to HoverBrush, so they cannot drift).
+      -->
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#2C2C2E" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#38383C" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#35353A" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#2C2C2E" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#35353A" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#35353A" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#35353A" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#2C2C2E" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#35353A" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#38383C" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#38383C" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#ECECF0" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EAEAEF" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#DCDCE1" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#ECECF0" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#DCDCE1" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#DCDCE1" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#DCDCE1" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#ECECF0" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#DCDCE1" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#EAEAEF" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#EAEAEF" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
   </Styles.Resources>
 
   <!-- ============================================================= -->
@@ -410,6 +447,64 @@
     <Setter Property="MinHeight" Value="0" />
   </Style>
 
+  <Style Selector="Button.danger">
+    <Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" />
+  </Style>
+  <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+
+  <!-- Capture composer: one surface holding the field, the duration and the actions, so the bar reads
+       as a single control rather than a row of loose buttons. -->
+  <Style Selector="Border.composer">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="Border.composer:focus-within">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Window.motion Border.composer">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition
+          Property="BorderBrush"
+          Duration="0:0:0.13"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
+    </Setter>
+  </Style>
+  <!-- The composer owns the surface, so the field inside it is borderless -->
+  <Style Selector="TextBox.bare">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="8,4" />
+  </Style>
+  <Style Selector="TextBox.bare /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.bare:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.bare:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <!-- Inside the composer the dropdown is a quiet chip, not a second boxed control -->
+  <Style Selector="Border.composer ComboBox">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="8,3" />
+  </Style>
+  <Style Selector="Border.composer ComboBox /template/ Border#Background">
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
   <!-- macOS-style search field -->
   <Style Selector="Button.search">
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
@@ -457,12 +552,37 @@
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
   </Style>
 
+  <!-- Fluent's own dropdown state brushes are translucent overlays (see ThemeBuilder.DropdownOverrides,
+       which repoints the resource keys at our tokens); these styles cover shape and the popup list. -->
   <Style Selector="ComboBox">
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
     <Setter Property="CornerRadius" Value="{DynamicResource Radius}" />
     <Setter Property="MinHeight" Value="30" />
     <Setter Property="Padding" Value="9,4" />
+  </Style>
+  <Style Selector="ComboBox:disabled">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <Style Selector="ComboBox /template/ Border#PopupBorder">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Radius}" />
+  </Style>
+  <Style Selector="ComboBoxItem">
+    <Setter Property="Padding" Value="10,6" />
+    <Setter Property="CornerRadius" Value="{DynamicResource Radius}" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
+  <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="ComboBoxItem:selected:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
   <Style Selector="NumericUpDown">
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />

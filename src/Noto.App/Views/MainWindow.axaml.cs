@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Noto.App.Themes;
 using Noto.App.ViewModels;
 
@@ -20,6 +21,9 @@ public partial class MainWindow : Window
 
         // Tunnel so single-key shortcuts and prompts see keys before any focused control does.
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
+
+        // Same for presses: clicking a row or a blank area has to take focus out of a text field.
+        AddHandler(PointerPressedEvent, OnGlobalPointerPressed, RoutingStrategies.Tunnel);
 
         DataContextChanged += (_, _) => Attach(DataContext as ShellViewModel);
         SizeChanged += OnSizeChanged;
@@ -118,6 +122,21 @@ public partial class MainWindow : Window
     }
 
     void OnScrimPressed(object? sender, PointerPressedEventArgs e) => _shell?.CommandBar.Close();
+
+    // Clicking outside a text field leaves it, the way every native app behaves. Rows and panels are not
+    // focusable, so without this the caret stayed in whatever box was last used. The press is not
+    // consumed: whatever was clicked still gets it (and focuses itself if it can).
+    void OnGlobalPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (e.Source is not Visual source)
+            return;
+        if (source.GetSelfAndVisualAncestors().OfType<TextBox>().Any())
+            return;
+        if (TopLevel.GetTopLevel(this)?.FocusManager is not { } focus)
+            return;
+        if (focus.GetFocusedElement() is TextBox)
+            focus.ClearFocus();
+    }
 
     void OnHelpScrimPressed(object? sender, PointerPressedEventArgs e) =>
         _shell!.IsHelpOpen = false;

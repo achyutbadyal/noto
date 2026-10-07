@@ -33,7 +33,7 @@
             Grid.Column="1"
             x:Name="CaptureBox"
             Text="{Binding Add.Text, Mode=TwoWay}"
-            Watermark="Capture…  tomorrow ~30m !2 @waiting:name /workspace"
+            Watermark="What needs doing?"
             v:Behaviors.FocusWhenVisible="True"
             AutomationProperties.Name="Quick capture"
           />
@@ -82,6 +82,12 @@
         Text="Enter saves · Esc closes · Tab switches workspace"
         Classes="hint"
         FontSize="11"
+      />
+      <TextBlock
+        Text="Optional shortcuts: ~30m  !2  tomorrow  @waiting:name  /workspace"
+        Classes="hint"
+        FontSize="11"
+        TextWrapping="Wrap"
       />
     </StackPanel>
   </Border>

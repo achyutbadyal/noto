@@ -283,6 +283,29 @@ public sealed class ShellTests : IDisposable
     }
 
     [Fact]
+    public async Task Escape_closes_the_detailed_create_panel_and_keeps_what_was_typed()
+    {
+        await _shell.InitializeAsync();
+        await _shell.GoAsync(AppPage.Today);
+        var today = (TodayViewModel)_shell.Content!;
+
+        today.Add.Text = "Draft the launch note";
+        today.Add.OpenDetailedCommand.Execute(null);
+        today.Add.DetailTitle.ShouldBe("Draft the launch note"); // carried over from the quick field
+        today.Add.IsDetailedOpen.ShouldBeTrue();
+
+        // Escape has to work from anywhere in the window, not just while the title box has focus.
+        (await Press("Escape")).ShouldBeTrue();
+        today.Add.IsDetailedOpen.ShouldBeFalse();
+        today.Add.Text.ShouldBe("Draft the launch note");
+
+        // Leaving the page closes it too, rather than restoring it on the way back.
+        today.Add.OpenDetailedCommand.Execute(null);
+        await _shell.GoAsync(AppPage.Backlog);
+        today.Add.IsDetailedOpen.ShouldBeFalse();
+    }
+
+    [Fact]
     public async Task Review_is_reachable_by_shortcut_and_says_so_when_nothing_is_carried()
     {
         await _shell.InitializeAsync();
@@ -716,7 +739,7 @@ public sealed class CaptureTests : IDisposable
         await vm.SaveAsync();
 
         closed.ShouldBeFalse();
-        vm.Status.ShouldBe("Add a title");
+        vm.Status.ShouldBe("Give the task a name");
     }
 
     [Fact]

@@ -54,11 +54,15 @@ public sealed partial class TodayViewModel : ItemListViewModel
 
     public string EmptyText => "Nothing planned. Pull from Someday or add something.";
 
+    // Shown in the capture bar and the detailed panel so it is obvious where a new task lands.
+    public string WorkspaceName => Snapshot?.Workspace.Name ?? "";
+
     public override async Task ReloadAsync()
     {
         var keep = FocusedRow?.Id;
         var snap = await Services.Reader.LoadAsync(WorkspaceId);
         Snapshot = snap;
+        OnPropertyChanged(nameof(WorkspaceName));
         var view = snap.Today_;
         var byId = snap.Items.ToDictionary(i => i.Id);
         ItemRowViewModel Row(TodoItem i, bool now = false) =>

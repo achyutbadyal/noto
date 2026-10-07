@@ -353,6 +353,34 @@ public sealed class ScreenshotTests : IDisposable
         guide.Classes.Contains("selected").ShouldBeFalse("navigating away clears the mark");
     }
 
+    // The capture composer and the detailed create panel.
+    [AvaloniaFact]
+    public async Task Capture_composer_and_detailed_panel_render()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        await SettleAsync();
+
+        var today = (TodayViewModel)shell.Content!;
+        today.Add.Text = "Write the launch note";
+        today.Add.Estimate = FieldOptions.Durations.First(o => o.Minutes == 90);
+        await SnapAsync(window, "capture-dark");
+
+        today.Add.OpenDetailedCommand.Execute(null);
+        today.Add.DetailTitle = "Write the launch note";
+        today.Add.DetailPriority = FieldOptions.Priorities.First(o => o.Value == 2);
+        today.Add.DetailWhen = FieldOptions.Whens.First(o => o.OffsetDays == 1);
+        await SettleAsync();
+
+        today.Add.IsDetailedOpen.ShouldBeTrue();
+        await SnapAsync(window, "capture-detailed-dark");
+
+        Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        await SnapAsync(window, "capture-detailed-light");
+    }
+
     // X of the row's icon centre, relative to the button.
     static double IconCentre(Button button)
     {

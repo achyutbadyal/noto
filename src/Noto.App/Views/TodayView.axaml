@@ -6,193 +6,387 @@
   x:Class="Noto.App.Views.TodayView"
   x:DataType="vm:TodayViewModel"
 >
-  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="24,12,24,16">
-    <!-- carry-over banner -->
-    <Border
-      Grid.Row="0"
-      Classes="raised appear"
-      Padding="12,8"
-      Margin="0,0,0,12"
-      IsVisible="{Binding BannerText, Converter={x:Static ObjectConverters.IsNotNull}}"
-    >
-      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-        <TextBlock Text="{Binding BannerText}" VerticalAlignment="Center" TextWrapping="Wrap" />
-        <Button
-          Grid.Column="1"
-          Classes="accent"
-          Content="Review  ⌘⇧R"
-          Padding="12,4"
-          VerticalAlignment="Center"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}"
-          ToolTip.Tip="Decide what today holds. Carried items are shown one at a time."
-        />
-      </Grid>
-    </Border>
-
-    <!-- 14-day completion strip: scrolls horizontally so it never clips on a narrow window -->
-    <ScrollViewer
-      Grid.Row="1"
-      HorizontalScrollBarVisibility="Auto"
-      VerticalScrollBarVisibility="Disabled"
-      Margin="0,0,0,12"
-      ToolTip.Tip="The last 14 days. Bar height is how much you finished; click any day to open its log."
-    >
-      <ItemsControl ItemsSource="{Binding Strip.Bars}" AutomationProperties.Name="Last 14 days">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="4" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:DayBarViewModel">
-            <Button
-              Padding="2"
-              Height="36"
-              VerticalContentAlignment="Bottom"
-              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}"
-              CommandParameter="{Binding}"
-              ToolTip.Tip="{Binding Tooltip}"
-              AutomationProperties.Name="{Binding AutomationName}"
-            >
-              <StackPanel Spacing="2" VerticalAlignment="Bottom">
-                <Border
-                  Width="14"
-                  Height="{Binding Height}"
-                  CornerRadius="2"
-                  VerticalAlignment="Bottom"
-                  Background="{DynamicResource AccentBrush}"
-                  Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}"
-                />
-                <TextBlock
-                  Text="{Binding Label}"
-                  FontSize="9"
-                  Classes="hint"
-                  HorizontalAlignment="Center"
-                />
-              </StackPanel>
-            </Button>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </ScrollViewer>
-
-    <!-- capacity bar and pace forecast -->
-    <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4">
-      <Grid
-        ColumnDefinitions="Auto,*,Auto,Auto,Auto"
-        ColumnSpacing="12"
-        IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}"
+  <Panel>
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="24,12,24,16">
+      <!-- carry-over banner -->
+      <Border
+        Grid.Row="0"
+        Classes="raised appear"
+        Padding="12,8"
+        Margin="0,0,0,12"
+        IsVisible="{Binding BannerText, Converter={x:Static ObjectConverters.IsNotNull}}"
       >
-        <TextBlock
-          Text="Capacity"
-          Classes="secondary"
-          VerticalAlignment="Center"
-          ToolTip.Tip="Planned work against the workspace's daily capacity. Set the capacity in Settings."
-        />
-        <ProgressBar
-          Grid.Column="1"
-          Minimum="0"
-          Maximum="100"
-          Value="{Binding Capacity.Percent}"
-          MinWidth="80"
-          Classes.over="{Binding Capacity.IsOver}"
-          VerticalAlignment="Center"
-          AutomationProperties.Name="{Binding Capacity.AutomationName}"
-          ToolTip.Tip="Planned work against the workspace's daily capacity."
-        />
-        <TextBlock
-          Grid.Column="2"
-          Text="{Binding Capacity.Text}"
-          VerticalAlignment="Center"
-          TextTrimming="CharacterEllipsis"
-        />
-        <TextBlock
-          Grid.Column="3"
-          Text="{Binding Capacity.StatusText}"
-          VerticalAlignment="Center"
-          TextTrimming="CharacterEllipsis"
-        />
-        <Button
-          Grid.Column="4"
-          Classes="info"
-          VerticalAlignment="Center"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
-          AutomationProperties.Name="About capacity"
-          ToolTip.Tip="What capacity and the day boundary mean"
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <TextBlock Text="{Binding BannerText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+          <Button
+            Grid.Column="1"
+            Classes="accent"
+            Content="Review  ⌘⇧R"
+            Padding="12,4"
+            VerticalAlignment="Center"
+            Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}"
+            ToolTip.Tip="Decide what today holds. Carried items are shown one at a time."
+          />
+        </Grid>
+      </Border>
+
+      <!-- 14-day completion strip: scrolls horizontally so it never clips on a narrow window -->
+      <ScrollViewer
+        Grid.Row="1"
+        HorizontalScrollBarVisibility="Auto"
+        VerticalScrollBarVisibility="Disabled"
+        Margin="0,0,0,12"
+        ToolTip.Tip="The last 14 days. Bar height is how much you finished; click any day to open its log."
+      >
+        <ItemsControl ItemsSource="{Binding Strip.Bars}" AutomationProperties.Name="Last 14 days">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="4" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:DayBarViewModel">
+              <Button
+                Padding="2"
+                Height="36"
+                VerticalContentAlignment="Bottom"
+                Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}"
+                CommandParameter="{Binding}"
+                ToolTip.Tip="{Binding Tooltip}"
+                AutomationProperties.Name="{Binding AutomationName}"
+              >
+                <StackPanel Spacing="2" VerticalAlignment="Bottom">
+                  <Border
+                    Width="14"
+                    Height="{Binding Height}"
+                    CornerRadius="2"
+                    VerticalAlignment="Bottom"
+                    Background="{DynamicResource AccentBrush}"
+                    Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}"
+                  />
+                  <TextBlock
+                    Text="{Binding Label}"
+                    FontSize="9"
+                    Classes="hint"
+                    HorizontalAlignment="Center"
+                  />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
+      <!-- capacity bar and pace forecast -->
+      <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4">
+        <Grid
+          ColumnDefinitions="Auto,*,Auto,Auto,Auto"
+          ColumnSpacing="12"
+          IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}"
         >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-      </Grid>
-      <WrapPanel Orientation="Horizontal">
-        <Button
-          Classes="link"
-          Content="{Binding Capacity.SuggestText}"
-          Command="{Binding ApplyDeferCommand}"
-          Padding="0"
-          Margin="0,0,12,0"
-          IsVisible="{Binding Capacity.HasSuggestion}"
-        />
+          <TextBlock
+            Text="Capacity"
+            Classes="secondary"
+            VerticalAlignment="Center"
+            ToolTip.Tip="Planned work against the workspace's daily capacity. Set the capacity in Settings."
+          />
+          <ProgressBar
+            Grid.Column="1"
+            Minimum="0"
+            Maximum="100"
+            Value="{Binding Capacity.Percent}"
+            MinWidth="80"
+            Classes.over="{Binding Capacity.IsOver}"
+            VerticalAlignment="Center"
+            AutomationProperties.Name="{Binding Capacity.AutomationName}"
+            ToolTip.Tip="Planned work against the workspace's daily capacity."
+          />
+          <TextBlock
+            Grid.Column="2"
+            Text="{Binding Capacity.Text}"
+            VerticalAlignment="Center"
+            TextTrimming="CharacterEllipsis"
+          />
+          <TextBlock
+            Grid.Column="3"
+            Text="{Binding Capacity.StatusText}"
+            VerticalAlignment="Center"
+            TextTrimming="CharacterEllipsis"
+          />
+          <Button
+            Grid.Column="4"
+            Classes="info"
+            VerticalAlignment="Center"
+            Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+            CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
+            AutomationProperties.Name="About capacity"
+            ToolTip.Tip="What capacity and the day boundary mean"
+          >
+            <PathIcon Data="{v:Icon info}" />
+          </Button>
+        </Grid>
+        <WrapPanel Orientation="Horizontal">
+          <Button
+            Classes="link"
+            Content="{Binding Capacity.SuggestText}"
+            Command="{Binding ApplyDeferCommand}"
+            Padding="0"
+            Margin="0,0,12,0"
+            IsVisible="{Binding Capacity.HasSuggestion}"
+          />
+          <TextBlock
+            Text="{Binding Capacity.Footnote}"
+            Classes="hint"
+            FontSize="11"
+            TextWrapping="Wrap"
+            IsVisible="{Binding Capacity.Footnote, Converter={x:Static ObjectConverters.IsNotNull}}"
+          />
+        </WrapPanel>
         <TextBlock
-          Text="{Binding Capacity.Footnote}"
-          Classes="hint"
-          FontSize="11"
+          Text="{Binding ForecastText}"
+          Classes="secondary"
           TextWrapping="Wrap"
-          IsVisible="{Binding Capacity.Footnote, Converter={x:Static ObjectConverters.IsNotNull}}"
+          IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}"
         />
-      </WrapPanel>
-      <TextBlock
-        Text="{Binding ForecastText}"
-        Classes="secondary"
-        TextWrapping="Wrap"
-        IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}"
-      />
-    </StackPanel>
+      </StackPanel>
 
-    <v:PromptBar Grid.Row="3" DataContext="{Binding Decisions}" Margin="0,0,0,12" />
+      <v:PromptBar Grid.Row="3" DataContext="{Binding Decisions}" Margin="0,0,0,12" />
 
-    <Panel Grid.Row="4">
-      <v:SectionsList DataContext="{Binding}" />
-      <TextBlock
-        Text="{Binding EmptyText}"
-        Classes="secondary"
+      <Panel Grid.Row="4">
+        <v:SectionsList DataContext="{Binding}" />
+        <TextBlock
+          Text="{Binding EmptyText}"
+          Classes="secondary"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          TextWrapping="Wrap"
+          TextAlignment="Center"
+          IsVisible="{Binding IsEmpty}"
+        />
+      </Panel>
+
+      <!-- capture: one composer holding the title, the duration and the actions, so it reads as a
+           single control instead of a row of loose buttons -->
+      <StackPanel Grid.Row="5" Spacing="4" Margin="0,8,0,0">
+        <Border x:Name="CaptureBar" Classes="composer" Padding="6">
+          <StackPanel Spacing="6">
+            <ItemsControl ItemsSource="{Binding Add.Chips}" IsVisible="{Binding Add.Chips.Count}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Border Classes="chip">
+                    <TextBlock Text="{Binding}" FontSize="12" />
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+              <TextBox
+                x:Name="AddBox"
+                Grid.Column="0"
+                Classes="bare"
+                Text="{Binding Add.Text, Mode=TwoWay}"
+                Watermark="New task…"
+                AutomationProperties.Name="New task title"
+                KeyDown="OnAddKeyDown"
+                ToolTip.Tip="Type what needs doing, then press Enter. Pick a duration on the right, or open More options for priority, dates and notes."
+              />
+              <ComboBox
+                Grid.Column="1"
+                Width="126"
+                ItemsSource="{Binding Add.Estimates}"
+                SelectedItem="{Binding Add.Estimate, Mode=TwoWay}"
+                AutomationProperties.Name="Estimate"
+                ToolTip.Tip="How long you think this will take. It counts against today's capacity."
+              />
+              <Button
+                Grid.Column="2"
+                Classes="accent"
+                Content="Add"
+                MinWidth="68"
+                Command="{Binding Add.AddCommand}"
+                ToolTip.Tip="Add it to today (Enter)"
+              />
+              <Button
+                Grid.Column="3"
+                Content="More options"
+                Command="{Binding Add.OpenDetailedCommand}"
+                ToolTip.Tip="Set priority, when, due date, time of day, who you're waiting on, and notes."
+              />
+            </Grid>
+          </StackPanel>
+        </Border>
+        <TextBlock
+          Text="{Binding Add.Error}"
+          Classes="error"
+          Margin="8,0,0,0"
+          IsVisible="{Binding Add.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+        />
+      </StackPanel>
+    </Grid>
+
+    <!-- Detailed create: every field the domain supports. It sits outside the page margins so the
+         panel's shadow has room and is not clipped by the page bounds. -->
+    <Panel x:Name="DetailedPanel" IsVisible="{Binding Add.IsDetailedOpen}" ZIndex="10">
+      <Border Background="#66000000" PointerPressed="OnDetailedScrimPressed" />
+      <Border
+        Classes="panel pop"
+        Width="500"
+        MaxWidth="540"
+        MaxHeight="560"
+        Margin="32"
         HorizontalAlignment="Center"
         VerticalAlignment="Center"
-        TextWrapping="Wrap"
-        TextAlignment="Center"
-        IsVisible="{Binding IsEmpty}"
-      />
-    </Panel>
+        Padding="20"
+        Background="{DynamicResource RaisedBrush}"
+        BoxShadow="0 6 20 0 #40000000"
+      >
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+            <StackPanel Spacing="2">
+              <TextBlock Text="New task" Classes="title" />
+              <TextBlock
+                Text="{Binding WorkspaceName, StringFormat='Adding to {0}'}"
+                Classes="hint"
+              />
+            </StackPanel>
+            <Button
+              Grid.Column="1"
+              Classes="icon small"
+              Command="{Binding Add.CloseDetailedCommand}"
+              AutomationProperties.Name="Close"
+            >
+              <PathIcon Data="{v:Icon close}" Width="14" Height="14" />
+            </Button>
+          </Grid>
 
-    <!-- inline add: "+ Add to today…" with token chips -->
-    <StackPanel Grid.Row="5" Spacing="6" Margin="0,8,0,0">
-      <ItemsControl ItemsSource="{Binding Add.Chips}" IsVisible="{Binding Add.Chips.Count}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal" Spacing="6" />
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="x:String">
-            <Border Classes="chip">
-              <TextBlock Text="{Binding}" FontSize="12" />
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <TextBox
-        x:Name="AddBox"
-        Text="{Binding Add.Text, Mode=TwoWay}"
-        Watermark="+ Add to today…  (n)   ~30m  !2  tomorrow  @waiting:name"
-        AutomationProperties.Name="Add to today"
-        KeyDown="OnAddKeyDown"
-        ToolTip.Tip="Type a sentence. ~30m sets an estimate, !2 a priority, tomorrow a day, @waiting:name marks it as waiting on someone. Full list in the guide under Capture."
-      />
-      <TextBlock
-        Text="{Binding Add.Error}"
-        Classes="error"
-        IsVisible="{Binding Add.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
-      />
-    </StackPanel>
-  </Grid>
+          <Border DockPanel.Dock="Top" Classes="hairline" Margin="0,0,0,14" />
+
+          <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,14,0,0">
+            <TextBlock
+              Text="{Binding Add.DetailError}"
+              Classes="error"
+              IsVisible="{Binding Add.DetailError, Converter={x:Static ObjectConverters.IsNotNull}}"
+            />
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel (Esc)" Command="{Binding Add.CloseDetailedCommand}" />
+              <Button
+                Classes="accent"
+                Content="Add task"
+                Padding="14,6"
+                Command="{Binding Add.DetailSubmitCommand}"
+              />
+            </StackPanel>
+          </StackPanel>
+
+          <ScrollViewer>
+            <StackPanel Spacing="12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="TITLE" Classes="section" />
+                <TextBox
+                  x:Name="DetailTitleBox"
+                  Text="{Binding Add.DetailTitle, Mode=TwoWay}"
+                  Watermark="What needs doing?"
+                  v:Behaviors.FocusWhenVisible="True"
+                  KeyDown="OnDetailKeyDown"
+                  AutomationProperties.Name="Task title"
+                />
+              </StackPanel>
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+                <StackPanel Spacing="4">
+                  <TextBlock
+                    Text="TIME"
+                    Classes="section"
+                    ToolTip.Tip="An estimate, used for the capacity bar."
+                  />
+                  <ComboBox
+                    ItemsSource="{Binding Add.Estimates}"
+                    SelectedItem="{Binding Add.DetailEstimate, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="Estimate"
+                  />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBlock Text="PRIORITY" Classes="section" />
+                  <ComboBox
+                    ItemsSource="{Binding Add.Priorities}"
+                    SelectedItem="{Binding Add.DetailPriority, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="Priority"
+                  />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,0">
+                  <TextBlock
+                    Text="WHEN"
+                    Classes="section"
+                    ToolTip.Tip="The day this is planned for. Someday keeps it out of today without dropping it."
+                  />
+                  <ComboBox
+                    ItemsSource="{Binding Add.Whens}"
+                    SelectedItem="{Binding Add.DetailWhen, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="When"
+                  />
+                  <TextBlock Text="{Binding Add.DetailWhenPreview}" Classes="hint" FontSize="11" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="0,10,0,0">
+                  <TextBlock
+                    Text="DUE"
+                    Classes="section"
+                    ToolTip.Tip="A deadline. Overdue items are pinned on top in the Deadline layout."
+                  />
+                  <ComboBox
+                    ItemsSource="{Binding Add.Dues}"
+                    SelectedItem="{Binding Add.DetailDue, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="Due date"
+                  />
+                  <TextBlock Text="{Binding Add.DetailDuePreview}" Classes="hint" FontSize="11" />
+                </StackPanel>
+              </Grid>
+
+              <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="TIME OF DAY" Classes="section" />
+                  <ComboBox
+                    ItemsSource="{Binding Add.TimesOfDay}"
+                    SelectedItem="{Binding Add.DetailTime, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.Name="Time of day"
+                  />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBlock Text="WAITING ON" Classes="section" />
+                  <TextBox
+                    Text="{Binding Add.DetailWaitingOn, Mode=TwoWay}"
+                    Watermark="Name (optional)"
+                    AutomationProperties.Name="Waiting on"
+                  />
+                </StackPanel>
+              </Grid>
+
+              <StackPanel Spacing="4">
+                <TextBlock Text="NOTES" Classes="section" />
+                <TextBox
+                  Text="{Binding Add.DetailNotes, Mode=TwoWay}"
+                  AcceptsReturn="True"
+                  TextWrapping="Wrap"
+                  MinHeight="64"
+                  Watermark="Markdown notes (optional)"
+                  AutomationProperties.Name="Notes"
+                />
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Panel>
+  </Panel>
 </UserControl>
