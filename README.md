@@ -24,16 +24,35 @@ Docker is only needed for the server container. Targets: the desktop app is deve
 ```sh
 mise run build             # dotnet build Noto.sln
 mise run test              # dotnet test Noto.sln (about 850 tests, ~30 s)
+mise run test:release      # -c Release; the timing budgets are written for Release
+mise run desktop           # run the desktop app
 ```
 
-Run a single project's tests:
+Run a single project's tests, optionally with a filter:
 
 ```sh
-mise exec -- dotnet test tests/Noto.Core.Tests
-mise exec -- dotnet test tests/Noto.Data.Tests --filter Break_down
+PROJECT=Noto.Core.Tests mise run test:one
+PROJECT=Noto.Data.Tests FILTER=Break_down mise run test:one
 ```
 
-Timing budgets in the tests are written for Release builds (Debug gets a 4x allowance). To check them as written: `mise exec -- dotnet test -c Release`.
+`mise tasks` lists everything (`restore`, `screenshots`, `clean`, `outdated`, `publish:desktop`, `ci`, …).
+
+## Formatting and linting
+
+[CSharpier](https://csharpier.com) is the formatter; it is pinned as a local .NET tool in
+`.config/dotnet-tools.json`, so nothing is installed globally — `mise run restore` (or any of the tasks below)
+restores it.
+
+```sh
+mise run fmt               # rewrite all C# with CSharpier
+mise run fmt:check         # verify only (use in CI)
+mise run lint              # dotnet format: whitespace, style and analyzer rules (no writes)
+mise run lint:fix          # apply those fixes
+mise run ci                # fmt:check + lint + build + test
+```
+
+> The codebase has never been formatted, so the first `mise run fmt` produces a large diff (roughly every
+> `.cs` file). Run it as its own commit.
 
 ## Run the desktop app
 

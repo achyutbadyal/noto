@@ -4,8 +4,11 @@ Design docs live in `docs/` (start with `05-architecture.md`, `04-domain-model.m
 
 ## Tooling
 All tooling is managed by mise (`mise.toml`). Never install tools globally; run through mise:
-- `mise run build` / `mise run test`
+- `mise run build` / `mise run test` / `mise run fmt` — see `mise tasks` for the full list
 - `mise exec -- dotnet <args>` for anything else
+
+.NET *tools* (CSharpier, the formatter) are pinned in `.config/dotnet-tools.json` and restored by
+`mise run restore`; `mise run fmt:check` verifies formatting and `mise run lint` checks whitespace/style/analyzers.
 
 ## Layout
 - `src/Noto.Core` — no UI, no I/O: models, time, commands, interfaces

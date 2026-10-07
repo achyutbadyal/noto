@@ -1,14 +1,104 @@
+# All tooling runs through mise: `mise run <task>` or `mise exec -- <cmd>`.
+# The .NET SDK is pinned here; .NET *tools* (CSharpier) are pinned in .config/dotnet-tools.json
+# and restored by `mise run restore`, so nothing is installed globally.
+
 [tools]
 dotnet = "10"
 
-[tasks.build]
-run = "dotnet build Noto.sln"
-
-[tasks.test]
-run = "dotnet test Noto.sln"
-
-[tasks.desktop]
-run = "dotnet run --project src/Noto.Desktop/Noto.Desktop.csproj"
-
 [env]
 DOTNET_CLI_TELEMETRY_OPTOUT = "1"
+DOTNET_NOLOGO = "1"
+DOTNET_CLI_UI_LANGUAGE = "en"
+
+# ---------------------------------------------------------------------------
+# Setup
+# ---------------------------------------------------------------------------
+
+[tasks.restore]
+description = "Restore NuGet packages and the pinned local tools"
+run = "dotnet restore Noto.sln && dotnet tool restore"
+
+# ---------------------------------------------------------------------------
+# Build / run
+# ---------------------------------------------------------------------------
+
+[tasks.build]
+description = "Build the solution"
+run = "dotnet build Noto.sln"
+
+[tasks.desktop]
+description = "Run the desktop app"
+run = "dotnet run --project src/Noto.Desktop/Noto.Desktop.csproj"
+
+[tasks."desktop:capture"]
+description = "Run the desktop app with the quick-capture panel open"
+run = "dotnet run --project src/Noto.Desktop/Noto.Desktop.csproj -- --capture"
+
+# ---------------------------------------------------------------------------
+# Test
+# ---------------------------------------------------------------------------
+
+[tasks.test]
+description = "Run all tests (Debug)"
+run = "dotnet test Noto.sln"
+
+[tasks."test:release"]
+description = "Run all tests in Release — the timing budgets in the tests are written for Release"
+run = "dotnet test Noto.sln -c Release"
+
+[tasks."test:app"]
+description = "Run the view-model and UI tests only"
+run = "dotnet test tests/Noto.App.Tests"
+
+[tasks."test:one"]
+description = "Run one test project, e.g. PROJECT=Noto.Core.Tests mise run test:one (add FILTER=Name to narrow)"
+run = "dotnet test tests/${PROJECT:?set PROJECT, e.g. PROJECT=Noto.Core.Tests} ${FILTER:+--filter $FILTER}"
+
+[tasks.screenshots]
+description = "Render every screen to dist/ui-preview (light + dark, layouts, overlays, narrow window)"
+env = { NOTO_SCREENSHOTS = "dist/ui-preview" }
+run = "dotnet test tests/Noto.App.Tests"
+
+# ---------------------------------------------------------------------------
+# Format / lint
+# ---------------------------------------------------------------------------
+
+[tasks.fmt]
+description = "Format all C# with CSharpier (opinionated; the first run rewrites most files)"
+run = "dotnet tool restore && dotnet csharpier format ."
+
+[tasks."fmt:check"]
+description = "Check CSharpier formatting without writing — use this in CI"
+run = "dotnet tool restore && dotnet csharpier check ."
+
+[tasks.lint]
+description = "Check whitespace, style and analyzer rules with dotnet format (no writes)"
+run = "dotnet format Noto.sln --verify-no-changes"
+
+[tasks."lint:fix"]
+description = "Apply whitespace, style and analyzer fixes with dotnet format"
+run = "dotnet format Noto.sln"
+
+# ---------------------------------------------------------------------------
+# Housekeeping
+# ---------------------------------------------------------------------------
+
+[tasks.clean]
+description = "Remove build output"
+run = "dotnet clean Noto.sln"
+
+[tasks.outdated]
+description = "List NuGet packages that have newer versions available"
+run = "dotnet list Noto.sln package --outdated"
+
+[tasks."publish:desktop"]
+description = "Publish a self-contained desktop build to dist/noto-desktop (TARGET_RID overrides the RID)"
+run = "dotnet publish src/Noto.Desktop -c Release -r ${TARGET_RID:-osx-arm64} --self-contained -o dist/noto-desktop"
+
+# ---------------------------------------------------------------------------
+# CI
+# ---------------------------------------------------------------------------
+
+[tasks.ci]
+description = "What CI should run: format check, lint, build, test"
+run = "dotnet tool restore && dotnet csharpier check . && dotnet format Noto.sln --verify-no-changes && dotnet build Noto.sln && dotnet test Noto.sln"
