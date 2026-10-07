@@ -4,9 +4,9 @@
              x:Class="Noto.App.Views.DayLogView"
              x:DataType="vm:DayLogViewModel">
   <ScrollViewer>
-    <StackPanel MaxWidth="720" Margin="24" Spacing="12">
-      <TextBlock Text="{Binding Title}" Classes="title" />
-      <TextBlock Text="{Binding Summary}" Classes="secondary" />
+    <StackPanel MaxWidth="720" Margin="24" Spacing="12" HorizontalAlignment="Stretch">
+      <TextBlock Text="{Binding Title}" Classes="title" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding Summary}" Classes="secondary" TextWrapping="Wrap" />
       <ItemsControl ItemsSource="{Binding Sections}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:DayLogSection">

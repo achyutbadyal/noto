@@ -49,7 +49,7 @@ public static class LifeOfItem
             ItemEventType.Created => "created",
             ItemEventType.Planned => Field("kind") switch
             {
-                "defer" => $"deferred → {Date(Field("to"))}",
+                "defer" => $"deferred to {Date(Field("to"))}",
                 "keep_today" => "kept for today",
                 "unschedule" => "unscheduled",
                 "plan" => $"planned for {Date(Field("to"))}",

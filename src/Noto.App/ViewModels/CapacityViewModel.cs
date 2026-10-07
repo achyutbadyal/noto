@@ -14,7 +14,7 @@ public sealed class CapacityViewModel(CapacitySummary summary, bool usesEstimate
     public string UsedText => Format(Summary.Committed);
     public string TotalText => Format(Summary.Capacity);
     public string Text => $"{UsedText} / {TotalText}";
-    public string StatusText => IsOver ? $"⚠ {Format(Summary.Over)} over" : "✓ fits";
+    public string StatusText => IsOver ? $"{Format(Summary.Over)} over" : "Fits";
     public string? Footnote => usesEstimates ? "* items without an estimate count as your median" : null;
 
     public IReadOnlyList<TodoItem> SuggestedDefers => Summary.SuggestedDefers;

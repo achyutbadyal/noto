@@ -6,56 +6,61 @@
              x:DataType="vm:TodayViewModel">
   <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="24,12,24,16">
     <!-- carry-over banner -->
-    <Border Grid.Row="0" Classes="raised" Padding="12,8" Margin="0,0,0,12"
+    <Border Grid.Row="0" Classes="raised appear" Padding="12,8" Margin="0,0,0,12"
             IsVisible="{Binding BannerText, Converter={x:Static ObjectConverters.IsNotNull}}">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding BannerText}" VerticalAlignment="Center" />
-        <Button Grid.Column="1" Classes="accent" Content="Review  ⌘⇧R" Padding="12,4"
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <TextBlock Text="{Binding BannerText}" VerticalAlignment="Center" TextWrapping="Wrap" />
+        <Button Grid.Column="1" Classes="accent" Content="Review  ⌘⇧R" Padding="12,4" VerticalAlignment="Center"
                 Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}" />
       </Grid>
     </Border>
 
-    <!-- 14-day completion strip -->
-    <ItemsControl Grid.Row="1" ItemsSource="{Binding Strip.Bars}" Margin="0,0,0,12" AutomationProperties.Name="Last 14 days">
-      <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:DayBarViewModel">
-          <Button Padding="2" Height="36" VerticalContentAlignment="Bottom"
-                  Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}" CommandParameter="{Binding}"
-                  ToolTip.Tip="{Binding Tooltip}" AutomationProperties.Name="{Binding AutomationName}">
-            <StackPanel Spacing="2" VerticalAlignment="Bottom">
-              <Border Width="14" Height="{Binding Height}" CornerRadius="2" VerticalAlignment="Bottom"
-                      Background="{DynamicResource AccentBrush}" Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}" />
-              <TextBlock Text="{Binding Label}" FontSize="9" Classes="hint" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Button>
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
+    <!-- 14-day completion strip: scrolls horizontally so it never clips on a narrow window -->
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,12">
+      <ItemsControl ItemsSource="{Binding Strip.Bars}" AutomationProperties.Name="Last 14 days">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DayBarViewModel">
+            <Button Padding="2" Height="36" VerticalContentAlignment="Bottom"
+                    Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}" CommandParameter="{Binding}"
+                    ToolTip.Tip="{Binding Tooltip}" AutomationProperties.Name="{Binding AutomationName}">
+              <StackPanel Spacing="2" VerticalAlignment="Bottom">
+                <Border Width="14" Height="{Binding Height}" CornerRadius="2" VerticalAlignment="Bottom"
+                        Background="{DynamicResource AccentBrush}" Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}" />
+                <TextBlock Text="{Binding Label}" FontSize="9" Classes="hint" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
 
     <!-- capacity bar and pace forecast -->
-    <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4" DataContext="{Binding}">
+    <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4">
       <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}">
         <TextBlock Text="Capacity" Classes="secondary" VerticalAlignment="Center" />
-        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Capacity.Percent}"
+        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Capacity.Percent}" MinWidth="80"
                      Classes.over="{Binding Capacity.IsOver}" VerticalAlignment="Center"
                      AutomationProperties.Name="{Binding Capacity.AutomationName}" />
-        <TextBlock Grid.Column="2" Text="{Binding Capacity.Text}" VerticalAlignment="Center" />
-        <TextBlock Grid.Column="3" Text="{Binding Capacity.StatusText}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2" Text="{Binding Capacity.Text}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+        <TextBlock Grid.Column="3" Text="{Binding Capacity.StatusText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
       </Grid>
-      <StackPanel Orientation="Horizontal" Spacing="12">
-        <Button Classes="link" Content="{Binding Capacity.SuggestText}" Command="{Binding ApplyDeferCommand}" Padding="0"
+      <WrapPanel Orientation="Horizontal">
+        <Button Classes="link" Content="{Binding Capacity.SuggestText}" Command="{Binding ApplyDeferCommand}" Padding="0" Margin="0,0,12,0"
                 IsVisible="{Binding Capacity.HasSuggestion}" />
-        <TextBlock Text="{Binding Capacity.Footnote}" Classes="hint" FontSize="11" IsVisible="{Binding Capacity.Footnote, Converter={x:Static ObjectConverters.IsNotNull}}" />
-      </StackPanel>
-      <TextBlock Text="{Binding ForecastText}" Classes="secondary" IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <TextBlock Text="{Binding Capacity.Footnote}" Classes="hint" FontSize="11" TextWrapping="Wrap"
+                   IsVisible="{Binding Capacity.Footnote, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      </WrapPanel>
+      <TextBlock Text="{Binding ForecastText}" Classes="secondary" TextWrapping="Wrap"
+                 IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}" />
     </StackPanel>
 
     <v:PromptBar Grid.Row="3" DataContext="{Binding Decisions}" Margin="0,0,0,12" />
 
     <Panel Grid.Row="4">
       <v:SectionsList DataContext="{Binding}" />
-      <TextBlock Text="{Binding EmptyText}" Classes="secondary" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsEmpty}" />
+      <TextBlock Text="{Binding EmptyText}" Classes="secondary" HorizontalAlignment="Center" VerticalAlignment="Center"
+                 TextWrapping="Wrap" TextAlignment="Center" IsVisible="{Binding IsEmpty}" />
     </Panel>
 
     <!-- inline add: "+ Add to today…" with token chips -->

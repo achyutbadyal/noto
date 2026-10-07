@@ -35,7 +35,7 @@ public sealed partial class InsightsViewModel(AppServices services, Guid workspa
         Cards.Clear();
         OldestOpen.Clear();
         foreach (var card in Build(report)) Cards.Add(card);
-        foreach (var o in report.OldestOpen) OldestOpen.Add(new(o.Item.Title, 0, $"{o.Age}d · ↻{o.Carry}"));
+        foreach (var o in report.OldestOpen) OldestOpen.Add(new(o.Item.Title, 0, $"{o.Age}d · carried {o.Carry}×"));
 
         var streak = CompletionStreak.Current(stats);
         StreakText = streak == 0 ? "" : $"Completion streak: {streak} day{(streak == 1 ? "" : "s")}";

@@ -29,7 +29,7 @@ public sealed class ServiceCaptureTests : IDisposable
 
     async Task<Guid> SyncedWorkspaceAsync()
     {
-        var ws = await new WorkspaceService(_a.Db, _clock).CreateAsync("Work", "🏢", "#00f", BuiltInPresets.Sprint);
+        var ws = await new WorkspaceService(_a.Db, _clock).CreateAsync("Work", "work", "#00f", BuiltInPresets.Sprint);
         await _a.Workspaces.EnableAsync(ws.Id);
         await _a.Client.SyncAsync();
         await _b.Workspaces.BootstrapNewDeviceAsync();
@@ -194,7 +194,7 @@ public sealed class ServiceCaptureTests : IDisposable
     [Fact]
     public async Task A_workspace_with_sync_off_records_clocks_but_queues_nothing_for_any_writer()
     {
-        var ws = await new WorkspaceService(_a.Db, _clock).CreateAsync("Local", "🏠", "#0f0", BuiltInPresets.Zen);
+        var ws = await new WorkspaceService(_a.Db, _clock).CreateAsync("Local", "home", "#0f0", BuiltInPresets.Zen);
         await new WorkspaceService(_a.Db, _clock).RenameAsync(ws.Id, "Still local");
         await new RecurrenceService(_a.Db, _clock).CreateRuleAsync(ws.Id, "FREQ=DAILY", new RuleTemplate("x"), new DateOnly(2026, 10, 7));
         await new DayNoteService(_a.Db).SetNoteAsync(ws.Id, new DateOnly(2026, 10, 7), "note");
@@ -206,7 +206,7 @@ public sealed class ServiceCaptureTests : IDisposable
     [Fact]
     public async Task Enabling_sync_pushes_existing_rules_tags_notes_and_links_too()
     {
-        var ws = await new WorkspaceService(_a.Db, _clock).CreateAsync("Work", "🏢", "#00f", BuiltInPresets.Sprint);
+        var ws = await new WorkspaceService(_a.Db, _clock).CreateAsync("Work", "work", "#00f", BuiltInPresets.Sprint);
         var rule = await new RecurrenceService(_a.Db, _clock).CreateRuleAsync(ws.Id, "FREQ=DAILY", new RuleTemplate("r"), new DateOnly(2026, 10, 7));
         await new DayNoteService(_a.Db).SetNoteAsync(ws.Id, new DateOnly(2026, 10, 7), "keep");
         var item = await _a.AddItemAsync(ws.Id, "x");

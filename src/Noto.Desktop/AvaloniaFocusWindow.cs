@@ -5,7 +5,7 @@ using Noto.Platform.Abstractions;
 
 namespace Noto.Desktop;
 
-// Always-on-top mini window: "Deploy v2.3 · 23:10 · ✓ done" (docs/07 §7.3).
+// Always-on-top mini window: "Deploy v2.3 · 23:10 · Done" (docs/07 §7.3).
 sealed class AvaloniaFocusWindow : IFocusWindow
 {
     readonly Window _window;
@@ -13,7 +13,7 @@ sealed class AvaloniaFocusWindow : IFocusWindow
 
     public AvaloniaFocusWindow()
     {
-        var done = new Button { Content = "✓ done" };
+        var done = new Button { Content = "Done" };
         done.Click += (_, _) => DoneRequested?.Invoke();
 
         _window = new Window

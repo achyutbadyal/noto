@@ -236,7 +236,7 @@ The original spec rendered a large preview card inside every row. At 10 linked i
 
 - A chip has one line: provider glyph, short identifier, and **at most three facts**, chosen per provider for actionability (PR: approvals, CI, mergeability; Slack: replies _since you last looked_; Jira: status).
 - **Change dot:** a chip gets a dot when the linked object changed since the user last opened the item.
-- States: loading (shimmer chip), auth needed (`⟨ Slack · 🔑 reconnect ⟩`), unavailable (struck-through chip with a "remove" action), not connected (plain link, plus a one-time hint "Connect Slack for live status").
+- States: loading (shimmer chip), auth needed (`⟨ Slack · reconnect ⟩`), unavailable (struck-through chip with a "remove" action), not connected (plain link, plus a one-time hint "Connect Slack for live status").
 
 ### 6.2 Expanded card (inspector or ⌥-click)
 

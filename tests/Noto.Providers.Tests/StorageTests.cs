@@ -84,7 +84,7 @@ public class LinkStorageTests : IDisposable
         var preview = new LinkPreview
         {
             Url = "https://github.com/a/b/pull/1", ProviderId = "github", Title = "T", State = LinkState.InReview, StateHash = "h1",
-            ChipFacts = [new("2✓", "g")], Status = PreviewStatus.Loaded, FetchedAt = _h.Clock.UtcNow, ViewedStateHash = "h1",
+            ChipFacts = [new("2 approved", "g")], Status = PreviewStatus.Loaded, FetchedAt = _h.Clock.UtcNow, ViewedStateHash = "h1",
             Metadata = new() { ["kind"] = JsonDocument.Parse("\"pr\"").RootElement.Clone() },
         };
         await _h.Uow.RunAsync(async s => { await s.Previews.PutAsync(preview); return 0; });
@@ -95,7 +95,7 @@ public class LinkStorageTests : IDisposable
 
         var read = (await _h.Uow.RunAsync(s => s.Previews.GetAsync(preview.Url)))!;
         (read.StateHash, read.ViewedStateHash, read.HasChange).ShouldBe(("h2", "h1", true));
-        read.ChipFacts.Single().Text.ShouldBe("2✓");
+        read.ChipFacts.Single().Text.ShouldBe("2 approved");
         read.Metadata["kind"].GetString().ShouldBe("pr");
         read.State.ShouldBe(LinkState.InReview);
     }

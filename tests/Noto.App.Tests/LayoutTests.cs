@@ -173,7 +173,9 @@ public sealed class LayoutTests : IDisposable
         habit.Name.ShouldBe("Morning run");
         habit.Cells.Count.ShouldBe(7);
         habit.Cells.Single(c => c.IsToday).State.ShouldBe(Noto.Core.Habits.HabitDayState.Pending);
-        habit.Cells.Single(c => c.IsToday).Glyph.ShouldBe("□"); // missed/pending days are empty squares, never a red cross
+        var todayCell = habit.Cells.Single(c => c.IsToday);
+        todayCell.IsMissed.ShouldBeTrue(); // missed/pending days are empty squares, never a red cross
+        todayCell.IsDone.ShouldBeFalse();
         grid.DayLabels.Count.ShouldBe(7);
         grid.Sections[0].Title.ShouldBe("Not habits");
         grid.Sections[0].IsCollapsed.ShouldBeTrue();
@@ -192,10 +194,10 @@ public sealed class LayoutTests : IDisposable
     [Fact]
     public async Task Today_all_spans_workspaces_with_colour_bars_and_drops_quiet_ones()
     {
-        var home = await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        var home = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         await _app.AddAsync("Work thing", AppFixture.Today, estimate: 60);
         await _app.Services.Bus.SendAsync(new CreateItem(Guid.CreateVersion7(), home.Id, "Home thing", AppFixture.Today));
-        var after = await _app.Services.Workspaces.CreateAsync("After hours", "🌙", BuiltInPresets.Zen, 2);
+        var after = await _app.Services.Workspaces.CreateAsync("After hours", "moon", BuiltInPresets.Zen, 2);
         await _app.Services.Workspaces.UpdateAsync(after.Id, ws => ws.FocusHoursJson = Noto.Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0)).ToJson());
         await _app.Services.Bus.SendAsync(new CreateItem(Guid.CreateVersion7(), after.Id, "Night thing", AppFixture.Today));
 
@@ -214,7 +216,7 @@ public sealed class LayoutTests : IDisposable
     [Fact]
     public async Task Cmd_0_opens_today_all_and_actions_work_across_workspaces()
     {
-        var home = await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        var home = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         var id = Guid.CreateVersion7();
         await _app.Services.Bus.SendAsync(new CreateItem(id, home.Id, "Home thing", AppFixture.Today));
         await _shell.InitializeAsync();

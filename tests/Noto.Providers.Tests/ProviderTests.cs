@@ -29,7 +29,7 @@ public class GitHubProviderTests
         pr.Title.ShouldBe("Add rich preview support");
         pr.Subtitle.ShouldBe("noto/noto-app #482");
         pr.State.ShouldBe(LinkState.Open);
-        pr.ChipFacts.Select(f => f.Text).ShouldBe(["2✓", "CI ✓", "ready"]);
+        pr.ChipFacts.Select(f => f.Text).ShouldBe(["2 approved", "CI passed", "ready"]);
         pr.AuthorName.ShouldBe("achyut");
         pr.Metadata["kind"].GetString().ShouldBe("pr");
 
@@ -64,7 +64,7 @@ public class GitHubProviderTests
             new FakeHttp().OnPath("graphql", Fixture.Load("github_pr_merged.json")), default));
 
         open.State.ShouldBe(LinkState.InReview); // REVIEW_REQUIRED
-        open.ChipFacts.Select(f => f.Text).ShouldContain("CI …");
+        open.ChipFacts.Select(f => f.Text).ShouldContain("CI pending");
         merged.State.ShouldBe(LinkState.Done);
         merged.StateHash.ShouldNotBe(open.StateHash);
     }
@@ -288,7 +288,7 @@ public class OtherProviderTests
 
         http.Requests[0].Path.ShouldBe("projects/group%2Fsub%2Fproject/merge_requests/7");
         p.State.ShouldBe(LinkState.InReview);
-        p.ChipFacts.Select(f => f.Text).ShouldBe(["1✓", "CI ✓", "open"]);
+        p.ChipFacts.Select(f => f.Text).ShouldBe(["1 approved", "CI passed", "open"]);
         p.Subtitle.ShouldBe("group/sub/project!7");
     }
 

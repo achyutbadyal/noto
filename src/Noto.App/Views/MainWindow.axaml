@@ -6,63 +6,96 @@
         x:Class="Noto.App.Views.MainWindow"
         x:DataType="vm:ShellViewModel"
         Title="Noto" Width="1240" Height="800" MinWidth="720" MinHeight="480"
-        Background="{DynamicResource CanvasBrush}">
+        FontFamily="SF Pro Text, Inter, Segoe UI Variable Text, Segoe UI, Helvetica Neue, sans-serif"
+        Background="{DynamicResource CanvasBrush}"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaChromeHints="PreferSystemChrome"
+        ExtendClientAreaTitleBarHeightHint="52">
   <Panel>
     <Grid ColumnDefinitions="Auto,*,Auto">
 
-      <!-- Sidebar: workspaces on top, Review / Insights / Settings at the bottom -->
-      <Border Grid.Column="0" Width="{Binding SidebarWidth}" Background="{DynamicResource SurfaceBrush}"
-              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
-        <DockPanel Margin="8" LastChildFill="True">
-          <StackPanel DockPanel.Dock="Bottom" Spacing="2">
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding StartReviewFromUiCommand}" AutomationProperties.Name="Review">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="◷" /><TextBlock Text="Review" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+      <!-- ===================== Sidebar ===================== -->
+      <Border Grid.Column="0" x:Name="Sidebar" Width="{Binding SidebarWidth}" Background="{DynamicResource SidebarBrush}"
+              BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,0,1,0" ClipToBounds="True">
+        <DockPanel LastChildFill="True">
+          <!-- Top inset keeps the first row clear of the native traffic lights. -->
+          <Border DockPanel.Dock="Top" Height="44" Background="Transparent" />
+
+          <StackPanel DockPanel.Dock="Bottom" Spacing="1" Margin="8,0,8,10">
+            <Button Classes="nav" Command="{Binding GoToCommand}" CommandParameter="TodayAll" AutomationProperties.Name="Today, all workspaces"
+                    Classes.selected="{Binding IsTodayAll}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon todayall}" Width="16" Height="16" />
+                <TextBlock Text="Today (all)" VerticalAlignment="Center" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="Insights" AutomationProperties.Name="Insights">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="◎" /><TextBlock Text="Insights" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            <Button Classes="nav" Command="{Binding StartReviewFromUiCommand}" AutomationProperties.Name="Review">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon review}" Width="16" Height="16" />
+                <TextBlock Text="Review" VerticalAlignment="Center" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="TodayAll" AutomationProperties.Name="Today, all workspaces">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="⌂" /><TextBlock Text="Today (all)" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            <Button Classes="nav" Command="{Binding GoToCommand}" CommandParameter="WeeklyReview" AutomationProperties.Name="Weekly review">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon weekly}" Width="16" Height="16" />
+                <TextBlock Text="Weekly review" VerticalAlignment="Center" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="WeeklyReview" AutomationProperties.Name="Weekly review">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="▦" /><TextBlock Text="Weekly review" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            <Button Classes="nav" Command="{Binding GoToCommand}" CommandParameter="Shutdown" AutomationProperties.Name="Shutdown">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon moon}" Width="16" Height="16" />
+                <TextBlock Text="Shutdown" VerticalAlignment="Center" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="Shutdown" AutomationProperties.Name="Shutdown">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="☾" /><TextBlock Text="Shutdown" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            <Button Classes="nav" Command="{Binding GoToCommand}" CommandParameter="Insights" AutomationProperties.Name="Insights">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon insights}" Width="16" Height="16" />
+                <TextBlock Text="Insights" VerticalAlignment="Center" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
             </Button>
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="⚙" /><TextBlock Text="Settings" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            <Button Classes="nav" Command="{Binding GoToCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon settings}" Width="16" Height="16" />
+                <TextBlock Text="Settings" VerticalAlignment="Center" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
             </Button>
           </StackPanel>
 
-          <StackPanel Spacing="2">
-            <TextBlock Text="NOTO" Classes="section" Margin="8,6,0,10" IsVisible="{Binding IsSidebarExpanded}" />
+          <StackPanel Spacing="1" Margin="8,0,8,8">
+            <TextBlock Text="WORKSPACES" Classes="section" Margin="8,0,0,6" IsVisible="{Binding EffectiveSidebarExpanded}" />
             <ItemsControl ItemsSource="{Binding Workspaces}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:WorkspaceTabViewModel">
-                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
+                  <Button Classes="nav" Padding="0" Classes.selected="{Binding IsSelected}"
                           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickWorkspaceCommand}" CommandParameter="{Binding}"
                           AutomationProperties.Name="{Binding AutomationName}">
-                    <Border Classes="tab" Classes.selected="{Binding IsSelected}" CornerRadius="6" Padding="0,6,8,6">
-                      <Grid ColumnDefinitions="3,Auto,*,Auto" ColumnSpacing="10">
-                        <Border Width="3" CornerRadius="2" Background="{Binding Color, Converter={x:Static v:RowConverters.Accent}}" />
-                        <TextBlock Grid.Column="1" Text="{Binding Icon}" />
-                        <TextBlock Grid.Column="2" Text="{Binding Name}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsSidebarExpanded}" />
-                        <Border Grid.Column="3" Classes="chip" IsVisible="{Binding HasBadge}"><TextBlock Text="{Binding BadgeText}" FontSize="11" /></Border>
-                      </Grid>
-                    </Border>
+                    <Grid ColumnDefinitions="3,Auto,*,Auto" ColumnSpacing="10" Margin="8,0,0,0">
+                      <Border Width="3" Height="16" CornerRadius="2" VerticalAlignment="Center"
+                              Background="{Binding Color, Converter={x:Static v:RowConverters.Accent}}" />
+                      <PathIcon Grid.Column="1" VerticalAlignment="Center" Width="16" Height="16"
+                                Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}" />
+                      <TextBlock Grid.Column="2" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                 IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).EffectiveSidebarExpanded}" />
+                      <Border Grid.Column="3" Classes="pill" VerticalAlignment="Center" IsVisible="{Binding HasBadge}">
+                        <TextBlock Text="{Binding BadgeText}" FontSize="11" FontWeight="Medium" Foreground="{DynamicResource Text1Brush}" />
+                      </Border>
+                    </Grid>
                   </Button>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" AutomationProperties.Name="New workspace">
-              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="＋" /><TextBlock Text="New workspace" IsVisible="{Binding IsSidebarExpanded}" Classes="secondary" /></StackPanel>
+
+            <Button Classes="nav" Margin="0,2,0,0" AutomationProperties.Name="New workspace">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <PathIcon Data="{v:Icon plus}" Width="16" Height="16" />
+                <TextBlock Text="New workspace" VerticalAlignment="Center" Classes="secondary" IsVisible="{Binding EffectiveSidebarExpanded}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
               <Button.Flyout>
-                <Flyout>
+                <Flyout Placement="RightEdgeAlignedTop">
                   <ItemsControl ItemsSource="{Binding Templates}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="x:String">
-                        <Button Content="{Binding}" HorizontalAlignment="Stretch"
+                        <Button Content="{Binding}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                                 Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).NewWorkspaceCommand}" CommandParameter="{Binding}" />
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -74,59 +107,112 @@
         </DockPanel>
       </Border>
 
-      <!-- Main column: header + page -->
-      <Grid Grid.Column="1" RowDefinitions="Auto,*">
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="24,14,24,18">
-          <TextBlock Text="{Binding HeaderTitle}" Classes="title" VerticalAlignment="Center" />
-          <StackPanel Grid.Column="1" Orientation="Horizontal" IsVisible="{Binding IsListPage}">
-            <Button Content="◀" Command="{Binding StepDayCommand}" CommandParameter="-1" AutomationProperties.Name="Previous day" />
-            <Button Content="▶" Command="{Binding StepDayCommand}" CommandParameter="1" AutomationProperties.Name="Next day" />
+      <!-- ===================== Main column ===================== -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,*" ClipToBounds="True">
+        <!-- Unified toolbar (lives inside the native title bar) -->
+        <Grid Grid.Row="0" Height="52" ColumnDefinitions="Auto,*,Auto" Margin="16,0">
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Classes="icon" Command="{Binding ToggleSidebarCommand}" AutomationProperties.Name="Toggle sidebar" ToolTip.Tip="Toggle sidebar">
+              <PathIcon Data="{v:Icon sidebar}" />
+            </Button>
+            <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsListPage}">
+              <Button Classes="icon small" Command="{Binding StepDayCommand}" CommandParameter="-1" AutomationProperties.Name="Previous day" ToolTip.Tip="Previous day">
+                <PathIcon Data="{v:Icon chevron-left}" />
+              </Button>
+              <Button Classes="icon small" Command="{Binding StepDayCommand}" CommandParameter="1" AutomationProperties.Name="Next day" ToolTip.Tip="Next day">
+                <PathIcon Data="{v:Icon chevron-right}" />
+              </Button>
+            </StackPanel>
+            <Border Classes="raised" Padding="2" CornerRadius="9" IsVisible="{Binding IsListPage}">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button Classes="seg" Classes.selected="{Binding IsToday}" Content="Today" Command="{Binding GoToCommand}" CommandParameter="Today" />
+                <Button Classes="seg" Classes.selected="{Binding IsBacklog}" Content="Backlog" Command="{Binding GoToCommand}" CommandParameter="Backlog" />
+              </StackPanel>
+            </Border>
           </StackPanel>
-          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0" IsVisible="{Binding IsListPage}">
-            <Button Content="Today" Command="{Binding GoToCommand}" CommandParameter="Today" />
-            <Button Content="Backlog" Command="{Binding GoToCommand}" CommandParameter="Backlog" />
+
+          <TextBlock Grid.Column="1" Text="{Binding HeaderTitle}" Classes="headline" HorizontalAlignment="Center" VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" Margin="12,0" />
+
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Border Classes="pill" Padding="10,4" IsVisible="{Binding FocusText, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <PathIcon Data="{v:Icon timer}" Width="13" Height="13" Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock Text="{Binding FocusText}" FontSize="12" VerticalAlignment="Center" IsVisible="{Binding ShowToolbarLabels}" />
+              </StackPanel>
+            </Border>
+            <Button Classes="search" Command="{Binding OpenCommandBarCommand}" AutomationProperties.Name="Command bar">
+              <StackPanel Orientation="Horizontal" Spacing="7">
+                <PathIcon Data="{v:Icon search}" Width="13" Height="13" />
+                <TextBlock Text="Ask or jump" Classes="hint" VerticalAlignment="Center" IsVisible="{Binding ShowToolbarLabels}" />
+                <Border Classes="pill" Padding="5,0" Margin="6,0,0,0" IsVisible="{Binding ShowToolbarLabels}"><TextBlock Text="⌘K" FontSize="11" Classes="hint" VerticalAlignment="Center" /></Border>
+              </StackPanel>
+            </Button>
+            <Button Classes="icon" Command="{Binding ShowHelpCommand}" AutomationProperties.Name="Keyboard shortcuts" ToolTip.Tip="Keyboard shortcuts">
+              <PathIcon Data="{v:Icon help}" />
+            </Button>
+            <Button Classes="icon" Command="{Binding ToggleInspectorCommand}" AutomationProperties.Name="Toggle inspector" ToolTip.Tip="Toggle inspector">
+              <PathIcon Data="{v:Icon todayall}" />
+            </Button>
           </StackPanel>
-          <TextBlock Grid.Column="3" Text="{Binding FocusText, StringFormat='⏱ {0}'}" VerticalAlignment="Center" IsVisible="{Binding FocusText, Converter={x:Static ObjectConverters.IsNotNull}}" />
-          <Button Grid.Column="4" Command="{Binding OpenCommandBarCommand}" AutomationProperties.Name="Command bar">
-            <TextBlock Text="⌘K  Ask or jump…" Classes="secondary" />
-          </Button>
-          <Button Grid.Column="5" Content="?" Command="{Binding ShowHelpCommand}" AutomationProperties.Name="Keyboard shortcuts" />
         </Grid>
 
-        <TextBlock Grid.Row="0" Text="{Binding WeekOutcomes}" Classes="secondary" VerticalAlignment="Bottom" Margin="24,0,0,-8" FontSize="12"
+        <Border Grid.Row="1" Classes="hairline" Margin="16,0" />
+        <TextBlock Grid.Row="2" Text="{Binding WeekOutcomes}" Classes="secondary" Margin="16,8,16,0" FontSize="12" TextWrapping="Wrap"
                    IsVisible="{Binding WeekOutcomes, Converter={x:Static ObjectConverters.IsNotNull}}" />
-        <ContentControl Grid.Row="1" Content="{Binding Content}" IsTabStop="False" />
+
+        <ContentControl Grid.Row="3" x:Name="PageHost" Content="{Binding Content}" IsTabStop="False" ClipToBounds="True" />
       </Grid>
 
-      <!-- Inspector (⌘I) -->
-      <Border Grid.Column="2" Width="320" IsVisible="{Binding ShowInspector}" Background="{DynamicResource RaisedBrush}"
-              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
-        <v:InspectorView DataContext="{Binding Inspector}" />
+      <!-- ===================== Inspector ===================== -->
+      <!-- Collapses to zero width (not IsVisible) so its width can animate. -->
+      <Border Grid.Column="2" x:Name="Inspector" Width="{Binding ShowInspector, Converter={x:Static v:RowConverters.InspectorWidth}}"
+              Opacity="{Binding ShowInspector, Converter={x:Static v:RowConverters.BoolToOpacity}}"
+              Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1,0,0,0" ClipToBounds="True">
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" Height="44" Margin="14,0,8,0" ColumnDefinitions="*,Auto">
+            <TextBlock Text="INSPECTOR" Classes="section" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="icon small" Command="{Binding ToggleInspectorCommand}" AutomationProperties.Name="Close inspector">
+              <PathIcon Data="{v:Icon close}" Width="14" Height="14" />
+            </Button>
+          </Grid>
+          <Border DockPanel.Dock="Top" Classes="hairline" />
+          <v:InspectorView DataContext="{Binding Inspector}" />
+        </DockPanel>
       </Border>
     </Grid>
 
-    <!-- Command bar (⌘K) -->
-    <Border IsVisible="{Binding CommandBar.IsOpen}" Background="#80000000" PointerPressed="OnScrimPressed">
-      <Border Classes="panel" Width="580" VerticalAlignment="Top" Margin="0,90,0,0" Padding="12" HorizontalAlignment="Center"
-              Background="{DynamicResource RaisedBrush}" PointerPressed="OnPanelPressed">
-        <StackPanel Spacing="8" DataContext="{Binding CommandBar}" x:DataType="vm:CommandBarViewModel">
-          <TextBox x:Name="BarBox" Text="{Binding Text, Mode=TwoWay}" Watermark="Ask or jump…  or type to add: Review PR tomorrow ~30m !2"
-                   v:Behaviors.FocusWhenVisible="True" AutomationProperties.Name="Command bar" />
+    <!-- Command bar (⌘K): fades + scales in; IsVisible stays true so the transition can run -->
+    <Border Classes="overlay scrim" IsHitTestVisible="{Binding CommandBar.IsOpen}"
+            Opacity="{Binding CommandBar.IsOpen, Converter={x:Static v:RowConverters.BoolToOpacity}}"
+            Background="#66000000" PointerPressed="OnScrimPressed">
+      <Border x:Name="CommandPanel" Classes="panel pop" Width="600" MaxWidth="640" VerticalAlignment="Top" Padding="14"
+              Margin="{Binding CommandBar.IsOpen, Converter={x:Static v:RowConverters.PanelMargin}}"
+              HorizontalAlignment="Center" Background="{DynamicResource RaisedBrush}" BoxShadow="0 18 50 0 #40000000" PointerPressed="OnPanelPressed">
+        <StackPanel Spacing="10" DataContext="{Binding CommandBar}" x:DataType="vm:CommandBarViewModel">
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+            <PathIcon Data="{v:Icon search}" Width="16" Height="16" VerticalAlignment="Center" />
+            <TextBox Grid.Column="1" x:Name="BarBox" Text="{Binding Text, Mode=TwoWay}" BorderThickness="0" Background="Transparent"
+                     Watermark="Ask or jump…  or type to add: Review PR tomorrow ~30m !2"
+                     v:Behaviors.FocusWhenVisible="True" AutomationProperties.Name="Command bar" />
+          </Grid>
+          <Border Classes="hairline" />
           <ItemsControl ItemsSource="{Binding Chips}" IsVisible="{Binding Chips.Count}">
             <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><Border Classes="chip"><TextBlock Text="{Binding}" FontSize="12" /></Border></DataTemplate></ItemsControl.ItemTemplate>
           </ItemsControl>
           <ListBox ItemsSource="{Binding Results}" SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}" MaxHeight="360"
-                   Background="Transparent" AutomationProperties.Name="Results">
+                   AutomationProperties.Name="Results">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:CommandResult">
                 <Grid ColumnDefinitions="24,*,Auto" Tapped="OnResultTapped">
-                  <TextBlock Text="{Binding Glyph}" Classes="secondary" />
-                  <StackPanel Grid.Column="1">
+                  <PathIcon Data="{Binding Glyph, Converter={x:Static v:RowConverters.Icon}}" VerticalAlignment="Center" Width="15" Height="15" />
+                  <StackPanel Grid.Column="1" Spacing="1">
                     <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Detail}" Classes="hint" FontSize="12" IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   </StackPanel>
-                  <TextBlock Grid.Column="2" Text="{Binding Shortcut}" Classes="hint" />
+                  <TextBlock Grid.Column="2" Text="{Binding Shortcut}" Classes="hint" VerticalAlignment="Center" />
                 </Grid>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -136,17 +222,25 @@
     </Border>
 
     <!-- Keyboard help (?) -->
-    <Border IsVisible="{Binding IsHelpOpen}" Background="#80000000" PointerPressed="OnHelpScrimPressed">
-      <Border Classes="panel" Width="640" MaxHeight="620" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20"
-              Background="{DynamicResource RaisedBrush}" PointerPressed="OnPanelPressed">
+    <Border Classes="overlay scrim" IsHitTestVisible="{Binding IsHelpOpen}"
+            Opacity="{Binding IsHelpOpen, Converter={x:Static v:RowConverters.BoolToOpacity}}"
+            Background="#66000000" PointerPressed="OnHelpScrimPressed">
+      <Border x:Name="HelpPanel" Classes="panel pop" Width="660" MaxWidth="700" MaxHeight="640" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="22"
+              Background="{DynamicResource RaisedBrush}" BoxShadow="0 18 50 0 #40000000" PointerPressed="OnPanelPressed">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Text="Keyboard shortcuts" Classes="title" Margin="0,0,0,12" />
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+            <TextBlock Text="Keyboard shortcuts" Classes="title" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="icon small" Command="{Binding CloseHelpCommand}" AutomationProperties.Name="Close">
+              <PathIcon Data="{v:Icon close}" Width="14" Height="14" />
+            </Button>
+          </Grid>
+          <Border DockPanel.Dock="Top" Classes="hairline" Margin="0,0,0,12" />
           <ScrollViewer>
             <ItemsControl ItemsSource="{Binding Shortcuts}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="l:Binding">
-                  <Grid ColumnDefinitions="110,*,Auto" Margin="0,2">
-                    <TextBlock Text="{Binding Display}" FontWeight="SemiBold" />
+                  <Grid ColumnDefinitions="120,*,Auto" Margin="0,3">
+                    <TextBlock Text="{Binding Display}" FontWeight="SemiBold" Classes="mono" />
                     <TextBlock Grid.Column="1" Text="{Binding Description}" />
                     <TextBlock Grid.Column="2" Text="{Binding Scope}" Classes="hint" />
                   </Grid>
@@ -159,13 +253,19 @@
     </Border>
 
     <!-- Undo toast: no confirmation dialogs, every action is undoable -->
-    <Border Classes="panel toast" IsVisible="{Binding Toast.IsVisible}" Background="{DynamicResource RaisedBrush}"
-            VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,24" Padding="16,10"
+    <Border Classes="panel toast" IsHitTestVisible="{Binding Toast.IsVisible}"
+            Opacity="{Binding Toast.IsVisible, Converter={x:Static v:RowConverters.BoolToOpacity}}"
+            Margin="{Binding Toast.IsVisible, Converter={x:Static v:RowConverters.ToastMargin}}"
+            Background="{DynamicResource RaisedBrush}"
+            VerticalAlignment="Bottom" HorizontalAlignment="Center" Padding="16,10"
+            CornerRadius="999" BoxShadow="0 8 24 0 #33000000"
             AutomationProperties.Name="{Binding Toast.Message}">
       <StackPanel Orientation="Horizontal" Spacing="16">
         <TextBlock Text="{Binding Toast.Message}" VerticalAlignment="Center" />
         <Button Classes="link" Content="Undo  ⌘Z" Command="{Binding Toast.UndoCommand}" IsVisible="{Binding Toast.CanUndo}" />
-        <Button Content="✕" Command="{Binding Toast.DismissCommand}" AutomationProperties.Name="Dismiss" />
+        <Button Classes="icon small" Command="{Binding Toast.DismissCommand}" AutomationProperties.Name="Dismiss">
+          <PathIcon Data="{v:Icon close}" Width="13" Height="13" />
+        </Button>
       </StackPanel>
     </Border>
   </Panel>

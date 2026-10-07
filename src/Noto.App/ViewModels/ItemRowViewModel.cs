@@ -12,7 +12,9 @@ public sealed partial class ItemRowViewModel : ObservableObject
 {
     public required TodoItem Item { get; init; }
     public required ItemMetrics Metrics { get; init; }
+    // Semantic icon name (resolved to a monochrome vector by IconConverters); never an emoji.
     public required string Glyph { get; init; }
+    public required bool IsNow { get; init; }
     public required string CarryText { get; init; }
     public required PressureState Pressure { get; init; }
     public required bool ShowBar { get; init; }
@@ -38,6 +40,8 @@ public sealed partial class ItemRowViewModel : ObservableObject
     public bool BarHot => ShowBar && Pressure == PressureState.Hot;
     public bool BarStale => ShowBar && Pressure == PressureState.Stale;
     public bool IsDone => Item.Status == ItemStatus.Done;
+    public bool IsWaiting => Item.Status == ItemStatus.Waiting;
+    public bool IsDropped => Item.Status == ItemStatus.Dropped;
 
     [ObservableProperty] bool _isFocused;
     [ObservableProperty] bool _isSelected;
@@ -84,7 +88,8 @@ public static class ItemRowFactory
             Item = item,
             Metrics = metrics,
             Glyph = GlyphFor(item, isNow),
-            CarryText = live && metrics.Carry > 0 ? $"↻{metrics.Carry}" : "",
+            IsNow = isNow && item.Status == ItemStatus.Open,
+            CarryText = live && metrics.Carry > 0 ? metrics.Carry.ToString() : "",
             Pressure = pressure,
             ShowBar = snap.Workspace.Pressure != Pressure.Gentle && pressure is PressureState.Hot or PressureState.Stale,
             IsStuck = stuck,
@@ -95,12 +100,12 @@ public static class ItemRowFactory
         };
     }
 
-    // ○ planned ◉ now ◌ waiting ✓ done ⊘ dropped
+    // planned / now / waiting / done / dropped — resolved to a vector icon in the view.
     static string GlyphFor(TodoItem item, bool isNow) => item.Status switch
     {
-        ItemStatus.Done => "✓",
-        ItemStatus.Dropped => "⊘",
-        ItemStatus.Waiting => "◌",
-        _ => isNow ? "◉" : "○",
+        ItemStatus.Done => "done",
+        ItemStatus.Dropped => "dropped",
+        ItemStatus.Waiting => "waiting",
+        _ => isNow ? "now" : "planned",
     };
 }

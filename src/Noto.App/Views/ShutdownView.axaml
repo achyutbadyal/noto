@@ -5,9 +5,9 @@
              x:Class="Noto.App.Views.ShutdownView"
              x:DataType="vm:ShutdownViewModel">
   <ScrollViewer>
-    <StackPanel MaxWidth="680" Margin="24" Spacing="16" HorizontalAlignment="Center">
+    <StackPanel MaxWidth="680" Margin="24" Spacing="16" HorizontalAlignment="Stretch">
       <TextBlock Text="{Binding StepNumber, StringFormat='Shutdown · step {0} of 3'}" Classes="section" />
-      <TextBlock Text="{Binding StepTitle}" Classes="title" />
+      <TextBlock Text="{Binding StepTitle}" Classes="title" TextWrapping="Wrap" />
 
       <!-- 1. done today -->
       <StackPanel Spacing="8" IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsDoneStep}}">

@@ -59,7 +59,7 @@ public sealed class ShellTests : IDisposable
     [Fact]
     public async Task Cmd_number_switches_workspaces_and_badges_count_decisions_not_open_items()
     {
-        var other = await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        var other = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         await _app.AddAsync("planned today", AppFixture.Today);
         await AddPastAsync("carried", 2);
         await _shell.InitializeAsync();
@@ -293,7 +293,7 @@ public sealed class ShellTests : IDisposable
         await _shell.GoAsync(AppPage.Today);
 
         _shell.Inspector.Item!.Title.ShouldBe("Deploy");
-        (_shell.Inspector.AgeText, _shell.Inspector.CarryText, _shell.Inspector.DefersText).ShouldBe(("4d", "↻4", "0"));
+        (_shell.Inspector.AgeText, _shell.Inspector.CarryText, _shell.Inspector.DefersText).ShouldBe(("4d", "4", "0"));
         _shell.Inspector.ShowStuckPrompt.ShouldBeTrue();
         _shell.Inspector.StuckPromptText.ShouldBe("This has been carried 4 times. What's in the way?");
         _shell.Inspector.Life.Select(l => l.Text).ShouldBe(["created", "carried ×4"]);
@@ -579,7 +579,7 @@ public sealed class CaptureTests : IDisposable
     [Fact]
     public async Task Defaults_to_a_workspace_inside_its_focus_hours()
     {
-        var evening = await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        var evening = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         // Work only runs 18:00–22:00 on weekdays; the fake clock says Wednesday 10:00.
         await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id,
             ws => ws.FocusHoursJson = Noto.Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0)).ToJson());
@@ -593,7 +593,7 @@ public sealed class CaptureTests : IDisposable
     [Fact]
     public async Task Tab_cycles_workspaces_and_keeps_the_typed_text()
     {
-        await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         var vm = Create();
         await vm.PrepareAsync();
         vm.Add.Text = "Buy milk";

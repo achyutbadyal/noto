@@ -5,14 +5,15 @@
              x:Class="Noto.App.Views.WeeklyReviewView"
              x:DataType="vm:WeeklyReviewViewModel">
   <ScrollViewer>
-    <StackPanel MaxWidth="680" Margin="24" Spacing="14" HorizontalAlignment="Center">
+    <StackPanel MaxWidth="680" Margin="24" Spacing="14" HorizontalAlignment="Stretch">
       <TextBlock Text="{Binding Heading}" Classes="section" />
       <TextBlock Text="{Binding StepNumber, StringFormat='Step {0} of 5'}" Classes="hint" />
-      <TextBlock Text="{Binding StepTitle}" Classes="title" />
+      <TextBlock Text="{Binding StepTitle}" Classes="title" TextWrapping="Wrap" />
 
       <!-- 1 wins -->
       <StackPanel Spacing="8" IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsWins}}">
-        <TextBlock Text="{Binding FinallyText}" Foreground="{DynamicResource DoneBrush}" IsVisible="{Binding FinallyText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <TextBlock Text="{Binding FinallyText}" Foreground="{DynamicResource DoneBrush}" TextWrapping="Wrap"
+                   IsVisible="{Binding FinallyText, Converter={x:Static ObjectConverters.IsNotNull}}" />
         <ItemsControl ItemsSource="{Binding Wins}">
           <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ItemRowViewModel"><v:ItemRowView /></DataTemplate></ItemsControl.ItemTemplate>
         </ItemsControl>
@@ -25,16 +26,16 @@
         <ItemsControl ItemsSource="{Binding Sweep}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:SweepEntryViewModel">
-              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" Margin="0,3">
-                <StackPanel>
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4">
+                <StackPanel MinWidth="0">
                   <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                   <TextBlock Text="{Binding Age}" Classes="hint" FontSize="11" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-                  <Button Classes="key" Content="Promote" Command="{Binding PickCommand}" CommandParameter="Promote" Classes.accent="{Binding IsPromote}" />
-                  <Button Classes="key" Content="Keep" Command="{Binding PickCommand}" CommandParameter="Keep" Classes.accent="{Binding IsKeep}" />
-                  <Button Classes="key" Content="Drop" Command="{Binding PickCommand}" CommandParameter="Drop" Classes.accent="{Binding IsDrop}" />
-                </StackPanel>
+                <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                  <Button Classes="key" Margin="4,0,0,0" Content="Promote" Command="{Binding PickCommand}" CommandParameter="Promote" Classes.accent="{Binding IsPromote}" />
+                  <Button Classes="key" Margin="4,0,0,0" Content="Keep" Command="{Binding PickCommand}" CommandParameter="Keep" Classes.accent="{Binding IsKeep}" />
+                  <Button Classes="key" Margin="4,0,0,0" Content="Drop" Command="{Binding PickCommand}" CommandParameter="Drop" Classes.accent="{Binding IsDrop}" />
+                </WrapPanel>
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -49,14 +50,17 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:InsightRow">
               <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="12" Margin="0,3">
-                <TextBlock Text="{Binding Label}" Classes="secondary" />
-                <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Label}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+                <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" MinWidth="60" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
               </Grid>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock Text="{Binding StuckSuggestion, StringFormat='→ {0}'}" Foreground="{DynamicResource LinkBrush}" IsVisible="{Binding StuckSuggestion, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" IsVisible="{Binding StuckSuggestion, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <PathIcon Data="{v:Icon arrow-right}" Width="14" Height="14" Foreground="{DynamicResource LinkBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+          <TextBlock Grid.Column="1" Text="{Binding StuckSuggestion}" Foreground="{DynamicResource LinkBrush}" TextWrapping="Wrap" />
+        </Grid>
       </StackPanel>
 
       <!-- 4 estimates -->
@@ -65,8 +69,8 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:InsightRow">
               <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="12" Margin="0,3">
-                <TextBlock Text="{Binding Label}" Classes="secondary" />
-                <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Label}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+                <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" MinWidth="60" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
               </Grid>
             </DataTemplate>
@@ -83,11 +87,11 @@
         <TextBox Text="{Binding Outcome3, Mode=TwoWay}" Watermark="3" />
       </StackPanel>
 
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Back" Command="{Binding BackCommand}" />
-        <Button Classes="accent" Content="Next" Command="{Binding NextCommand}" IsVisible="{Binding !IsLast}" Padding="14,6" />
-        <Button Classes="accent" Content="Finish" Command="{Binding FinishCommand}" IsVisible="{Binding IsLast}" Padding="14,6" />
-      </StackPanel>
+      <WrapPanel Orientation="Horizontal">
+        <Button Content="Back" Command="{Binding BackCommand}" Margin="0,0,8,8" />
+        <Button Classes="accent" Content="Next" Command="{Binding NextCommand}" IsVisible="{Binding !IsLast}" Padding="14,6" Margin="0,0,8,8" />
+        <Button Classes="accent" Content="Finish" Command="{Binding FinishCommand}" IsVisible="{Binding IsLast}" Padding="14,6" Margin="0,0,8,8" />
+      </WrapPanel>
     </StackPanel>
   </ScrollViewer>
 </UserControl>

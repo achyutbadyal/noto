@@ -33,7 +33,7 @@ public enum ResultKind { Command, Item, Add }
 
 public sealed record CommandResult(ResultKind Kind, string Title, string? Detail, string? Shortcut, Func<Task> Execute)
 {
-    public string Glyph => Kind switch { ResultKind.Command => "›", ResultKind.Item => "○", _ => "＋" };
+    public string Glyph => Kind switch { ResultKind.Command => "chevron-right", ResultKind.Item => "planned", _ => "plus" };
 }
 
 // ⌘K: ask or jump. Commands, items (full-text search) and "add this" in one ranked list (docs/07 §7.1).

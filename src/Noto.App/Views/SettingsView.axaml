@@ -3,10 +3,11 @@
              xmlns:vm="using:Noto.App.ViewModels"
              xmlns:m="using:Noto.Core.Models"
              xmlns:p="using:Noto.Core.Presets"
+             xmlns:v="using:Noto.App.Views"
              x:Class="Noto.App.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
   <ScrollViewer>
-    <StackPanel MaxWidth="640" Margin="24" Spacing="14" HorizontalAlignment="Center">
+    <StackPanel MaxWidth="640" Margin="24" Spacing="14" HorizontalAlignment="Stretch">
       <TextBlock Text="Workspace" Classes="section" />
       <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
         <TextBlock Text="Name" VerticalAlignment="Center" Classes="secondary" />
@@ -19,7 +20,14 @@
         <TextBlock Text="Preset" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox Grid.Column="1" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset, Mode=TwoWay}" HorizontalAlignment="Stretch"
                   AutomationProperties.Name="Preset">
-          <ComboBox.ItemTemplate><DataTemplate x:DataType="p:Preset"><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="p:Preset">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <PathIcon Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}" Width="15" Height="15" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+              </StackPanel>
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
         </ComboBox>
         <TextBlock Grid.Row="1" Text="Layout" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout, Mode=TwoWay}" HorizontalAlignment="Stretch"
@@ -47,8 +55,8 @@
         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TimeZone, Mode=TwoWay}" Watermark="Europe/Berlin" />
         <Button Grid.Row="3" Grid.Column="2" Content="Apply" Command="{Binding ApplyTimeZoneCommand}" />
       </Grid>
-      <CheckBox IsChecked="{Binding FollowsDevice, Mode=TwoWay}" Content="Follow this device's time zone" />
-      <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <ToggleSwitch IsChecked="{Binding FollowsDevice, Mode=TwoWay}" Content="Follow this device's time zone" />
+      <TextBlock Text="{Binding Error}" Classes="error" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
 
       <TextBlock Text="Appearance (this device)" Classes="section" Margin="0,12,0,0" />
       <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8" DataContext="{Binding Appearance}" x:DataType="vm:AppearanceViewModel">
@@ -66,18 +74,18 @@
         <ComboBox Grid.Column="1" ItemsSource="{Binding ImportFormats}" SelectedItem="{Binding ImportFormat, Mode=TwoWay}" HorizontalAlignment="Stretch" />
         <Button Grid.Column="2" Content="Choose file…" Click="OnImportClick" />
       </Grid>
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <Button Content="Export JSON…" Click="OnExportJsonClick" />
+      <WrapPanel Orientation="Horizontal">
+        <Button Content="Export JSON…" Click="OnExportJsonClick" Margin="0,0,8,0" />
         <Button Content="Export items CSV…" Click="OnExportCsvClick" />
-      </StackPanel>
+      </WrapPanel>
       <TextBlock Text="{Binding DataStatus}" Classes="secondary" IsVisible="{Binding DataStatus, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
 
       <TextBlock Text="This device" Classes="section" Margin="0,12,0,0" />
       <ItemsControl ItemsSource="{Binding Capabilities}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:CapabilityRow">
-            <Grid ColumnDefinitions="220,*" Margin="0,3">
-              <TextBlock Text="{Binding Name}" Classes="secondary" />
+            <Grid ColumnDefinitions="180,*" ColumnSpacing="8" Margin="0,3">
+              <TextBlock Text="{Binding Name}" Classes="secondary" TextTrimming="CharacterEllipsis" />
               <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" />
             </Grid>
           </DataTemplate>

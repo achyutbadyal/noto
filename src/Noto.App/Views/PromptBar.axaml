@@ -7,7 +7,7 @@
   <!-- Inline question for Defer…, Waiting on…, Break down, Drop reason, Estimate -->
   <Border Classes="panel" Padding="12" IsVisible="{Binding Prompt, Converter={x:Static ObjectConverters.IsNotNull}}">
     <StackPanel Spacing="8">
-      <TextBlock Text="{Binding Prompt.Title}" FontWeight="SemiBold" />
+      <TextBlock Text="{Binding Prompt.Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
       <TextBox Text="{Binding Prompt.Text, Mode=TwoWay}" Watermark="{Binding Prompt.Hint}" IsVisible="{Binding Prompt.IsTextual}"
                v:Behaviors.FocusWhenVisible="True" AutomationProperties.Name="{Binding Prompt.Title}" />
       <ItemsControl ItemsSource="{Binding DropReasonOptions}" IsVisible="{Binding Prompt.IsDropReason}">

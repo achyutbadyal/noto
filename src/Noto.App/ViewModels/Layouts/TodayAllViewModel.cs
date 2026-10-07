@@ -58,7 +58,7 @@ public sealed partial class TodayAllViewModel : ItemListViewModel
         _sections = sections;
         OnPropertyChanged(nameof(Sections));
         BannerText = view.TotalNeedsDecision == 0 ? null : $"{view.TotalNeedsDecision} items carried over need a decision";
-        CapacityText = capacity == 0 ? null : $"Capacity {Duration.Short(committed)} / {Duration.Short(capacity)}" + (committed > capacity ? "  ⚠ over" : "  ✓ fits");
+        CapacityText = capacity == 0 ? null : $"Capacity {Duration.Short(committed)} / {Duration.Short(capacity)}" + (committed > capacity ? "  · over" : "  · fits");
         QuietText = view.Quiet.Count == 0 ? null : $"Outside focus hours: {string.Join(", ", view.Quiet.Select(w => w.Name))}";
         RestoreFocus(keep);
     }

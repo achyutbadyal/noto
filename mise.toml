@@ -7,5 +7,8 @@ run = "dotnet build Noto.sln"
 [tasks.test]
 run = "dotnet test Noto.sln"
 
+[tasks.desktop]
+run = "dotnet run --project src/Noto.Desktop/Noto.Desktop.csproj"
+
 [env]
 DOTNET_CLI_TELEMETRY_OPTOUT = "1"

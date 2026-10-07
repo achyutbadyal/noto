@@ -7,26 +7,41 @@
              x:DataType="vm:InspectorViewModel">
   <ScrollViewer>
     <StackPanel Margin="16" Spacing="14">
-      <TextBlock Text="Select an item to see its details." Classes="hint" IsVisible="{Binding !HasItem}" />
+      <TextBlock Text="Select an item to see its details." Classes="hint" TextWrapping="Wrap" IsVisible="{Binding !HasItem}" />
 
       <StackPanel Spacing="14" IsVisible="{Binding HasItem}">
-        <StackPanel Spacing="2">
+        <StackPanel Spacing="3">
           <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding ScheduleText}" Classes="secondary" />
+          <TextBlock Text="{Binding ScheduleText}" Classes="secondary" TextWrapping="Wrap" />
           <TextBlock Text="{Binding StateText}" Classes="hint" />
         </StackPanel>
 
         <!-- the three numbers -->
         <Grid ColumnDefinitions="*,*,*" AutomationProperties.Name="Age, carry and defers">
-          <StackPanel><TextBlock Text="AGE" Classes="section" /><TextBlock Text="{Binding AgeText}" FontSize="16" /></StackPanel>
-          <StackPanel Grid.Column="1"><TextBlock Text="CARRY" Classes="section" /><TextBlock Text="{Binding CarryText}" FontSize="16" /></StackPanel>
-          <StackPanel Grid.Column="2"><TextBlock Text="DEFERS" Classes="section" /><TextBlock Text="{Binding DefersText}" FontSize="16" /></StackPanel>
+          <StackPanel Spacing="2">
+            <TextBlock Text="AGE" Classes="section" />
+            <TextBlock Text="{Binding AgeText}" FontSize="16" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="CARRY" Classes="section" />
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <PathIcon Data="{v:Icon carry}" Width="13" Height="13" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding CarryText}" FontSize="16" />
+            </StackPanel>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="2">
+            <TextBlock Text="DEFERS" Classes="section" />
+            <TextBlock Text="{Binding DefersText}" FontSize="16" />
+          </StackPanel>
         </Grid>
 
         <!-- stuck prompt: intervention, not punishment -->
         <Border Classes="raised" Padding="12" IsVisible="{Binding ShowStuckPrompt}">
           <StackPanel Spacing="8">
-            <TextBlock Text="{Binding StuckPromptText}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+              <PathIcon Data="{v:Icon stuck}" Width="14" Height="14" Foreground="{DynamicResource PressureStaleBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+              <TextBlock Grid.Column="1" Text="{Binding StuckPromptText}" TextWrapping="Wrap" />
+            </Grid>
             <ItemsControl ItemsSource="{Binding Reasons}">
               <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
@@ -37,10 +52,10 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock Text="{Binding FixPrompt}" Foreground="{DynamicResource LinkBrush}" TextWrapping="Wrap" IsVisible="{Binding HasFix}" />
-            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasFix}">
-              <Button Content="Now · 25 min" Command="{Binding MakeNowCommand}" />
-              <Button Content="First thing tomorrow" Command="{Binding ScheduleTomorrowCommand}" />
-            </StackPanel>
+            <WrapPanel Orientation="Horizontal" IsVisible="{Binding HasFix}">
+              <Button Content="Now · 25 min" Command="{Binding MakeNowCommand}" Margin="0,0,8,6" />
+              <Button Content="First thing tomorrow" Command="{Binding ScheduleTomorrowCommand}" Margin="0,0,8,6" />
+            </WrapPanel>
           </StackPanel>
         </Border>
         <v:PromptBar DataContext="{Binding Decisions}" />

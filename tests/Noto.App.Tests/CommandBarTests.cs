@@ -100,7 +100,7 @@ public sealed class CommandBarTests : IDisposable
     [Fact]
     public async Task Search_hits_in_other_workspaces_switch_to_them()
     {
-        var other = await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        var other = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         var id = Guid.CreateVersion7();
         await _app.Services.Bus.SendAsync(new Noto.Core.Commands.CreateItem(id, other.Id, "Buy groceries", AppFixture.Today));
         await OpenWithAsync("groceries");
@@ -141,7 +141,7 @@ public sealed class CommandBarTests : IDisposable
     [Fact]
     public async Task Slash_opens_the_bar_from_a_list_and_workspace_tokens_route_the_add()
     {
-        var other = await _app.Services.Workspaces.CreateAsync("Home", "🏠", BuiltInPresets.Zen, 1);
+        var other = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
         await _shell.InitializeAsync();
 
         await _shell.HandleKeyAsync(KeyChord.Of("/"));

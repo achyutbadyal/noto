@@ -13,6 +13,8 @@ public static class ThemeBuilder
         app.Resources.ThemeDictionaries[ThemeVariant.Dark] = Build(ThemeTokens.Dark, dark: true);
         app.Resources.ThemeDictionaries[ThemeVariant.Light] = Build(ThemeTokens.Light, dark: false);
         app.Resources["RowHeight"] = 36.0;
+        app.Resources["Radius"] = new CornerRadius(8);
+        app.Resources["RadiusLarge"] = new CornerRadius(12);
         SetAccent(app, null);
     }
 
@@ -20,8 +22,12 @@ public static class ThemeBuilder
     {
         foreach (var (variant, dark) in new[] { (ThemeVariant.Dark, true), (ThemeVariant.Light, false) })
         {
-            if (app.Resources.ThemeDictionaries[variant] is ResourceDictionary dict)
-                dict["AccentBrush"] = Brush(ThemeTokens.AccentFor(accentName, dark));
+            if (app.Resources.ThemeDictionaries[variant] is not ResourceDictionary dict) continue;
+            var color = Color.Parse(ThemeTokens.AccentFor(accentName, dark));
+            dict["AccentBrush"] = new SolidColorBrush(color);
+            // A soft, translucent accent used for selections and sidebar highlights (macOS "tinted" look).
+            dict["AccentSoftBrush"] = new SolidColorBrush(Color.FromArgb(dark ? (byte)0x3A : (byte)0x24, color.R, color.G, color.B));
+            dict["AccentBorderBrush"] = new SolidColorBrush(Color.FromArgb(dark ? (byte)0x66 : (byte)0x4D, color.R, color.G, color.B));
         }
     }
 
@@ -40,6 +46,8 @@ public static class ThemeBuilder
             dict[Key(name)] = Brush(hex);
             dict[Key(name) + "Color"] = Color.Parse(hex);
         }
+        // A translucent separator used for hairlines between chrome regions.
+        dict["HairlineBrush"] = new SolidColorBrush(Color.FromArgb(dark ? (byte)0x1F : (byte)0x17, 0x80, 0x80, 0x88));
         return dict;
     }
 

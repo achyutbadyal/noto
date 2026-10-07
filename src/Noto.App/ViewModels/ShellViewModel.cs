@@ -41,18 +41,34 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public ObservableCollection<WorkspaceTabViewModel> Workspaces { get; } = [];
 
     [ObservableProperty] WorkspaceTabViewModel? _selected;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowInspector), nameof(IsListPage))] AppPage _page = AppPage.Today;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowInspector), nameof(IsListPage), nameof(IsToday), nameof(IsBacklog), nameof(IsTodayAll))] AppPage _page = AppPage.Today;
     [ObservableProperty] object? _content;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowInspector))] bool _isInspectorOpen = true;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(SidebarWidth))] bool _isSidebarExpanded = true;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SidebarWidth), nameof(EffectiveSidebarExpanded))] bool _isSidebarExpanded = true;
     [ObservableProperty] bool _isHelpOpen;
     [ObservableProperty] string _headerTitle = "";
     [ObservableProperty] string? _focusText;
     [ObservableProperty] DateOnly? _viewDay;
 
-    public bool ShowInspector => IsInspectorOpen && Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll;
-    public double SidebarWidth => IsSidebarExpanded ? 232 : 56;
+    // Viewport-driven layout: the window pushes its width here so the shell can adapt instead of clipping.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsCompact), nameof(IsNarrow), nameof(ShowToolbarLabels), nameof(EffectiveSidebarExpanded), nameof(SidebarWidth), nameof(ShowInspector))]
+    double _viewportWidth = 1240;
+
+    // Below ~880px the sidebar collapses to its icon rail and the toolbar drops its labels.
+    public bool IsCompact => ViewportWidth < 880;
+    // Below ~1000px the inspector is hidden so the list keeps a usable width.
+    public bool IsNarrow => ViewportWidth < 1000;
+    public bool ShowToolbarLabels => !IsCompact;
+
+    public bool EffectiveSidebarExpanded => IsSidebarExpanded && !IsCompact;
+
+    public bool ShowInspector => IsInspectorOpen && !IsNarrow && Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll;
+    public double SidebarWidth => EffectiveSidebarExpanded ? 232 : 56;
     public bool IsListPage => Page is AppPage.Today or AppPage.Backlog or AppPage.DayLog or AppPage.TodayAll;
+    public bool IsToday => Page == AppPage.Today;
+    public bool IsBacklog => Page == AppPage.Backlog;
+    public bool IsTodayAll => Page == AppPage.TodayAll;
 
     public TodayViewModel? TodayPage => Selected is { } s ? _today.GetValueOrDefault(s.Id) : null;
     public ReviewViewModel? Review { get; private set; }

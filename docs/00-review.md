@@ -1,6 +1,6 @@
 # Noto — Design Review (2026-10-07)
 
-Review of `01`–`10` for **feasibility**, **requirements** and **correctness**. Severity: 🔴 blocks a correct v1 · 🟠 will cause rework if not fixed before the relevant phase · 🟡 cleanup.
+Review of `01`–`10` for **feasibility**, **requirements** and **correctness**. Severity: blocks a correct v1 · will cause rework if not fixed before the relevant phase · cleanup.
 
 `07-ui-ux-design.md` was rewritten as part of this review (v2).
 
@@ -41,7 +41,7 @@ The concept is sound, and the docs are unusually thorough for a pre-code project
 
 ## 1. Correctness
 
-### 🔴 C1 — Age is defined three different ways
+### C1 — Age is defined three different ways
 
 - `UC-03`: created on Day 1, "On Day 2 … age badge '2 days'". `04 › Age Calculation Rules`: "Created yesterday … 1 day". That's an off-by-one between the two docs.
 - `04 › TodoItem`: `AgeDays => DateOnly.FromDateTime(DateTime.Now) - OriginalDate`.
@@ -52,7 +52,7 @@ The concept is sound, and the docs are unusually thorough for a pre-code project
 
 **Fix:** store nothing. Compute `logical_date(ts, workspace)` = the local date of `ts - day_boundary` in the workspace's IANA time zone. Age = `logical_date(end ?? now) - logical_date(created_at)`, where `end` is `completed_at`/`dropped_at`. Use `DateTimeOffset` (or UTC + tz id) everywhere.
 
-### 🔴 C2 — Three conflicting escalation scales
+### C2 — Three conflicting escalation scales
 
 | Source                        | Amber | Orange | Red  | Extreme   |
 | ----------------------------- | ----- | ------ | ---- | --------- |
@@ -63,7 +63,7 @@ The concept is sound, and the docs are unusually thorough for a pre-code project
 
 UC-03 says escalation is "configurable per workspace", but no doc says where that configuration lives. **Fix:** one `pressure` setting with thresholds (UI v2 §9), stored on the workspace/mode config.
 
-### 🔴 C3 — Rollover algorithm
+### C3 — Rollover algorithm
 
 `04 › Rollover Algorithm`:
 
@@ -75,7 +75,7 @@ UC-03 says escalation is "configurable per workspace", but no doc says where tha
 
 **Fix:** make rollover a **query**, not a write. Today's view = `status = Active AND planned_for <= today` (+ completed today). Carry count = the number of logical days between `planned_for` and today (or end), minus days spent Waiting. Snapshots become a **derived cache**, recomputed deterministically from items and history for any date range. Then they never need to sync, they self-heal after gaps, and multi-device rollover disappears as a problem.
 
-### 🔴 C4 — Sync design loses data
+### C4 — Sync design loses data
 
 `05 › Sync Rules`, `06 › POST /sync`:
 
@@ -85,7 +85,7 @@ UC-03 says escalation is "configurable per workspace", but no doc says where tha
 - `TodoItem.Version` ("optimistic concurrency") is defined but never used by the LWW rules.
 - **Per-workspace sync toggle vs user-level sync log.** Turning sync off and back on for a workspace has no defined backfill behavior.
 
-### 🟠 C5 — Domain model inconsistencies (`04`)
+### C5 — Domain model inconsistencies (`04`)
 
 - `WORKSPACE }|--|| MODE_CONFIG` reads "many workspaces share one mode config". It should be 1:N, one config per (workspace, mode), so each mode remembers its settings.
 - `RECURRENCE_RULE.template_todo_id` and `TODO_ITEM.recurrence_rule_id` create a cycle. Instances need `(rule_id, occurrence_date)` with a **deterministic id** (e.g. a UUIDv5 of both). Otherwise two devices generating "on demand" create duplicate instances.
@@ -95,7 +95,7 @@ UC-03 says escalation is "configurable per workspace", but no doc says where tha
 - Habit `streak_current`/`streak_longest` are listed as stored fields (`03`). They're derivable, and storing them adds another sync-conflict source.
 - `USER` entity with email in a "no account required" local DB. Make it optional / server-only.
 
-### 🟠 C6 — "Modes change behavior, not data" is contradicted by the modes themselves
+### C6 — "Modes change behavior, not data" is contradicted by the modes themselves
 
 - Deadline makes `due_date` **required**. Switching an existing workspace into Deadline leaves invalid items.
 - Habit makes "all items implicitly recurring". Kanban has "no daily rollover". Switching Sprint → Kanban → Sprint has undefined rollover/age state.
@@ -105,7 +105,7 @@ UC-03 says escalation is "configurable per workspace", but no doc says where tha
 
 UI v2 §9 resolves this by splitting modes into **Layout × Order × Pressure** presets and defining the switching behavior.
 
-### 🟠 C7 — Roadmap document errors (`08`)
+### C7 — Roadmap document errors (`08`)
 
 - **"Phase 5" appears twice** (Sync & Backend at line ~185 and Connected Apps), and Sync & Backend is specified twice (once as Phase 5, once as Phase 6). The Gantt chart has Connected Apps as Phase 5.
 - The MVP says "Desktop (Windows + macOS + Linux)". `01` says macOS P0 and Windows/Linux P2.
@@ -114,7 +114,7 @@ UI v2 §9 resolves this by splitting modes into **Layout × Order × Pressure** 
 - Accountability mode's "weekly email digest" (`03`) needs a server and email. It's sold as a paid Sync feature in `09` but described as a free mode feature in `03`.
 - The `v1` keyboard map collided with OS shortcuts: ⌘M (minimize), ⌘S, ⌥Space / Alt+Space (Windows window menu), and ⌘←/→/⌫ inside text fields. Fixed in UI v2 §12.
 
-### 🟡 C8 — Smaller items
+### C8 — Smaller items
 
 - `01`/`05` target `net8.0`. .NET 8 support ends Nov 2026; target **.NET 10 (LTS)**. `netstandard2.1` in `Noto.Core` is unnecessary since there's no consumer that needs it.
 - `docker-compose.yml` uses the obsolete `version:` key. The default `POSTGRES_PASSWORD=password` and `JWT_SECRET` should be required env vars with no defaults.
@@ -127,7 +127,7 @@ UI v2 §9 resolves this by splitting modes into **Layout × Order × Pressure** 
 
 ## 2. Requirements
 
-### 🔴 R1 — Missing: deciding about carried items, and planning ahead
+### R1 — Missing: deciding about carried items, and planning ahead
 
 The model has `original_date` but no **`planned_for`**, so:
 
@@ -137,7 +137,7 @@ The model has `original_date` but no **`planned_for`**, so:
 
 This is the single biggest product gap. If every unfinished item lands on today forever, Today becomes a backlog, and accountability turns into noise. **Add:** `planned_for`, `Waiting` status, `Someday` flag, `Dropped` + reason, `Deferred` events, and derived carry/defer counts (UI v2 §2, §4, §14).
 
-### 🟠 R2 — Requirements without acceptance criteria or owners
+### R2 — Requirements without acceptance criteria or owners
 
 - **Quick capture "< 2s" and "works when the app isn't focused".** Avalonia has no global hotkey or menubar-capture API. This is native interop on each OS (Carbon `RegisterEventHotKey`, Win32 `RegisterHotKey`; Linux/Wayland has no general solution). It's scheduled as a 2-day UI task.
 - **"Workspace switching < 100ms".** OK, but there's no NFR for cold start, DB size or memory. Set a budget: cold start < 1s on Apple Silicon, 10k items without jank.
@@ -147,7 +147,7 @@ This is the single biggest product gap. If every unfinished item lands on today 
 - **Time zones / travel / DST:** no requirement at all, despite day boundaries being the core mechanic.
 - **Data portability:** export is "JSON/CSV", but there's no **import** from Todoist, Things or Reminders. That import is the main adoption path for a todo app.
 
-### 🟠 R3 — Undecided, but load-bearing
+### R3 — Undecided, but load-bearing
 
 - Is the web (WASM) build **local-only** (data in browser storage, which the browser can evict) or **server-backed**? `06` adds CRUD endpoints "for web-only users", which creates a second write path that bypasses the sync engine. Pick one. Recommendation: WASM is just another sync client; drop the CRUD endpoints; keep the read-only stats endpoints only if a non-app consumer exists.
 - **Do link previews sync?** They're "cached in main SQLite" (`10`), which syncs. Preview content comes from *private* Slack, Jira and GitHub data fetched with the user's credentials. Syncing it sends private third-party content to the Noto server, which contradicts "privacy-first". Recommendation: device-local, never synced (each device refetches).
@@ -157,7 +157,7 @@ This is the single biggest product gap. If every unfinished item lands on today 
 
 ## 3. Feasibility
 
-### 🔴 F1 — Connected Apps OAuth needs a server
+### F1 — Connected Apps OAuth needs a server
 
 - **Slack and Atlassian (Jira/Confluence Cloud) OAuth require a `client_secret` for the code exchange.** GitHub OAuth Apps traditionally do too. A secret shipped inside a desktop or WASM binary is public. Options:
   - (a) a tiny token-exchange relay run by Noto. Tokens pass through it, which contradicts "never leave the device", so the wording needs to change.
@@ -168,17 +168,17 @@ This is the single biggest product gap. If every unfinished item lands on today 
 - **Slack specifically:** reading threads needs a Slack app installed into the user's workspace. Many company workspaces require admin approval for third-party apps, which will block a large share of the "Dev/Manager" persona. Plan for this, or start with GitHub/Jira/Linear.
 - **Notion:** integrations only see pages explicitly shared with them, so arbitrary pasted Notion URLs will mostly fail.
 
-### 🔴 F2 — Connected Apps on WASM
+### F2 — Connected Apps on WASM
 
 Browsers block cross-origin calls to Slack, Jira and most APIs (CORS), and OpenGraph scraping of arbitrary sites is impossible from a page. WASM previews **require a proxy server**. That puts tokens and fetched content on the server, which contradicts F1's privacy model. The "Web Crypto + passphrase" credential store doesn't solve this. **Decide:** connected apps are desktop/mobile-only, or web requires Sync and a declared server-side fetch.
 
-### 🟠 F3 — Stack choices
+### F3 — Stack choices
 
 - **EF Core on WASM and iOS (AOT).** EF Core's AOT/trimming support is still partial (precompiled queries are experimental), and iOS forbids JIT. ADR-02 picks CommunityToolkit.Mvvm *for* AOT-friendliness, then pairs it with the least AOT-friendly piece of the stack. For a ~10-table schema, consider `Microsoft.Data.Sqlite` + hand-written SQL (or Dapper/AOT-friendly mapping) in a repository layer. Keep migrations as numbered SQL scripts. This also makes the WASM SQLite story (OPFS-backed wasm SQLite) less risky.
 - **Avalonia for a macOS-first app.** It's workable, but it won't feel native: menus, text input, scrolling physics and VoiceOver support all need deliberate work. Menubar, global hotkey, share extension and widgets are all native code regardless. Budget a "macOS polish" phase explicitly. (This review doesn't recommend changing frameworks: cross-platform from one codebase is a stated goal.)
 - **Avalonia WASM on mobile browsers.** IME/text input and performance are weak spots. Don't count it as "covers all other platforms" (`01`).
 
-### 🟠 F4 — Schedule
+### F4 — Schedule
 
 - The Gantt chart is **fully sequential, about 156 working days** (~7.5 months full-time solo), with no buffer, design time, beta or bug-fix phase, using calendar dates that include weekends.
 - 29 days of Connected Apps come **before** Sync and **before** WASM, although web is P1 and Connected Apps depend on decisions only Sync can answer (F1/F2).
@@ -194,7 +194,7 @@ Browsers block cross-origin calls to Slack, Jira and most APIs (CORS), and OpenG
 7. Board/Timeline/Habit layouts.
 8. OAuth relay, mobile.
 
-### 🟡 F5 — Business (`09`)
+### F5 — Business (`09`)
 
 - **Missing competitors:** Sunsama (daily planning ritual with task rollover, plus Jira/GitHub/Linear/Slack integrations), Akiflow, Amazing Marvin (procrastination/stale-task features), Things (Logbook). The moat claim "no other TODO app makes item age a first-class citizen" is weak against Sunsama. The defensible difference is **decisions + reasons + insights, local-first, at a fraction of Sunsama's price** (UI v2 §0, §5, §8).
 - **Assumptions:** 5% free→paid is the top of the typical freemium range, and DAU/MAU > 60% is well above what productivity apps usually achieve. Treat these as stretch numbers, not conservative ones.

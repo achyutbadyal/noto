@@ -5,37 +5,47 @@
              x:Class="Noto.App.Views.ItemRowView"
              x:DataType="vm:ItemRowViewModel">
   <Border Classes="row" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
-          AutomationProperties.Name="{Binding AutomationName}"
+          AutomationProperties.Name="{Binding AutomationName}" ClipToBounds="True"
           PointerPressed="OnPointerPressed" DoubleTapped="OnDoubleTapped">
-    <Grid ColumnDefinitions="3,3,Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
-      <!-- 3px pressure bar: hot and stale only, never the only signal (the carry glyph says it too) -->
+    <Grid ColumnDefinitions="3,3,Auto,*,Auto" ColumnSpacing="8">
+      <!-- 3px pressure bar: hot and stale only, never the only signal (the carry icon says it too) -->
       <Border Grid.Column="0" Classes="bar" Classes.hot="{Binding BarHot}" Classes.stale="{Binding BarStale}" />
 
       <Border Grid.Column="1" Width="3" CornerRadius="2" IsVisible="{Binding HasWorkspaceAccent}"
               Background="{Binding WorkspaceAccent, Converter={x:Static v:RowConverters.Accent}}" />
 
-      <!-- status glyph doubles as the complete toggle -->
-      <Button Grid.Column="2" Content="{Binding Glyph}" Command="{Binding ToggleCompleteCommand}"
-              Padding="4,0" MinWidth="24" FontSize="15" Focusable="False"
-              AutomationProperties.Name="Toggle complete" />
+      <!-- status icon doubles as the complete toggle -->
+      <Button Grid.Column="2" Classes="status" Command="{Binding ToggleCompleteCommand}" Focusable="False"
+              AutomationProperties.Name="Toggle complete" ToolTip.Tip="Toggle complete">
+        <PathIcon Width="17" Height="17" Data="{Binding Glyph, Converter={x:Static v:RowConverters.Icon}}"
+                  Classes.done="{Binding IsDone}" Classes.now="{Binding IsNow}" Classes.waiting="{Binding IsWaiting}"
+                  Classes.dropped="{Binding IsDropped}" />
+      </Button>
 
-      <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,4">
-        <TextBlock Text="{Binding Breadcrumb}" IsVisible="{Binding HasBreadcrumb}" Classes="hint" FontSize="11" />
+      <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,4" MinWidth="0">
+        <TextBlock Text="{Binding Breadcrumb}" IsVisible="{Binding HasBreadcrumb}" Classes="hint" FontSize="11" TextTrimming="CharacterEllipsis" />
         <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsEditing}"
                    TextDecorations="{Binding IsDone, Converter={x:Static v:RowConverters.Strike}}" />
         <TextBox x:Name="EditBox" Text="{Binding Owner.EditText, Mode=TwoWay}" IsVisible="{Binding IsEditing}"
                  v:Behaviors.FocusWhenVisible="True" MinHeight="26" Padding="6,2" />
       </StackPanel>
 
-      <TextBlock Grid.Column="4" Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" VerticalAlignment="Center" Classes="hint" FontSize="12" />
-      <Border Grid.Column="5" Classes="stuck" IsVisible="{Binding IsStuck}" VerticalAlignment="Center">
-        <TextBlock Text="stuck?" FontSize="11" Classes="carry stale" />
-      </Border>
-
-      <TextBlock Grid.Column="6" Text="{Binding CarryText}" IsVisible="{Binding HasCarry}" VerticalAlignment="Center"
-                 Classes="carry" Classes.warm="{Binding IsWarm}" Classes.hot="{Binding IsHot}" Classes.stale="{Binding IsStale}" />
-      <TextBlock Grid.Column="7" Text="{Binding EstimateText}" IsVisible="{Binding HasEstimate}" VerticalAlignment="Center" Classes="hint" />
-      <TextBlock Grid.Column="8" Text="{Binding PriorityText}" IsVisible="{Binding HasPriority}" VerticalAlignment="Center" Classes="hint" />
+      <!-- trailing metadata stays right-aligned and trims before the title does -->
+      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <TextBlock Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" Classes="hint" FontSize="12"
+                   TextTrimming="CharacterEllipsis" MaxWidth="160" />
+        <Border Classes="stuck" IsVisible="{Binding IsStuck}" VerticalAlignment="Center">
+          <TextBlock Text="stuck?" FontSize="11" Classes="carry stale" />
+        </Border>
+        <StackPanel Orientation="Horizontal" Spacing="3" IsVisible="{Binding HasCarry}" VerticalAlignment="Center">
+          <PathIcon Width="12" Height="12" Data="{v:Icon carry}" Classes="carry"
+                    Classes.warm="{Binding IsWarm}" Classes.hot="{Binding IsHot}" Classes.stale="{Binding IsStale}" />
+          <TextBlock Text="{Binding CarryText}" Classes="carry"
+                     Classes.warm="{Binding IsWarm}" Classes.hot="{Binding IsHot}" Classes.stale="{Binding IsStale}" />
+        </StackPanel>
+        <TextBlock Text="{Binding EstimateText}" IsVisible="{Binding HasEstimate}" VerticalAlignment="Center" Classes="hint" />
+        <TextBlock Text="{Binding PriorityText}" IsVisible="{Binding HasPriority}" VerticalAlignment="Center" Classes="hint" />
+      </StackPanel>
     </Grid>
   </Border>
 </UserControl>

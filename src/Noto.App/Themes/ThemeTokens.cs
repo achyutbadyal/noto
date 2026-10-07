@@ -1,48 +1,51 @@
 namespace Noto.App.Themes;
 
-// Design tokens from docs/07 §11.1. Single source: the Avalonia resource dictionaries are built from these,
-// and the contrast tests read the same values.
+// Design tokens for a native-feeling macOS look. Single source: the Avalonia resource dictionaries are
+// built from these, and the contrast tests read the same values. Values are tuned to Apple's system greys
+// while still meeting the contrast budget in docs/07 §11.1 (verified by ThemeTests).
 public static class ThemeTokens
 {
     public static readonly IReadOnlyDictionary<string, string> Dark = new Dictionary<string, string>
     {
-        ["canvas"] = "#0E0F12",
-        ["surface"] = "#16181D",
-        ["raised"] = "#1D2027",
-        ["hover"] = "#242833",
-        ["border"] = "#2A2E38",
-        ["text-1"] = "#ECEEF2",
-        ["text-2"] = "#A3A9B6",
-        ["text-3"] = "#868D9B",
-        ["link"] = "#7AA7FF",
-        ["done"] = "#6CC08B",
-        ["pressure-warm"] = "#E0B252",
-        ["pressure-hot"] = "#F08A4B",
-        ["pressure-stale"] = "#FF6B6B",
+        ["canvas"] = "#1C1C1E",
+        ["surface"] = "#232326",
+        ["sidebar"] = "#26262A",
+        ["raised"] = "#2C2C2E",
+        ["hover"] = "#38383C",
+        ["border"] = "#35353A",
+        ["text-1"] = "#F5F5F7",
+        ["text-2"] = "#A6A6AC",
+        ["text-3"] = "#9A9AA1",
+        ["link"] = "#5CB0FF",
+        ["done"] = "#34D06B",
+        ["pressure-warm"] = "#F2C94C",
+        ["pressure-hot"] = "#FFA657",
+        ["pressure-stale"] = "#FF8078",
     };
 
     public static readonly IReadOnlyDictionary<string, string> Light = new Dictionary<string, string>
     {
-        ["canvas"] = "#F7F7F5",
+        ["canvas"] = "#F2F2F7",
         ["surface"] = "#FFFFFF",
-        ["raised"] = "#F0F0EC",
-        ["hover"] = "#EFEFEB",
-        ["border"] = "#E2E2DC",
-        ["text-1"] = "#17181C",
-        ["text-2"] = "#525866",
-        ["text-3"] = "#676D7A",
-        ["link"] = "#2F5FD0",
-        ["done"] = "#2B7A4B",
-        ["pressure-warm"] = "#8A5F00",
-        ["pressure-hot"] = "#B34A12",
-        ["pressure-stale"] = "#C22F2F",
+        ["sidebar"] = "#ECECF1",
+        ["raised"] = "#ECECF0",
+        ["hover"] = "#EAEAEF",
+        ["border"] = "#DCDCE1",
+        ["text-1"] = "#1D1D1F",
+        ["text-2"] = "#5C5C61",
+        ["text-3"] = "#66666B",
+        ["link"] = "#0B5FCE",
+        ["done"] = "#1A7036",
+        ["pressure-warm"] = "#7F5200",
+        ["pressure-hot"] = "#A93C0E",
+        ["pressure-stale"] = "#B52B2B",
     };
 
     // Foreground tokens that must reach WCAG AA (4.5:1) on every background token below.
     public static readonly IReadOnlyList<string> TextTokens =
         ["text-1", "text-2", "text-3", "link", "done", "pressure-warm", "pressure-hot", "pressure-stale"];
 
-    public static readonly IReadOnlyList<string> Backgrounds = ["canvas", "surface", "raised"];
+    public static readonly IReadOnlyList<string> Backgrounds = ["canvas", "surface", "sidebar", "raised"];
 
     // Ten workspace accents, tuned per theme. Used for bars and accents (non-text, 3:1).
     public static readonly IReadOnlyDictionary<string, (string Dark, string Light)> Accents = new Dictionary<string, (string, string)>

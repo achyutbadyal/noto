@@ -77,8 +77,8 @@ public sealed class GitLabProvider : ProviderBase
         var p = New(url, Str(n, "title") ?? "", state, gitlabState, merged.ToString(), approvals.ToString(), pipeline);
         p.Subtitle = $"{split[0].Trim('/')}!{iid}";
         var facts = new List<ChipFact>();
-        if (approvals > 0) facts.Add(new($"{approvals}✓"));
-        if (pipeline is not null) facts.Add(new(pipeline switch { "success" => "CI ✓", "failed" => "CI ✗", _ => "CI …" }));
+        if (approvals > 0) facts.Add(new($"{approvals} approved"));
+        if (pipeline is not null) facts.Add(new(pipeline switch { "success" => "CI passed", "failed" => "CI failed", _ => "CI pending" }));
         facts.Add(new(merged ? "merged" : gitlabState == "closed" ? "closed" : Str(n, "has_conflicts") == "true" ? "conflicts" : "open"));
         p.ChipFacts = facts.Take(3).ToList();
         p.AuthorName = Str(n, "author", "name");

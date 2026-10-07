@@ -58,11 +58,11 @@ public sealed class TodayTests : IDisposable
         var vm = await LoadAsync();
 
         var row = Row(vm, "Deploy v2.3");
-        row.CarryText.ShouldBe("↻4");
+        row.CarryText.ShouldBe("4");
         row.Pressure.ShouldBe(PressureState.Hot);   // honest: 3–5 is hot
         row.ShowBar.ShouldBeTrue();
         row.EstimateText.ShouldBe("~1h");
-        row.Glyph.ShouldBe("○");
+        row.Glyph.ShouldBe("planned");
         row.AutomationName.ShouldBe("Deploy v2.3, needs a decision, carried 4 times, stuck, estimate 1 hour");
         vm.NeedsDecision.ShouldBe(1);
         vm.BannerText.ShouldBe("1 item carried over need a decision");
@@ -263,7 +263,7 @@ public sealed class TodayTests : IDisposable
 
         vm.Capacity!.IsOver.ShouldBeTrue();
         vm.Capacity.Text.ShouldBe("8h / 6h");
-        vm.Capacity.StatusText.ShouldBe("⚠ 2h over");
+        vm.Capacity.StatusText.ShouldBe("2h over");
         vm.Capacity.Fraction.ShouldBe(1.0);
         vm.Capacity.HasSuggestion.ShouldBeTrue();
 
@@ -271,7 +271,7 @@ public sealed class TodayTests : IDisposable
         await vm.ReloadAsync();
 
         vm.Capacity!.IsOver.ShouldBeFalse();
-        vm.Capacity.StatusText.ShouldBe("✓ fits");
+        vm.Capacity.StatusText.ShouldBe("Fits");
     }
 
     [Fact]
@@ -295,7 +295,7 @@ public sealed class TodayTests : IDisposable
         await vm.HandleKeyAsync(Key("f"));
         await vm.ReloadAsync();
         vm.Sections[0].Rows.Single().Id.ShouldBe(id);
-        vm.Sections[0].Rows[0].Glyph.ShouldBe("◉");
+        vm.Sections[0].Rows[0].Glyph.ShouldBe("now");
         _app.Services.Focus.IsActive.ShouldBeTrue();
         _app.Services.Focus.RemainingText.ShouldBe("25:00");
 

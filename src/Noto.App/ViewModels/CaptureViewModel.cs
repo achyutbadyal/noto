@@ -11,7 +11,7 @@ namespace Noto.App.ViewModels;
 public sealed record WorkspaceChoice(Guid Id, string Name, string Icon);
 
 // The global quick-capture panel (docs/07 §7.2): token input, a workspace picker that defaults by focus hours,
-// and a "＋ attach current page" chip when the frontmost app is a browser.
+// and an "attach current page" toggle when the frontmost app is a browser.
 public sealed partial class CaptureViewModel : ObservableObject
 {
     readonly AppServices _services;
@@ -32,7 +32,7 @@ public sealed partial class CaptureViewModel : ObservableObject
     [ObservableProperty] string? _status;
 
     public bool HasAttachOffer => Context?.Url is not null;
-    public string AttachText => Context?.Url is null ? "" : $"＋ attach current page  ⌘L   {Context.PageTitle}";
+    public string AttachText => Context?.Url is null ? "" : $"Attach current page  ⌘L   {Context.PageTitle}";
 
     public event Action? Saved;
     public event Action? CloseRequested;

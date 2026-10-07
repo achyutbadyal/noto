@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -21,23 +22,54 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
 
         DataContextChanged += (_, _) => Attach(DataContext as ShellViewModel);
+        SizeChanged += OnSizeChanged;
         _tick.Tick += async (_, _) => { if (_shell is not null) await _shell.TickAsync(); };
-        Opened += (_, _) => _tick.Start();
+        Opened += (_, _) =>
+        {
+            _tick.Start();
+            ApplyViewport(Bounds.Width);
+        };
         Closed += (_, _) => _tick.Stop();
     }
 
+    // Drives the responsive shell: the sidebar collapses and the inspector hides as the window narrows.
+    // The minimum width guards against the tiny/zero sizes reported during the first layout pass, which
+    // would otherwise flash a collapsed layout and animate the inspector in on startup.
+    void OnSizeChanged(object? sender, SizeChangedEventArgs e) => ApplyViewport(e.NewSize.Width);
+
+    void ApplyViewport(double width)
+    {
+        if (_shell is not null && width >= MinViewportWidth) _shell.ViewportWidth = width;
+    }
+
+    const double MinViewportWidth = 320;
+
     void Attach(ShellViewModel? shell)
     {
+        if (_shell is not null) _shell.PropertyChanged -= OnShellPropertyChanged;
         _shell = shell;
         if (shell is null) return;
 
-        shell.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(ShellViewModel.Selected) && shell.Selected is { } tab && Application.Current is { } app)
-                ThemeBuilder.SetAccent(app, tab.Color);
-        };
+        shell.PropertyChanged += OnShellPropertyChanged;
         shell.Appearance.Changed += ApplyAppearance;
         ApplyAppearance();
+    }
+
+    void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (_shell is not { } shell) return;
+        if (e.PropertyName == nameof(ShellViewModel.Selected) && shell.Selected is { } tab && Application.Current is { } app)
+            ThemeBuilder.SetAccent(app, tab.Color);
+        else if (e.PropertyName == nameof(ShellViewModel.Content))
+            FadeInPage();
+    }
+
+    // New page fades in on its own (the old page is swapped out instantly, so there's no muddy cross-fade).
+    void FadeInPage()
+    {
+        if (ReduceMotion || !IsVisible) return;
+        PageHost.Opacity = 0;
+        Dispatcher.UIThread.Post(() => PageHost.Opacity = 1, DispatcherPriority.Render);
     }
 
     // Theme, text size, row density and the reduce-motion gate (docs/07 §11.3, §15).
@@ -59,6 +91,7 @@ public partial class MainWindow : Window
         SetMotion(!reduce);
     }
 
+    // The "motion" class turns on every transition in Styles.axaml.
     void SetMotion(bool on) => Classes.Set("motion", on);
 
     async void OnKeyDown(object? sender, KeyEventArgs e)

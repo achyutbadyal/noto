@@ -21,9 +21,9 @@ public sealed partial class OnboardingViewModel(AppServices services) : Observab
     public async Task ChooseAsync(OnboardingChoice choice)
     {
         if (choice is OnboardingChoice.Work or OnboardingChoice.Both)
-            await services.Workspaces.CreateAsync("Work", "🏢", BuiltInPresets.Sprint, 0);
+            await services.Workspaces.CreateAsync("Work", "work", BuiltInPresets.Sprint, 0);
         if (choice is OnboardingChoice.Personal or OnboardingChoice.Both)
-            await services.Workspaces.CreateAsync("Personal", "🏠", BuiltInPresets.Zen, 1);
+            await services.Workspaces.CreateAsync("Personal", "personal", BuiltInPresets.Zen, 1);
         Completed?.Invoke();
     }
 }

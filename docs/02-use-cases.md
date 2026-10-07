@@ -4,19 +4,19 @@ Terms (**age**, **carry**, **defers**, **logical day**, item states) are defined
 
 ## Personas
 
-### 🧑‍💻 Dev (Primary)
+### Dev (Primary)
 
 A software engineer tracking standup items, code reviews and sprint commitments. Wants to see at a glance what keeps slipping, and wants PRs and tickets in todos to show live status.
 
-### 🧑‍🎓 Student
+### Student
 
 Tracks assignments, study goals and personal habits. Wants different workspaces for courses and personal life, and deadlines that are visible on a timeline.
 
-### 🧑‍💼 Manager
+### Manager
 
 Tracks follow-ups with reports, meeting action items and project milestones. Needs **Waiting on** to know what's been delegated and for how long.
 
-### 🏃 Side-Project Hustler
+### Side-Project Hustler
 
 Runs side projects alongside a day job. Needs workspace isolation and focus hours, so weekend ideas don't clutter Monday's work view and work doesn't leak into evenings.
 
@@ -164,7 +164,7 @@ Runs side projects alongside a day job. Needs workspace isolation and focus hour
 - Credentials are never synced or exported. Previews are device-local.
 - Chip renders within 2s from cache, or 5s on first fetch.
 - If the app isn't connected, the link is plain and clickable, with a one-time "Connect X" hint.
-- Expired tokens refresh automatically. If refresh fails, the chip shows "🔑 reconnect".
+- Expired tokens refresh automatically. If refresh fails, the chip shows " reconnect".
 - Multiple URLs in one item each get a chip (at most 2 shown in the row, all of them in the inspector).
 - Custom apps: token/API key + URL pattern + OpenGraph or JSONPath mapping, optionally with state mapping.
 - Automatic completion from link state is opt-in, reversible and recorded in history.
@@ -311,7 +311,7 @@ Runs side projects alongside a day job. Needs workspace isolation and focus hour
 | Two devices open on a new day at the same time | No conflict: day change writes nothing, and recurrence instances have deterministic ids.                                        |
 | 100+ items in a day                            | Virtualized list. The capacity bar makes the overcommitment obvious and suggests deferrals.                                     |
 | URL pasted but app not connected               | Plain link, plus a one-time "Connect [App] for live status" hint.                                                               |
-| OAuth token expires mid-session                | Background refresh. If it fails, the chip shows 🔑 reconnect.                                                                   |
+| OAuth token expires mid-session                | Background refresh. If it fails, the chip shows reconnect.                                                                      |
 | Linked resource deleted or inaccessible        | Chip shows unavailable, with a "remove link" action.                                                                            |
 | Multiple URLs from different apps in one item  | Each gets a chip, fetched in parallel (batched per provider).                                                                   |
 | Self-hosted app URL (e.g. on-prem Jira)        | Native: per-connection `instance_url`. Web: only via a self-hosted gateway with that host allowlisted.                          |

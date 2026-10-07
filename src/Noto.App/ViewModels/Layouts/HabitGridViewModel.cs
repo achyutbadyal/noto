@@ -12,8 +12,11 @@ namespace Noto.App.ViewModels;
 
 public sealed record HabitCellViewModel(DateOnly Day, HabitDayState State, bool IsToday)
 {
-    // A missed day is an empty square, never a red cross (docs/07 §9.1).
-    public string Glyph => State switch { HabitDayState.Done => "■", HabitDayState.Missed or HabitDayState.Pending => "□", _ => "·" };
+    // A missed day is an empty square, never a red cross (docs/07 §9.1). Rendered as a rounded
+    // square in the view, so the state is exposed rather than a text glyph.
+    public bool IsDone => State == HabitDayState.Done;
+    public bool IsMissed => State is HabitDayState.Missed or HabitDayState.Pending;
+    public bool IsScheduled => State is not HabitDayState.NotScheduled;
     public string Description => $"{Day.ToString("dddd", System.Globalization.CultureInfo.InvariantCulture)}: " + State switch
     {
         HabitDayState.Done => "done",

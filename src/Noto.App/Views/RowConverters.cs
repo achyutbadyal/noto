@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
 using Noto.App.ViewModels;
@@ -6,7 +7,24 @@ namespace Noto.App.Views;
 
 public static class RowConverters
 {
+    // Resolves a stored icon name (or a legacy emoji) to a monochrome geometry for PathIcon.
+    public static readonly IValueConverter Icon = new FuncValueConverter<string?, Geometry?>(AppIcons.Get);
+
+    // Drives overlay fades without toggling IsVisible (which would skip the transition).
+    public static readonly IValueConverter BoolToOpacity = new FuncValueConverter<bool, double>(open => open ? 1.0 : 0.0);
+    public static readonly IValueConverter InverseBool = new FuncValueConverter<bool, bool>(value => !value);
+
+    // Enter transitions: the command palette drops in and the toast slides up, both via Margin
+    // (this Avalonia build has no transform transition, but ThicknessTransition gives the same read).
+    public static readonly IValueConverter PanelMargin = new FuncValueConverter<bool, Thickness>(open =>
+        new Thickness(0, open ? 120 : 108, 0, 0));
+    public static readonly IValueConverter ToastMargin = new FuncValueConverter<bool, Thickness>(visible =>
+        new Thickness(0, 0, 0, visible ? 28 : 12));
+
     public static readonly IValueConverter TodayOpacity = new FuncValueConverter<bool, double>(today => today ? 1.0 : 0.55);
+
+    // The inspector collapses to zero width (instead of IsVisible) so its width can animate.
+    public static readonly IValueConverter InspectorWidth = new FuncValueConverter<bool, double>(show => show ? 320 : 0);
 
     public static readonly IValueConverter CloseLabel = new FuncValueConverter<bool, string>(complete => complete ? "Start the day  Esc" : "Skip review  Esc");
 

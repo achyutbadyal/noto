@@ -232,7 +232,7 @@ public sealed class AppConnection          // local-only table; secrets are in t
 ### OAuth details & known trade-offs
 
 - **Native OAuth** follows RFC 8252 (OAuth for native apps): system browser, loopback redirect, PKCE. Providers whose token exchange requires a `client_secret` (Slack, Atlassian, GitHub OAuth Apps) get one **embedded in the native build**. RFC 8252 treats native clients as public, so this secret should be assumed extractable. Mitigations: PKCE everywhere it's supported, minimal read-only scopes, per-release secret rotation where the provider allows it, and abuse monitoring on the provider dashboards. The secret alone grants no access to any user's data.
-- **Token refresh:** before expiry, under a single-flight lock per connection. On failure → `RefreshFailed` → chips show `🔑 reconnect`.
+- **Token refresh:** before expiry, under a single-flight lock per connection. On failure → `RefreshFailed` → chips show `reconnect`.
 - **Disconnect:** revokes at the provider where an API exists, then deletes the keyring item and the connection's cached previews.
 
 ```mermaid
@@ -242,7 +242,7 @@ flowchart TD
     B -->|Expired| D{Refresh token?}
     D -->|Yes| E[Refresh, single-flight]
     E -->|OK| F[Update keyring] --> C
-    E -->|Fail| G[RefreshFailed → chip shows 🔑 reconnect]
+ E -->|Fail| G[RefreshFailed → chip shows reconnect]
     D -->|No: PAT / API key| G
     C -->|200| H[Update cache, state hash, live-link rules]
     C -->|401/403| G
@@ -309,7 +309,7 @@ Previews live in the local-only `link_preview_cache`, keyed by normalized URL. S
 │  App name:      [ Internal Wiki              ]          │
 │  URL pattern:   [ wiki.acme.com/pages/*      ]          │
 │  Auth:          [ Bearer token          ▾ ]             │
-│  Token:         [ ••••••••••••••••••••  👁 ]  (keyring) │
+│ Token: [ •••••••••••••••••••• ] (keyring) │
 │                                                         │
 │  Preview:  ○ OpenGraph   ● JSON API                     │
 │  Endpoint:      [ https://wiki.acme.com/api/v1/pages/{path} ] │
@@ -363,7 +363,7 @@ A provider is a class implementing `IAppProvider`, shipped in the app. Loading t
 | Loading         | Shimmer chip                         | Skeleton card                                 |
 | Loaded          | Facts                                | Full card                                     |
 | Stale           | Facts (cached)                       | "Updated 12m ago", refreshing                 |
-| AuthRequired    | `⟨ Slack · 🔑 reconnect ⟩`           | Reconnect button (deep-links to Settings)     |
+| AuthRequired    | `⟨ Slack · reconnect ⟩`              | Reconnect button (deep-links to Settings)     |
 | Error (API)     | Cached facts if any, plus a ⚠ glyph  | Error text + Retry                            |
 | Error (network) | Cached facts if any, else plain link | Auto-retry on connectivity                    |
 | Unavailable     | Struck-through chip                  | "No longer accessible" + Remove link          |

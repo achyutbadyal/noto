@@ -130,8 +130,8 @@ public sealed partial class GitHubProvider : ProviderBase
             p = New(url, Str(n, "title") ?? "", state, Str(n, "state"), merged.ToString(), decision, ci);
             p.Subtitle = $"{subtitle} #{r.Id}";
             var facts = new List<ChipFact>();
-            if (approvals > 0) facts.Add(new($"{approvals}✓"));
-            if (ci is not null) facts.Add(new(ci switch { "SUCCESS" => "CI ✓", "FAILURE" or "ERROR" => "CI ✗", _ => "CI …" }));
+            if (approvals > 0) facts.Add(new($"{approvals} approved"));
+            if (ci is not null) facts.Add(new(ci switch { "SUCCESS" => "CI passed", "FAILURE" or "ERROR" => "CI failed", _ => "CI pending" }));
             facts.Add(new(merged ? "merged" : closed ? "closed" : Str(n, "isDraft") == "true" ? "draft"
                 : Str(n, "mergeable") == "CONFLICTING" ? "conflicts" : "ready"));
             p.ChipFacts = facts.Take(3).ToList();

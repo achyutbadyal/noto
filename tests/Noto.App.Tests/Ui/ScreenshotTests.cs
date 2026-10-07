@@ -36,7 +36,7 @@ public sealed class ScreenshotTests : IDisposable
         await _app.Services.Bus.SendAsync(new CompleteItem(done));
         await _app.Services.Bus.SendAsync(new SetPriority(deploy, 2));
         await _app.Services.Workspaces.SetNowAsync(_app.Workspace.Id, deploy);
-        await _app.Services.Workspaces.CreateAsync("Personal", "🏠", BuiltInPresets.Zen, 1);
+        await _app.Services.Workspaces.CreateAsync("Personal", "home", BuiltInPresets.Zen, 1);
     }
 
     (MainWindow Window, ShellViewModel Shell) Open(ThemeVariant? variant = null)
@@ -152,5 +152,32 @@ public sealed class ScreenshotTests : IDisposable
         Snap(window, "todayall-dark");
         await shell.GoAsync(AppPage.WeeklyReview);
         Snap(window, "weekly-dark");
+    }
+
+    // A narrow window must adapt (collapse the sidebar, hide the inspector) instead of clipping.
+    [AvaloniaFact]
+    public async Task Narrow_window_adapts_instead_of_clipping()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Light);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+
+        shell.ViewportWidth = 760;
+        Dispatcher.UIThread.RunJobs();
+
+        shell.IsNarrow.ShouldBeTrue();
+        shell.IsCompact.ShouldBeTrue();
+        shell.ShowToolbarLabels.ShouldBeFalse();
+        shell.EffectiveSidebarExpanded.ShouldBeFalse();
+        shell.SidebarWidth.ShouldBe(56);
+        shell.ShowInspector.ShouldBeFalse();
+        Snap(window, "narrow-light");
+
+        shell.ViewportWidth = 1240;
+        Dispatcher.UIThread.RunJobs();
+        shell.ShowInspector.ShouldBeTrue();
+        shell.EffectiveSidebarExpanded.ShouldBeTrue();
+        shell.SidebarWidth.ShouldBe(232);
     }
 }

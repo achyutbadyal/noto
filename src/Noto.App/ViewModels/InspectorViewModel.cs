@@ -66,7 +66,7 @@ public sealed partial class InspectorViewModel : ObservableObject
 
         var metrics = snapshot.MetricsOf(item);
         AgeText = metrics.Age == 0 ? "New" : $"{metrics.Age}d";
-        CarryText = metrics.Carry > 0 ? $"↻{metrics.Carry}" : "0";
+        CarryText = metrics.Carry.ToString();
         DefersText = metrics.Defers.ToString();
         Notes = item.Notes ?? "";
         StateText = ItemLabels.StateWord(item, snapshot.Today, snapshot.Workspace.NowItemId == item.Id);

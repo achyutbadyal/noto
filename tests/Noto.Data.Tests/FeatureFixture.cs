@@ -22,7 +22,7 @@ public sealed class FeatureFixture : IDisposable
         Bus = new CommandBus(Uow, Clock, Guid.CreateVersion7());
         Derive = new DerivationService(Uow, Clock);
         Workspaces = new WorkspaceService(Uow, Clock);
-        Ws = Workspaces.CreateAsync("Work", "🏢", "#fff", BuiltInPresets.Sprint).GetAwaiter().GetResult();
+        Ws = Workspaces.CreateAsync("Work", "work", "#fff", BuiltInPresets.Sprint).GetAwaiter().GetResult();
         Ws.TzFollowsDevice = false;
         Ws.TimeZone = "UTC";
         Uow.RunAsync(async s => { await s.Workspaces.UpsertAsync(Ws); return 0; }).GetAwaiter().GetResult();

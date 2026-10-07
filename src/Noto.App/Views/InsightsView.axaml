@@ -1,33 +1,36 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
              x:Class="Noto.App.Views.InsightsView"
              x:DataType="vm:InsightsViewModel">
   <ScrollViewer>
-    <StackPanel MaxWidth="720" Margin="24" Spacing="16" HorizontalAlignment="Center">
+    <StackPanel MaxWidth="720" Margin="24" Spacing="16" HorizontalAlignment="Stretch">
       <TextBlock Text="{Binding StreakText}" Classes="secondary" IsVisible="{Binding StreakText.Length}" />
       <TextBlock Text="{Binding EmptyText}" Classes="secondary" TextWrapping="Wrap" IsVisible="{Binding HasEmpty}" />
 
       <ItemsControl ItemsSource="{Binding Cards}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:InsightCard">
-            <Border Classes="panel" Padding="20" Margin="0,0,0,12" AutomationProperties.Name="{Binding Headline}">
-              <StackPanel Spacing="8">
+            <Border Classes="panel appear" Padding="20" Margin="0,0,0,12" AutomationProperties.Name="{Binding Headline}">
+              <StackPanel Spacing="10">
                 <TextBlock Text="{Binding Headline}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding Detail}" Classes="secondary" IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <TextBlock Text="{Binding Detail}" Classes="secondary" TextWrapping="Wrap" IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}" />
                 <ItemsControl ItemsSource="{Binding Rows}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:InsightRow">
                       <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="12" Margin="0,3">
-                        <TextBlock Text="{Binding Label}" Classes="secondary" />
-                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" />
-                        <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
+                        <TextBlock Text="{Binding Label}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" MinWidth="60" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" TextTrimming="CharacterEllipsis" />
                       </Grid>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <TextBlock Text="{Binding Suggestion, StringFormat='→ {0}'}" Foreground="{DynamicResource LinkBrush}"
-                           IsVisible="{Binding Suggestion, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" IsVisible="{Binding Suggestion, Converter={x:Static ObjectConverters.IsNotNull}}">
+                  <PathIcon Data="{v:Icon arrow-right}" Width="14" Height="14" Foreground="{DynamicResource LinkBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                  <TextBlock Grid.Column="1" Text="{Binding Suggestion}" Foreground="{DynamicResource LinkBrush}" TextWrapping="Wrap" />
+                </Grid>
               </StackPanel>
             </Border>
           </DataTemplate>

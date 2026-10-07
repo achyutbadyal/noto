@@ -24,7 +24,7 @@ public sealed class AppFixture : IDisposable
         var platform = new PlatformServices(new UnsupportedHotkey("test"), new InMemoryKeyring(),
             new UnsupportedCaptureContext("test"), new UnsupportedNotifications("test"), new StaticReduceMotion());
         Services = new AppServices(Db, bus, Clock, Db, platform);
-        Workspace = Services.Workspaces.CreateAsync("Work", "🏢", preset ?? BuiltInPresets.Sprint, 0).GetAwaiter().GetResult();
+        Workspace = Services.Workspaces.CreateAsync("Work", "work", preset ?? BuiltInPresets.Sprint, 0).GetAwaiter().GetResult();
     }
 
     public async Task<Guid> AddAsync(string title, DateOnly? plannedFor = null, int? estimate = null)

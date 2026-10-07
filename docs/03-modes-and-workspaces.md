@@ -17,8 +17,8 @@ Noto doesn't seed four workspaces. It asks one question, _"What do you want Noto
 
 | Answer   | Workspaces created                                 |
 | -------- | -------------------------------------------------- |
-| Work     | 🏢 Work (Sprint preset, focus hours Mon–Fri 09–18) |
-| Personal | 🏠 Personal (Zen preset)                           |
+| Work     | Work (Sprint preset, focus hours Mon–Fri 09–18)    |
+| Personal | Personal (Zen preset)                              |
 | Both     | Both of the above                                  |
 
 Health (Habit preset) and Side Projects (Kanban preset) are offered as one-click templates in "New workspace". Users can create, rename, reorder, archive and delete workspaces freely. Deletion is soft, with a 30-day recovery period (UC-02).
@@ -64,12 +64,12 @@ A **mode** changes how a workspace _looks and pushes_, never what's stored. Earl
 
 | Preset            | Layout          | Order               | Pressure                      | Best for                               |
 | ----------------- | --------------- | ------------------- | ----------------------------- | -------------------------------------- |
-| 📋 Sprint         | list            | priority_carry      | honest                        | Work, daily throughput                 |
-| 🧘 Zen            | list (Spacious) | manual              | gentle                        | Personal, low pressure                 |
-| 🎯 Deadline       | timeline        | due_date            | honest                        | Exams, launches, time-boxed projects   |
-| 🔁 Habit          | habit_grid      | time_of_day         | gentle                        | Health, routines                       |
-| 📌 Kanban         | board           | manual (per column) | gentle (stuck-in-column only) | Side projects, multi-phase work        |
-| 🔥 Accountability | list            | carry_desc          | relentless                    | Any workspace where you want the truth |
+| Sprint            | list            | priority_carry      | honest                        | Work, daily throughput                 |
+| Zen               | list (Spacious) | manual              | gentle                        | Personal, low pressure                 |
+| Deadline          | timeline        | due_date            | honest                        | Exams, launches, time-boxed projects   |
+| Habit             | habit_grid      | time_of_day         | gentle                        | Health, routines                       |
+| Kanban            | board           | manual (per column) | gentle (stuck-in-column only) | Side projects, multi-phase work        |
+| Accountability    | list            | carry_desc          | relentless                    | Any workspace where you want the truth |
 
 Changing any control turns the preset into `"<Preset> (custom)"`. Each layout keeps its own settings in `layout_settings`, so switching away and back restores board columns, timeline range and so on.
 

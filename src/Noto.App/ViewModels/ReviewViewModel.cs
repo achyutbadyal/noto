@@ -58,7 +58,7 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     public string CurrentDetail => Current is not { } e ? "" :
         $"{(e.Row.Metrics.Age == 0 ? "created today" : $"created {e.Row.Metrics.Age} day{(e.Row.Metrics.Age == 1 ? "" : "s")} ago")}" +
-        (e.Row.Metrics.Carry > 0 ? $" · carried ↻{e.Row.Metrics.Carry}" : "") +
+        (e.Row.Metrics.Carry > 0 ? $" · carried {e.Row.Metrics.Carry}×" : "") +
         (e.Row.Metrics.Defers > 0 ? $" · deferred {(e.Row.Metrics.Defers == 1 ? "once" : $"{e.Row.Metrics.Defers}×")}" : "");
 
     public string SuggestionText => Suggestion is { } s ? $"Noto noticed: {s.Text}  [{s.Key}]" : "";
