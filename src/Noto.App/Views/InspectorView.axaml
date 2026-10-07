@@ -31,19 +31,13 @@
         <!-- the three numbers -->
         <StackPanel Spacing="6">
           <Grid ColumnDefinitions="*,Auto">
-            <TextBlock
-              Text="THIS ITEM"
-              Classes="section"
-              VerticalAlignment="Center"
-              ToolTip.Tip="Age, carry and defers — the three honest numbers behind a row."
-            />
+            <TextBlock Text="THIS ITEM" Classes="section" VerticalAlignment="Center" />
             <Button
               Grid.Column="1"
               Classes="info"
               Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
               CommandParameter="{x:Static vm:HelpTopicIds.Carry}"
               AutomationProperties.Name="About age, carry and defers"
-              ToolTip.Tip="What age, carry, defers and the colours mean"
             >
               <PathIcon Data="{v:Icon info}" />
             </Button>
@@ -53,7 +47,7 @@
               <TextBlock
                 Text="AGE"
                 Classes="section"
-                ToolTip.Tip="Days since the item was created. A fact, not a judgement — nothing escalates on age alone."
+                ToolTip.Tip="Days since it was created. Nothing escalates on age alone."
               />
               <TextBlock Text="{Binding AgeText}" FontSize="16" />
             </StackPanel>
@@ -61,7 +55,7 @@
               <TextBlock
                 Text="CARRY"
                 Classes="section"
-                ToolTip.Tip="Days it was planned for and left undone. This is what pressure reacts to."
+                ToolTip.Tip="Planned days that passed with this undone — what pressure reacts to."
               />
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <PathIcon Data="{v:Icon carry}" Width="13" Height="13" VerticalAlignment="Center" />
@@ -72,7 +66,7 @@
               <TextBlock
                 Text="DEFERS"
                 Classes="section"
-                ToolTip.Tip="Times you deliberately pushed it to a later day."
+                ToolTip.Tip="Times you deliberately pushed it later."
               />
               <TextBlock Text="{Binding DefersText}" FontSize="16" />
             </StackPanel>
@@ -86,7 +80,7 @@
               Text="EDIT"
               Classes="section"
               VerticalAlignment="Center"
-              ToolTip.Tip="Every change here is recorded in the activity log below and can be undone with ⌘Z."
+              ToolTip.Tip="Recorded in the log below, and undone with ⌘Z."
             />
             <Button
               Grid.Column="1"
@@ -94,7 +88,6 @@
               Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
               CommandParameter="{x:Static vm:HelpTopicIds.Editing}"
               AutomationProperties.Name="About editing and deleting"
-              ToolTip.Tip="What you can change, and where changes are recorded"
             >
               <PathIcon Data="{v:Icon info}" />
             </Button>
@@ -114,13 +107,7 @@
               AutomationProperties.Name="Title"
             />
 
-            <TextBlock
-              Grid.Row="1"
-              Text="Time"
-              Classes="secondary"
-              VerticalAlignment="Center"
-              ToolTip.Tip="An estimate, counted against today's capacity."
-            />
+            <TextBlock Grid.Row="1" Text="Time" Classes="secondary" VerticalAlignment="Center" />
             <ComboBox
               Grid.Row="1"
               Grid.Column="1"
@@ -128,7 +115,6 @@
               SelectedItem="{Binding Estimate, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
               AutomationProperties.Name="Estimate"
-              ToolTip.Tip="An estimate, counted against today's capacity."
             />
 
             <TextBlock
@@ -136,7 +122,6 @@
               Text="Priority"
               Classes="secondary"
               VerticalAlignment="Center"
-              ToolTip.Tip="1 is highest. It decides the order when the workspace sorts by priority."
             />
             <ComboBox
               Grid.Row="2"
@@ -145,16 +130,10 @@
               SelectedItem="{Binding Priority, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
               AutomationProperties.Name="Priority"
-              ToolTip.Tip="1 is highest. It decides the order when the workspace sorts by priority."
+              ToolTip.Tip="1 is highest."
             />
 
-            <TextBlock
-              Grid.Row="3"
-              Text="When"
-              Classes="secondary"
-              VerticalAlignment="Center"
-              ToolTip.Tip="The day this is planned for. Someday keeps it out of today without dropping it."
-            />
+            <TextBlock Grid.Row="3" Text="When" Classes="secondary" VerticalAlignment="Center" />
             <ComboBox
               Grid.Row="3"
               Grid.Column="1"
@@ -162,16 +141,9 @@
               SelectedItem="{Binding When, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
               AutomationProperties.Name="When"
-              ToolTip.Tip="The day this is planned for. Someday keeps it out of today without dropping it."
             />
 
-            <TextBlock
-              Grid.Row="4"
-              Text="Due"
-              Classes="secondary"
-              VerticalAlignment="Center"
-              ToolTip.Tip="A deadline. Overdue items are pinned on top in the Deadline layout."
-            />
+            <TextBlock Grid.Row="4" Text="Due" Classes="secondary" VerticalAlignment="Center" />
             <ComboBox
               Grid.Row="4"
               Grid.Column="1"
@@ -179,7 +151,6 @@
               SelectedItem="{Binding Due, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
               AutomationProperties.Name="Due date"
-              ToolTip.Tip="A deadline. Overdue items are pinned on top in the Deadline layout."
             />
 
             <TextBlock
@@ -187,7 +158,6 @@
               Text="Day part"
               Classes="secondary"
               VerticalAlignment="Center"
-              ToolTip.Tip="When in the day you mean to do it. Used by the Habit layout's ordering."
             />
             <ComboBox
               Grid.Row="5"
@@ -196,7 +166,6 @@
               SelectedItem="{Binding TimeOfDay, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
               AutomationProperties.Name="Time of day"
-              ToolTip.Tip="When in the day you mean to do it. Used by the Habit layout's ordering."
             />
 
             <TextBlock
@@ -204,7 +173,6 @@
               Text="Waiting on"
               Classes="secondary"
               VerticalAlignment="Center"
-              ToolTip.Tip="Who or what you are blocked on. Setting this moves the item to Waiting on."
             />
             <TextBox
               Grid.Row="6"
@@ -214,7 +182,7 @@
               KeyDown="OnWaitingKeyDown"
               LostFocus="OnWaitingLostFocus"
               AutomationProperties.Name="Waiting on"
-              ToolTip.Tip="Who or what you are blocked on. Setting this moves the item to Waiting on."
+              ToolTip.Tip="Setting this moves the item to the Waiting on section."
             />
           </Grid>
           <TextBlock
@@ -226,12 +194,7 @@
         </StackPanel>
 
         <!-- stuck prompt: intervention, not punishment -->
-        <Border
-          Classes="raised"
-          Padding="12"
-          IsVisible="{Binding ShowStuckPrompt}"
-          ToolTip.Tip="A stuck item gets a question, not a scolding: why has this stalled, and what is the next small step?"
-        >
+        <Border Classes="raised" Padding="12" IsVisible="{Binding ShowStuckPrompt}">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
               <PathIcon
@@ -330,7 +293,7 @@
             HorizontalAlignment="Left"
             Command="{Binding DeleteCommand}"
             AutomationProperties.Name="Delete task"
-            ToolTip.Tip="Deletes the task. Nothing is destroyed — ⌘Z brings it straight back."
+            ToolTip.Tip="⌘Z brings it straight back."
           />
         </StackPanel>
       </StackPanel>

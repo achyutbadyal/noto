@@ -65,8 +65,15 @@ This vocabulary is only useful if the app teaches it. Noto carries a **Guide** p
 
 | Affordance | Where | Behaviour |
 | ---------- | ----- | --------- |
-| Short tooltip | Every control a new user cannot guess | One sentence. Never a paragraph — depth belongs in the guide. |
+| Short tooltip | Only where the label does not already say it | One sentence, never a paragraph. Depth belongs in the guide. |
 | ⓘ button | Next to a confusing label (mode controls, capacity, age/carry/defers, review, shutdown, weekly, insights) | Opens the Guide at the matching topic. |
+
+The tooltip rule is strict, because noise trains people to ignore all of them:
+
+- **If the label already says it, there is no tooltip.** A duration dropdown needs no "how long will this take"; an "Add" button needs no "add it".
+- **Icon-only controls keep theirs** — there the tooltip *is* the label, which also keeps the collapsed sidebar usable.
+- **An ⓘ needs no tooltip**: the icon says "more", and its accessible name names the topic.
+- What earns one: a concept that cannot be guessed from the label — what *carry* counts, that priority 1 is highest, what the status glyphs mean, that setting a waiting-on name moves the item to Waiting on, that a delete is undoable, that the day-strip bars are completions.
 
 The guide is one page: a searchable topic rail plus a document pane of titled sections, each a short paragraph and an optional label/description list. Its topics are `start`, `workspaces`, `modes`, `layouts`, `order`, `pressure`, `carry`, `review`, `shutdown`, `weekly`, `today-all`, `capture`, `shortcuts` and `connected`.
 

@@ -12,7 +12,7 @@
         Text="{Binding StreakText}"
         Classes="secondary"
         IsVisible="{Binding StreakText.Length}"
-        ToolTip.Tip="A completion streak — consecutive days on which you finished at least one planned item."
+        ToolTip.Tip="Consecutive days with at least one planned item finished."
       />
       <TextBlock
         Text="{Binding EmptyText}"
@@ -98,19 +98,13 @@
 
       <StackPanel IsVisible="{Binding HasOldest}" Spacing="4">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock
-            Text="OLDEST OPEN ITEMS"
-            Classes="section"
-            VerticalAlignment="Center"
-            ToolTip.Tip="Items you have been carrying the longest. Age is a fact; carry is what pressure reacts to."
-          />
+          <TextBlock Text="OLDEST OPEN ITEMS" Classes="section" VerticalAlignment="Center" />
           <Button
             Grid.Column="1"
             Classes="info"
             Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
             CommandParameter="{x:Static vm:HelpTopicIds.Carry}"
             AutomationProperties.Name="About age and carry"
-            ToolTip.Tip="What age, carry and defers mean"
           >
             <PathIcon Data="{v:Icon info}" />
           </Button>

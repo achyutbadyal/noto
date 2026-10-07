@@ -41,7 +41,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="TodayAll"
               AutomationProperties.Name="Today, all workspaces"
-              ToolTip.Tip="Today across every workspace (⌘0). Workspaces outside their focus hours stay quiet."
+              ToolTip.Tip="Every workspace's today. Workspaces outside their focus hours stay quiet."
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -65,7 +65,7 @@
               Classes.collapsed="{Binding IsSidebarCollapsed}"
               Command="{Binding StartReviewFromUiCommand}"
               AutomationProperties.Name="Review"
-              ToolTip.Tip="Morning review — decide what today holds, one carried item at a time (⌘⇧R). Learn more from the ⓘ in the guide."
+              ToolTip.Tip="Review"
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -90,7 +90,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="WeeklyReview"
               AutomationProperties.Name="Weekly review"
-              ToolTip.Tip="Weekly review — sweep what has gone quiet, once a week."
+              ToolTip.Tip="Weekly review"
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -115,7 +115,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="Shutdown"
               AutomationProperties.Name="Shutdown"
-              ToolTip.Tip="Shutdown — close the day deliberately: what got done, what carries (⌘⇧D)."
+              ToolTip.Tip="Shutdown"
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon Data="{v:Icon moon}" Width="16" Height="16" VerticalAlignment="Center" />
@@ -160,7 +160,7 @@
               Command="{Binding GoToCommand}"
               CommandParameter="Settings"
               AutomationProperties.Name="Settings"
-              ToolTip.Tip="Settings — the workspace's mode, capacity and day, plus this device's appearance."
+              ToolTip.Tip="Settings"
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon
@@ -186,7 +186,7 @@
               Classes.selected="{Binding IsHelp}"
               Command="{Binding OpenHelpCommand}"
               AutomationProperties.Name="Guide"
-              ToolTip.Tip="Guide — what every mode, number and button means."
+              ToolTip.Tip="Guide"
             >
               <Grid ColumnDefinitions="Auto,*">
                 <PathIcon Data="{v:Icon book}" Width="16" Height="16" VerticalAlignment="Center" />

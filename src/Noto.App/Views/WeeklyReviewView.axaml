@@ -16,7 +16,6 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Weekly}"
           AutomationProperties.Name="About the weekly review"
-          ToolTip.Tip="What the five steps of the weekly review do"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>

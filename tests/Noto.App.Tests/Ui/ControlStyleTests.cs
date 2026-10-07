@@ -30,11 +30,19 @@ public sealed class ControlStyleTests
             Application.Current!.RequestedThemeVariant = variant;
 
             var combo = new ComboBox { ItemsSource = new[] { "a", "b" }, SelectedIndex = 0 };
-            var window = new Window { Width = 320, Height = 200, Content = combo };
+            var window = new Window
+            {
+                Width = 320,
+                Height = 200,
+                Content = combo,
+            };
             window.Show();
             Dispatcher.UIThread.RunJobs();
 
-            var part = combo.GetVisualDescendants().OfType<Border>().First(b => b.Name == "Background");
+            var part = combo
+                .GetVisualDescendants()
+                .OfType<Border>()
+                .First(b => b.Name == "Background");
             Check(name, "normal", part, tokens, "raised", failures);
 
             ((IPseudoClasses)combo.Classes).Set(":pointerover", true);

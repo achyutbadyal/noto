@@ -31,7 +31,6 @@
             Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
             CommandParameter="{x:Static vm:HelpTopicIds.Review}"
             AutomationProperties.Name="About the morning review"
-            ToolTip.Tip="Why these items are in front of you, and what each decision does"
           >
             <PathIcon Data="{v:Icon info}" />
           </Button>

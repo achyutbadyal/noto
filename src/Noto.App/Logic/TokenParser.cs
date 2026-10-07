@@ -75,12 +75,7 @@ public static class TokenParser
             // Tags start with a letter, so references like #482 stay in the title. Capture passes
             // recognizeTags: false because nothing stores a tag yet — better to keep "#backend" visible
             // in the title than to strip it and lose it.
-            if (
-                recognizeTags
-                && text.Length > 1
-                && text[0] == '#'
-                && char.IsLetter(text[1])
-            )
+            if (recognizeTags && text.Length > 1 && text[0] == '#' && char.IsLetter(text[1]))
             {
                 tags.Add(text[1..]);
                 tokens.Add(new(TokenKind.Tag, text, start));
@@ -190,7 +185,11 @@ public static class TokenParser
     }
 
     // Backspace removes a whole recognized token at the end of the input.
-    public static string RemoveTrailingToken(string input, DateOnly today, bool recognizeTags = true)
+    public static string RemoveTrailingToken(
+        string input,
+        DateOnly today,
+        bool recognizeTags = true
+    )
     {
         var trimmed = input.TrimEnd();
         var last = Parse(trimmed, today, recognizeTags: recognizeTags).Tokens.LastOrDefault();

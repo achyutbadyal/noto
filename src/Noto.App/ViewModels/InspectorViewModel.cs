@@ -231,7 +231,10 @@ public sealed partial class InspectorViewModel : ObservableObject
         if (value is null || _snapshot is not { } snap)
             return;
         var due = value.InDays is { } days ? snap.Today.AddDays(days) : (DateOnly?)null;
-        _ = SaveAsync(new SetDueDate(Item!.Id, due), due is null ? "Cleared the due date" : "Set a due date");
+        _ = SaveAsync(
+            new SetDueDate(Item!.Id, due),
+            due is null ? "Cleared the due date" : "Set a due date"
+        );
     }
 
     partial void OnTimeOfDayChanged(TimeOfDayOption? value)

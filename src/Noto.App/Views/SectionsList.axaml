@@ -19,7 +19,6 @@
               Click="OnSectionHeaderClick"
               Focusable="False"
               IsEnabled="{Binding IsCollapsible}"
-              ToolTip.Tip="Sections are the same in every layout: Now (your one focus), Planned, Waiting on someone, Done today. Click to collapse."
             >
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <PathIcon

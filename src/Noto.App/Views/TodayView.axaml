@@ -25,7 +25,6 @@
             Padding="12,4"
             VerticalAlignment="Center"
             Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}"
-            ToolTip.Tip="Decide what today holds. Carried items are shown one at a time."
           />
         </Grid>
       </Border>
@@ -36,7 +35,7 @@
         HorizontalScrollBarVisibility="Auto"
         VerticalScrollBarVisibility="Disabled"
         Margin="0,0,0,12"
-        ToolTip.Tip="The last 14 days. Bar height is how much you finished; click any day to open its log."
+        ToolTip.Tip="Bar height is how much you finished. Click a day to open its log."
       >
         <ItemsControl ItemsSource="{Binding Strip.Bars}" AutomationProperties.Name="Last 14 days">
           <ItemsControl.ItemsPanel>
@@ -84,12 +83,7 @@
           ColumnSpacing="12"
           IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}"
         >
-          <TextBlock
-            Text="Capacity"
-            Classes="secondary"
-            VerticalAlignment="Center"
-            ToolTip.Tip="Planned work against the workspace's daily capacity. Set the capacity in Settings."
-          />
+          <TextBlock Text="Capacity" Classes="secondary" VerticalAlignment="Center" />
           <ProgressBar
             Grid.Column="1"
             Minimum="0"
@@ -99,7 +93,6 @@
             Classes.over="{Binding Capacity.IsOver}"
             VerticalAlignment="Center"
             AutomationProperties.Name="{Binding Capacity.AutomationName}"
-            ToolTip.Tip="Planned work against the workspace's daily capacity."
           />
           <TextBlock
             Grid.Column="2"
@@ -120,7 +113,6 @@
             Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
             CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
             AutomationProperties.Name="About capacity"
-            ToolTip.Tip="What capacity and the day boundary mean"
           >
             <PathIcon Data="{v:Icon info}" />
           </Button>
@@ -194,7 +186,6 @@
                 Watermark="New task…"
                 AutomationProperties.Name="New task title"
                 KeyDown="OnAddKeyDown"
-                ToolTip.Tip="Type what needs doing, then press Enter. Pick a duration on the right, or open More options for priority, dates and notes."
               />
               <ComboBox
                 Grid.Column="1"
@@ -202,7 +193,6 @@
                 ItemsSource="{Binding Add.Estimates}"
                 SelectedItem="{Binding Add.Estimate, Mode=TwoWay}"
                 AutomationProperties.Name="Estimate"
-                ToolTip.Tip="How long you think this will take. It counts against today's capacity."
               />
               <Button
                 Grid.Column="2"
@@ -210,13 +200,11 @@
                 Content="Add"
                 MinWidth="68"
                 Command="{Binding Add.AddCommand}"
-                ToolTip.Tip="Add it to today (Enter)"
               />
               <Button
                 Grid.Column="3"
                 Content="More options"
                 Command="{Binding Add.OpenDetailedCommand}"
-                ToolTip.Tip="Set priority, when, due date, time of day, who you're waiting on, and notes."
               />
             </Grid>
           </StackPanel>
@@ -300,11 +288,7 @@
 
               <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto">
                 <StackPanel Spacing="4">
-                  <TextBlock
-                    Text="TIME"
-                    Classes="section"
-                    ToolTip.Tip="An estimate, used for the capacity bar."
-                  />
+                  <TextBlock Text="TIME" Classes="section" />
                   <ComboBox
                     ItemsSource="{Binding Add.Estimates}"
                     SelectedItem="{Binding Add.DetailEstimate, Mode=TwoWay}"
@@ -323,11 +307,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,0">
-                  <TextBlock
-                    Text="WHEN"
-                    Classes="section"
-                    ToolTip.Tip="The day this is planned for. Someday keeps it out of today without dropping it."
-                  />
+                  <TextBlock Text="WHEN" Classes="section" />
                   <ComboBox
                     ItemsSource="{Binding Add.Whens}"
                     SelectedItem="{Binding Add.DetailWhen, Mode=TwoWay}"
@@ -337,11 +317,7 @@
                   <TextBlock Text="{Binding Add.DetailWhenPreview}" Classes="hint" FontSize="11" />
                 </StackPanel>
                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="0,10,0,0">
-                  <TextBlock
-                    Text="DUE"
-                    Classes="section"
-                    ToolTip.Tip="A deadline. Overdue items are pinned on top in the Deadline layout."
-                  />
+                  <TextBlock Text="DUE" Classes="section" />
                   <ComboBox
                     ItemsSource="{Binding Add.Dues}"
                     SelectedItem="{Binding Add.DetailDue, Mode=TwoWay}"

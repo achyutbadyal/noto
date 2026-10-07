@@ -39,7 +39,7 @@
         Command="{Binding ToggleCompleteCommand}"
         Focusable="False"
         AutomationProperties.Name="Toggle complete"
-        ToolTip.Tip="Click to complete or reopen (x). The shape shows the state: circle = planned, filled = Now, clock = waiting, check = done."
+        ToolTip.Tip="circle planned · filled Now · clock waiting · check done"
       >
         <PathIcon
           Width="17"
@@ -86,12 +86,7 @@
           TextTrimming="CharacterEllipsis"
           MaxWidth="160"
         />
-        <Border
-          Classes="stuck"
-          IsVisible="{Binding IsStuck}"
-          VerticalAlignment="Center"
-          ToolTip.Tip="Stuck: carried long enough that Noto asks why. Open the item to pick a reason and a next step."
-        >
+        <Border Classes="stuck" IsVisible="{Binding IsStuck}" VerticalAlignment="Center">
           <TextBlock Text="stuck?" FontSize="11" Classes="carry stale" />
         </Border>
         <StackPanel
@@ -99,7 +94,7 @@
           Spacing="3"
           IsVisible="{Binding HasCarry}"
           VerticalAlignment="Center"
-          ToolTip.Tip="Carry — how many planned days passed with this undone. Amber is warming up, red is stale."
+          ToolTip.Tip="Carry — planned days that passed undone."
         >
           <PathIcon
             Width="12"
@@ -123,14 +118,13 @@
           IsVisible="{Binding HasEstimate}"
           VerticalAlignment="Center"
           Classes="hint"
-          ToolTip.Tip="Estimate — how long you think this takes."
         />
         <TextBlock
           Text="{Binding PriorityText}"
           IsVisible="{Binding HasPriority}"
           VerticalAlignment="Center"
           Classes="hint"
-          ToolTip.Tip="Priority, 1 (highest) to 4. Set it with the number keys."
+          ToolTip.Tip="Priority — 1 is highest."
         />
       </StackPanel>
     </Grid>

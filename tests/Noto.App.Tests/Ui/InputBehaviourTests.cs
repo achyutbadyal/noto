@@ -36,7 +36,10 @@ public sealed class InputBehaviourTests
                 await Task.Delay(10);
             }
 
-            var box = window.GetVisualDescendants().OfType<TextBox>().First(t => t.Name == "AddBox");
+            var box = window
+                .GetVisualDescendants()
+                .OfType<TextBox>()
+                .First(t => t.Name == "AddBox");
             box.Focus();
             Dispatcher.UIThread.RunJobs();
             box.IsFocused.ShouldBeTrue("the field should be focusable to begin with");
@@ -44,8 +47,10 @@ public sealed class InputBehaviourTests
             // Click the middle of the (non-focusable) list area.
             var list = window.GetVisualDescendants().OfType<SectionsList>().First();
             var point =
-                list.TranslatePoint(new Point(list.Bounds.Width / 2, list.Bounds.Height / 2), window)
-                ?? new Point();
+                list.TranslatePoint(
+                    new Point(list.Bounds.Width / 2, list.Bounds.Height / 2),
+                    window
+                ) ?? new Point();
             window.MouseDown(point, MouseButton.Left);
             window.MouseUp(point, MouseButton.Left);
             Dispatcher.UIThread.RunJobs();

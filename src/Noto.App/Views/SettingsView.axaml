@@ -24,7 +24,6 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Modes}"
           AutomationProperties.Name="What is a mode?"
-          ToolTip.Tip="A mode is three independent controls — layout, order and pressure. Open the guide."
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>
@@ -35,19 +34,14 @@
         ColumnSpacing="8"
         RowSpacing="8"
       >
-        <TextBlock
-          Text="Preset"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="A named bundle of layout, order and pressure. Picking one sets all three."
-        />
+        <TextBlock Text="Preset" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Column="1"
           ItemsSource="{Binding Presets}"
           SelectedItem="{Binding SelectedPreset, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
           AutomationProperties.Name="Preset"
-          ToolTip.Tip="A named bundle of layout, order and pressure. Picking one sets all three."
+          ToolTip.Tip="A bundle of layout, order and pressure."
         >
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="p:Preset">
@@ -76,18 +70,11 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Modes}"
           AutomationProperties.Name="About presets"
-          ToolTip.Tip="The six presets and what each one is for"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>
 
-        <TextBlock
-          Grid.Row="1"
-          Text="Layout"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="How items are arranged: list, board, timeline or habit grid."
-        />
+        <TextBlock Grid.Row="1" Text="Layout" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Row="1"
           Grid.Column="1"
@@ -95,7 +82,6 @@
           SelectedItem="{Binding LayoutChoice, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
           AutomationProperties.Name="Layout"
-          ToolTip.Tip="How items are arranged: list, board, timeline or habit grid."
         />
         <Button
           Grid.Row="1"
@@ -105,18 +91,11 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Layouts}"
           AutomationProperties.Name="About layouts"
-          ToolTip.Tip="What each layout shows"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>
 
-        <TextBlock
-          Grid.Row="2"
-          Text="Order"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="How items are sorted inside a section."
-        />
+        <TextBlock Grid.Row="2" Text="Order" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Row="2"
           Grid.Column="1"
@@ -124,7 +103,6 @@
           SelectedItem="{Binding OrderChoice, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
           AutomationProperties.Name="Order"
-          ToolTip.Tip="How items are sorted inside a section."
         />
         <Button
           Grid.Row="2"
@@ -134,18 +112,11 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Order}"
           AutomationProperties.Name="About order"
-          ToolTip.Tip="The five order strategies"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>
 
-        <TextBlock
-          Grid.Row="3"
-          Text="Pressure"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="How loudly Noto reminds you: gentle, honest or relentless."
-        />
+        <TextBlock Grid.Row="3" Text="Pressure" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Row="3"
           Grid.Column="1"
@@ -153,7 +124,7 @@
           SelectedItem="{Binding PressureChoice, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
           AutomationProperties.Name="Pressure"
-          ToolTip.Tip="How loudly Noto reminds you: gentle, honest or relentless."
+          ToolTip.Tip="How loudly Noto reminds you."
         />
         <Button
           Grid.Row="3"
@@ -163,7 +134,6 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Pressure}"
           AutomationProperties.Name="About pressure"
-          ToolTip.Tip="What each level changes, and the carry thresholds behind it"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>
@@ -178,7 +148,6 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
           AutomationProperties.Name="About capacity and the day"
-          ToolTip.Tip="How capacity and the day boundary shape Today"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>
@@ -189,25 +158,18 @@
         ColumnSpacing="8"
         RowSpacing="8"
       >
-        <TextBlock
-          Text="Unit"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="Whether capacity is counted in minutes or in items."
-        />
+        <TextBlock Text="Unit" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Column="1"
           ItemsSource="{Binding UnitOptions}"
           SelectedItem="{Binding UnitChoice, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
-          ToolTip.Tip="Whether capacity is counted in minutes or in items."
         />
         <TextBlock
           Grid.Row="1"
           Text="Daily capacity"
           VerticalAlignment="Center"
           Classes="secondary"
-          ToolTip.Tip="Your realistic amount of work for one day. Today's bar compares what you planned against it."
         />
         <NumericUpDown
           Grid.Row="1"
@@ -216,21 +178,19 @@
           Minimum="1"
           Maximum="10000"
           FormatString="0"
-          ToolTip.Tip="Your realistic amount of work for one day. Today's bar compares what you planned against it."
         />
         <TextBlock
           Grid.Row="2"
           Text="Day starts at"
           VerticalAlignment="Center"
           Classes="secondary"
-          ToolTip.Tip="When a new day begins. 04:00 keeps work done at 01:00 on the previous day."
         />
         <TextBox
           Grid.Row="2"
           Grid.Column="1"
           Text="{Binding DayBoundary, Mode=TwoWay}"
           Watermark="HH:mm"
-          ToolTip.Tip="When a new day begins. 04:00 keeps work done at 01:00 on the previous day."
+          ToolTip.Tip="When a new day begins — 04:00 keeps a 01:00 finish on the previous day."
         />
         <Button
           Grid.Row="2"
@@ -238,19 +198,12 @@
           Content="Apply"
           Command="{Binding ApplyDayBoundaryCommand}"
         />
-        <TextBlock
-          Grid.Row="3"
-          Text="Time zone"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="An IANA id such as Europe/Berlin, or follow this device."
-        />
+        <TextBlock Grid.Row="3" Text="Time zone" VerticalAlignment="Center" Classes="secondary" />
         <TextBox
           Grid.Row="3"
           Grid.Column="1"
           Text="{Binding TimeZone, Mode=TwoWay}"
           Watermark="Europe/Berlin"
-          ToolTip.Tip="An IANA id such as Europe/Berlin, or follow this device."
         />
         <Button
           Grid.Row="3"
@@ -262,7 +215,6 @@
       <ToggleSwitch
         IsChecked="{Binding FollowsDevice, Mode=TwoWay}"
         Content="Follow this device's time zone"
-        ToolTip.Tip="Use this device's zone for the workspace's logical day."
       />
       <TextBlock
         Text="{Binding Error}"
@@ -280,41 +232,22 @@
         DataContext="{Binding Appearance}"
         x:DataType="vm:AppearanceViewModel"
       >
-        <TextBlock
-          Text="Theme"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="Light, dark, or whatever the system is set to."
-        />
+        <TextBlock Text="Theme" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Column="1"
           ItemsSource="{x:Static vm:AppearanceViewModel.ThemeChoices}"
           SelectedItem="{Binding Theme, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
-          ToolTip.Tip="Light, dark, or whatever the system is set to."
         />
-        <TextBlock
-          Grid.Row="1"
-          Text="Density"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="How tall rows are. Compact fits more on screen."
-        />
+        <TextBlock Grid.Row="1" Text="Density" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Row="1"
           Grid.Column="1"
           ItemsSource="{x:Static vm:AppearanceViewModel.DensityChoices}"
           SelectedItem="{Binding Density, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
-          ToolTip.Tip="How tall rows are. Compact fits more on screen."
         />
-        <TextBlock
-          Grid.Row="2"
-          Text="Text size"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="Base text size for this device."
-        />
+        <TextBlock Grid.Row="2" Text="Text size" VerticalAlignment="Center" Classes="secondary" />
         <Slider
           Grid.Row="2"
           Grid.Column="1"
@@ -323,39 +256,24 @@
           Value="{Binding BodySize, Mode=TwoWay}"
           TickFrequency="1"
           IsSnapToTickEnabled="True"
-          ToolTip.Tip="Base text size for this device."
         />
       </Grid>
 
       <TextBlock Text="Import &amp; export" Classes="section" Margin="0,12,0,0" />
       <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
-        <TextBlock
-          Text="Import from"
-          VerticalAlignment="Center"
-          Classes="secondary"
-          ToolTip.Tip="Brings items in from another tool. Imported items start with no carry, so old history never counts against you."
-        />
+        <TextBlock Text="Import from" VerticalAlignment="Center" Classes="secondary" />
         <ComboBox
           Grid.Column="1"
           ItemsSource="{Binding ImportFormats}"
           SelectedItem="{Binding ImportFormat, Mode=TwoWay}"
           HorizontalAlignment="Stretch"
-          ToolTip.Tip="Brings items in from another tool. Imported items start with no carry, so old history never counts against you."
+          ToolTip.Tip="Imported items start with no carry, so old history never counts against you."
         />
         <Button Grid.Column="2" Content="Choose file…" Click="OnImportClick" />
       </Grid>
       <WrapPanel Orientation="Horizontal">
-        <Button
-          Content="Export JSON…"
-          Click="OnExportJsonClick"
-          Margin="0,0,8,0"
-          ToolTip.Tip="Everything, including history — good for a backup."
-        />
-        <Button
-          Content="Export items CSV…"
-          Click="OnExportCsvClick"
-          ToolTip.Tip="The item list as a spreadsheet, for another tool."
-        />
+        <Button Content="Export JSON…" Click="OnExportJsonClick" Margin="0,0,8,0" />
+        <Button Content="Export items CSV…" Click="OnExportCsvClick" />
       </WrapPanel>
       <TextBlock
         Text="{Binding DataStatus}"

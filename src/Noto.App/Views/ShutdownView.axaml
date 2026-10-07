@@ -20,7 +20,6 @@
           Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
           CommandParameter="{x:Static vm:HelpTopicIds.Shutdown}"
           AutomationProperties.Name="About shutdown"
-          ToolTip.Tip="What shutdown does and why it exists"
         >
           <PathIcon Data="{v:Icon info}" />
         </Button>

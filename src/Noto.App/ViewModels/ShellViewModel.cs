@@ -649,7 +649,10 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
 
         // The detailed create panel is modal, so Escape must close it wherever focus happens to be
         // (a dropdown inside it swallows the key otherwise).
-        if (chord.Key == "Escape" && Content is TodayViewModel { Add.IsDetailedOpen: true } detailed)
+        if (
+            chord.Key == "Escape"
+            && Content is TodayViewModel { Add.IsDetailedOpen: true } detailed
+        )
         {
             detailed.Add.Dismiss(keepTitle: true);
             return true;

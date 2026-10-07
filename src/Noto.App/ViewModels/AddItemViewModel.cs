@@ -94,8 +94,7 @@ public sealed partial class AddItemViewModel(
     partial void OnDetailWhenChanged(WhenOption value) =>
         OnPropertyChanged(nameof(DetailWhenPreview));
 
-    partial void OnDetailDueChanged(DueOption value) =>
-        OnPropertyChanged(nameof(DetailDuePreview));
+    partial void OnDetailDueChanged(DueOption value) => OnPropertyChanged(nameof(DetailDuePreview));
 
     // Backspace at the end of a recognized token removes the whole token.
     public void Backspace() =>
@@ -188,7 +187,14 @@ public sealed partial class AddItemViewModel(
 
         var commands = new List<ItemCommand>
         {
-            new CreateItem(id, workspaceId, title, planned, DetailWhen.Someday, DetailEstimate.Minutes),
+            new CreateItem(
+                id,
+                workspaceId,
+                title,
+                planned,
+                DetailWhen.Someday,
+                DetailEstimate.Minutes
+            ),
         };
         if (DetailPriority.Value > 0)
             commands.Add(new SetPriority(id, DetailPriority.Value));
@@ -233,11 +239,8 @@ public sealed partial class AddItemViewModel(
         DetailError = null;
     }
 
-    ParsedCapture Parse(string input) =>
-        TokenParser.Parse(input, today(), recognizeTags: false);
+    ParsedCapture Parse(string input) => TokenParser.Parse(input, today(), recognizeTags: false);
 
     string Preview(int? offsetDays) =>
-        offsetDays is { } days
-            ? today().AddDays(days).ToString("ddd MMM d", Invariant)
-            : "No date";
+        offsetDays is { } days ? today().AddDays(days).ToString("ddd MMM d", Invariant) : "No date";
 }
