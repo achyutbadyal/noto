@@ -10,4 +10,7 @@
     <ProjectReference Include="..\Noto.Core\Noto.Core.csproj" />
     <ProjectReference Include="..\Noto.Platform\Noto.Platform.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
 </Project>

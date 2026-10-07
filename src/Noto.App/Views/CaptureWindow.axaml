@@ -5,6 +5,7 @@
   xmlns:v="using:Noto.App.Views"
   x:Class="Noto.App.Views.CaptureWindow"
   x:DataType="vm:CaptureViewModel"
+  Icon="avares://Noto.App/Assets/noto.png"
   Width="560"
   SizeToContent="Height"
   CanResize="False"

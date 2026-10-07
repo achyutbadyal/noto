@@ -1,0 +1,9 @@
+{
+  "name": "noto-icons",
+  "private": true,
+  "description": "Rasterises assets/icon/*.svg into the app icon set. Run via `mise run icons`.",
+  "type": "module",
+  "dependencies": {
+    "sharp": "^0.35.5"
+  }
+}

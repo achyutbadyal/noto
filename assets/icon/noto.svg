@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <!-- Bluish Gradient (Cyan to Cobalt to Midnight Blue) -->
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06B6D4" />
+      <stop offset="50%" stop-color="#3B82F6" />
+      <stop offset="100%" stop-color="#1E3A8A" />
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg-grad)" />
+  <g>
+    <!-- Hardcoded drop-shadow for bulletproof sharp/librsvg rendering -->
+    <path d="M 270,680 L 270,380 L 490,680 L 760,330" 
+          fill="none" stroke="#000000" stroke-opacity="0.25" stroke-width="120" 
+          stroke-linecap="round" stroke-linejoin="round" transform="translate(0, 16)" />
+    <!-- Crisp white foreground stroke -->
+    <path d="M 270,680 L 270,380 L 490,680 L 760,330" 
+          fill="none" stroke="#FFFFFF" stroke-width="120" 
+          stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

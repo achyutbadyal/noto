@@ -8,5 +8,10 @@ obj/
 *.db-*
 dist/
 
+# icon generator artifacts
+node_modules/
+.pnp*
+.yarn/
+
 # Local tooling state (never commit)
 .workbuddy-ai/

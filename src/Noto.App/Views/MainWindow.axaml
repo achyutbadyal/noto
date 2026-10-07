@@ -6,6 +6,7 @@
   xmlns:v="using:Noto.App.Views"
   x:Class="Noto.App.Views.MainWindow"
   x:DataType="vm:ShellViewModel"
+  Icon="avares://Noto.App/Assets/noto.png"
   Title="Noto"
   Width="1240"
   Height="800"
