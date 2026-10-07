@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Noto.Core\Noto.Core.csproj" />
+  </ItemGroup>
+</Project>

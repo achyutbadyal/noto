@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:l="using:Noto.App.Logic"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.InspectorView"
+             x:DataType="vm:InspectorViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="14">
+      <TextBlock Text="Select an item to see its details." Classes="hint" IsVisible="{Binding !HasItem}" />
+
+      <StackPanel Spacing="14" IsVisible="{Binding HasItem}">
+        <StackPanel Spacing="2">
+          <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding ScheduleText}" Classes="secondary" />
+          <TextBlock Text="{Binding StateText}" Classes="hint" />
+        </StackPanel>
+
+        <!-- the three numbers -->
+        <Grid ColumnDefinitions="*,*,*" AutomationProperties.Name="Age, carry and defers">
+          <StackPanel><TextBlock Text="AGE" Classes="section" /><TextBlock Text="{Binding AgeText}" FontSize="16" /></StackPanel>
+          <StackPanel Grid.Column="1"><TextBlock Text="CARRY" Classes="section" /><TextBlock Text="{Binding CarryText}" FontSize="16" /></StackPanel>
+          <StackPanel Grid.Column="2"><TextBlock Text="DEFERS" Classes="section" /><TextBlock Text="{Binding DefersText}" FontSize="16" /></StackPanel>
+        </Grid>
+
+        <!-- stuck prompt: intervention, not punishment -->
+        <Border Classes="raised" Padding="12" IsVisible="{Binding ShowStuckPrompt}">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding StuckPromptText}" TextWrapping="Wrap" />
+            <ItemsControl ItemsSource="{Binding Reasons}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:StuckReasonOption">
+                  <Button Classes="key" Content="{Binding Label}" Padding="10,4"
+                          Command="{Binding $parent[UserControl].((vm:InspectorViewModel)DataContext).ChooseOptionCommand}" CommandParameter="{Binding}" />
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding FixPrompt}" Foreground="{DynamicResource LinkBrush}" TextWrapping="Wrap" IsVisible="{Binding HasFix}" />
+            <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding HasFix}">
+              <Button Content="Now · 25 min" Command="{Binding MakeNowCommand}" />
+              <Button Content="First thing tomorrow" Command="{Binding ScheduleTomorrowCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <v:PromptBar DataContext="{Binding Decisions}" />
+
+        <StackPanel Spacing="4">
+          <TextBlock Text="NOTES" Classes="section" />
+          <TextBox Text="{Binding Notes, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" Watermark="Markdown notes"
+                   LostFocus="OnNotesLostFocus" AutomationProperties.Name="Notes" />
+        </StackPanel>
+
+        <StackPanel Spacing="4" IsVisible="{Binding HasSubtasks}">
+          <TextBlock Text="{Binding ContainerProgress, StringFormat='SUBTASKS · {0}'}" Classes="section" />
+          <ItemsControl ItemsSource="{Binding Subtasks}">
+            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ItemRowViewModel"><v:ItemRowView /></DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+
+        <StackPanel Spacing="4" IsVisible="{Binding HasLife}">
+          <TextBlock Text="LIFE OF THIS ITEM" Classes="section" />
+          <ItemsControl ItemsSource="{Binding Life}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="l:LifeLine">
+                <Grid ColumnDefinitions="56,*" Margin="0,2">
+                  <TextBlock Text="{Binding DayText}" Classes="hint" />
+                  <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.SectionsList"
+             x:DataType="vm:ItemListViewModel">
+  <ScrollViewer x:Name="Scroller" HorizontalScrollBarVisibility="Disabled">
+    <ItemsControl ItemsSource="{Binding Sections}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:SectionViewModel">
+          <StackPanel Margin="0,0,0,20" IsVisible="{Binding !IsEmpty}">
+            <Button Padding="12,4" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                    Click="OnSectionHeaderClick" Focusable="False" IsEnabled="{Binding IsCollapsible}">
+              <TextBlock Text="{Binding Header}" Classes="section" />
+            </Button>
+            <ItemsControl ItemsSource="{Binding VisibleRows}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ItemRowViewModel"><v:ItemRowView /></DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
+</UserControl>

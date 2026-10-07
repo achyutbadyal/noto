@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.ReviewView"
+             x:DataType="vm:ReviewViewModel">
+  <ScrollViewer>
+    <Border Classes="panel" MaxWidth="680" Margin="24" Padding="28" VerticalAlignment="Top" HorizontalAlignment="Center">
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding Greeting}" FontSize="16" TextWrapping="Wrap" />
+          <TextBlock Grid.Column="1" Text="{Binding ProgressText}" Classes="secondary" />
+        </Grid>
+        <TextBlock Text="{Binding DayNote, StringFormat='Yesterday you wrote: {0}'}" Classes="secondary" IsVisible="{Binding HasDayNote}" />
+        <Separator />
+
+        <!-- the current card -->
+        <StackPanel Spacing="6" IsVisible="{Binding !IsComplete}" AutomationProperties.Name="{Binding CurrentTitle}">
+          <TextBlock Text="{Binding CurrentTitle}" FontSize="22" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding CurrentDetail}" Classes="secondary" />
+          <TextBlock Text="{Binding Current.Decision, StringFormat='Decided: {0}'}" Classes="hint" IsVisible="{Binding Current.IsDecided}" />
+          <TextBlock Text="{Binding SuggestionText}" IsVisible="{Binding HasSuggestion}" Foreground="{DynamicResource LinkBrush}" />
+        </StackPanel>
+        <StackPanel Spacing="6" IsVisible="{Binding IsComplete}">
+          <TextBlock Text="All decided." FontSize="22" FontWeight="SemiBold" />
+          <TextBlock Text="Press Esc to start the day." Classes="secondary" />
+        </StackPanel>
+
+        <!-- one key per decision; the same keys work on the keyboard -->
+        <WrapPanel IsVisible="{Binding !IsComplete}" ItemSpacing="8" LineSpacing="8">
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="t"><TextBlock Text="{Binding KeepLabel, StringFormat='T  {0}'}" /></Button>
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="d"><TextBlock Text="D  Defer…" /></Button>
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="s"><TextBlock Text="S  Someday" /></Button>
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="b"><TextBlock Text="B  Break down" /></Button>
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="w"><TextBlock Text="W  Waiting on…" /></Button>
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="x"><TextBlock Text="X  Drop" /></Button>
+          <Button Classes="key" Padding="12,6" Command="{Binding PressCommand}" CommandParameter="a"><TextBlock Text="{Binding DoneLabel, StringFormat='A  {0}'}" /></Button>
+        </WrapPanel>
+
+        <TextBlock Text="{Binding Message}" Classes="error" IsVisible="{Binding HasMessage}" />
+        <v:PromptBar DataContext="{Binding Decisions}" />
+
+        <!-- the rest of the queue -->
+        <ItemsControl ItemsSource="{Binding Entries}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ReviewEntry">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                <TextBlock Text="{Binding Row.Title}" Classes="secondary" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Text="{Binding Decision}" Classes="hint" IsVisible="{Binding IsDecided}" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Separator />
+        <!-- live capacity -->
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}">
+          <TextBlock Text="Today so far" Classes="secondary" VerticalAlignment="Center" />
+          <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Capacity.Percent}" Classes.over="{Binding Capacity.IsOver}"
+                       VerticalAlignment="Center" AutomationProperties.Name="{Binding Capacity.AutomationName}" />
+          <TextBlock Grid.Column="2" Text="{Binding Capacity.Text}" VerticalAlignment="Center" />
+        </Grid>
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+          <Button Classes="key" Padding="12,6" Command="{Binding KeepAllCommand}" IsVisible="{Binding !IsComplete}"><TextBlock Text="{Binding KeepAllLabel}" /></Button>
+          <TextBlock Grid.Column="1" Text="{Binding KeepAllText}" Classes="secondary" VerticalAlignment="Center" IsVisible="{Binding HasKeepAll}" />
+          <Button Grid.Column="2" Content="Undo  ⌘Z" Command="{Binding UndoLastCommand}" />
+          <Button Grid.Column="3" Content="{Binding IsComplete, Converter={x:Static v:RowConverters.CloseLabel}}" Command="{Binding SkipCommand}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+  </ScrollViewer>
+</UserControl>

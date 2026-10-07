@@ -1,0 +1,10 @@
+{
+  "iid": 7,
+  "title": "Refactor importer",
+  "state": "opened",
+  "draft": false,
+  "has_conflicts": false,
+  "author": { "name": "Dana", "avatar_url": "https://gl.example/a.png" },
+  "head_pipeline": { "status": "success" },
+  "user_notes_count": 3
+}

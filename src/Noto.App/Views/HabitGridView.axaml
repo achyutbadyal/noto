@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.HabitGridView"
+             x:DataType="vm:HabitGridViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="24,8,24,16" Spacing="12">
+      <v:PromptBar DataContext="{Binding Decisions}" />
+      <TextBlock Text="No habits yet. A habit is a recurring item that is skipped, not carried, when missed." Classes="secondary"
+                 IsVisible="{Binding HasNoHabits}" TextWrapping="Wrap" />
+
+      <ItemsControl ItemsSource="{Binding Habits}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:HabitRowViewModel">
+            <Border Classes="row" Classes.focused="{Binding IsFocused}" Padding="12,6" AutomationProperties.Name="{Binding AutomationName}">
+              <Grid ColumnDefinitions="200,*,Auto" ColumnSpacing="12">
+                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <ItemsControl Grid.Column="1" ItemsSource="{Binding Cells}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HabitCellViewModel">
+                      <Button Content="{Binding Glyph}" FontSize="18" MinWidth="30" ToolTip.Tip="{Binding Description}"
+                              AutomationProperties.Name="{Binding Description}" IsEnabled="{Binding IsToday}"
+                              Command="{Binding $parent[UserControl].((vm:HabitGridViewModel)DataContext).ToggleTodayCommand}"
+                              CommandParameter="{Binding $parent[ItemsControl].((vm:HabitRowViewModel)DataContext)}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Grid.Column="2" Text="{Binding StreakText}" Classes="secondary" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <ItemsControl ItemsSource="{Binding DayLabels}" Margin="224,0,0,0">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><TextBlock Text="{Binding}" Classes="hint" Width="30" TextAlignment="Center" /></DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <v:SectionsList DataContext="{Binding}" MinHeight="160" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

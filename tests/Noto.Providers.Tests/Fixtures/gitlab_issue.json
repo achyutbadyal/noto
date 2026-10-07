@@ -1,0 +1,8 @@
+{
+  "iid": 9,
+  "title": "Flaky test",
+  "state": "closed",
+  "author": { "name": "Sam", "avatar_url": null },
+  "assignees": [{ "username": "dana" }],
+  "user_notes_count": 2
+}

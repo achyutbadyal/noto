@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:m="using:Noto.Core.Models"
+             xmlns:p="using:Noto.Core.Presets"
+             x:Class="Noto.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <ScrollViewer>
+    <StackPanel MaxWidth="640" Margin="24" Spacing="14" HorizontalAlignment="Center">
+      <TextBlock Text="Workspace" Classes="section" />
+      <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+        <TextBlock Text="Name" VerticalAlignment="Center" Classes="secondary" />
+        <TextBox Grid.Column="1" Text="{Binding Name, Mode=TwoWay}" />
+        <Button Grid.Column="2" Content="Rename" Command="{Binding RenameCommand}" />
+      </Grid>
+
+      <TextBlock Text="Mode" Classes="section" Margin="0,12,0,0" />
+      <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+        <TextBlock Text="Preset" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding Presets}" SelectedItem="{Binding SelectedPreset, Mode=TwoWay}" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Preset">
+          <ComboBox.ItemTemplate><DataTemplate x:DataType="p:Preset"><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Grid.Row="1" Text="Layout" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Layouts}" SelectedItem="{Binding Layout, Mode=TwoWay}" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Layout" />
+        <TextBlock Grid.Row="2" Text="Order" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Orders}" SelectedItem="{Binding Order, Mode=TwoWay}" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Order" />
+        <TextBlock Grid.Row="3" Text="Pressure" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Pressures}" SelectedItem="{Binding Pressure, Mode=TwoWay}" HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Pressure" />
+      </Grid>
+      <TextBlock Text="{Binding PresetLabel, StringFormat='Preset: {0}'}" Classes="hint" />
+      <TextBlock Text="{Binding WhatChanges}" Classes="secondary" TextWrapping="Wrap" />
+
+      <TextBlock Text="Capacity &amp; day" Classes="section" Margin="0,12,0,0" />
+      <Grid ColumnDefinitions="140,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+        <TextBlock Text="Unit" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding Units}" SelectedItem="{Binding Unit, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="1" Text="Daily capacity" VerticalAlignment="Center" Classes="secondary" />
+        <NumericUpDown Grid.Row="1" Grid.Column="1" Value="{Binding Capacity, Mode=TwoWay}" Minimum="1" Maximum="10000" FormatString="0" />
+        <TextBlock Grid.Row="2" Text="Day starts at" VerticalAlignment="Center" Classes="secondary" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding DayBoundary, Mode=TwoWay}" Watermark="HH:mm" />
+        <Button Grid.Row="2" Grid.Column="2" Content="Apply" Command="{Binding ApplyDayBoundaryCommand}" />
+        <TextBlock Grid.Row="3" Text="Time zone" VerticalAlignment="Center" Classes="secondary" />
+        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding TimeZone, Mode=TwoWay}" Watermark="Europe/Berlin" />
+        <Button Grid.Row="3" Grid.Column="2" Content="Apply" Command="{Binding ApplyTimeZoneCommand}" />
+      </Grid>
+      <CheckBox IsChecked="{Binding FollowsDevice, Mode=TwoWay}" Content="Follow this device's time zone" />
+      <TextBlock Text="{Binding Error}" Classes="error" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+      <TextBlock Text="Appearance (this device)" Classes="section" Margin="0,12,0,0" />
+      <Grid ColumnDefinitions="140,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="8" RowSpacing="8" DataContext="{Binding Appearance}" x:DataType="vm:AppearanceViewModel">
+        <TextBlock Text="Theme" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Column="1" ItemsSource="{x:Static vm:AppearanceViewModel.ThemeChoices}" SelectedItem="{Binding Theme, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="1" Text="Density" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{x:Static vm:AppearanceViewModel.DensityChoices}" SelectedItem="{Binding Density, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+        <TextBlock Grid.Row="2" Text="Text size" VerticalAlignment="Center" Classes="secondary" />
+        <Slider Grid.Row="2" Grid.Column="1" Minimum="13" Maximum="18" Value="{Binding BodySize, Mode=TwoWay}" TickFrequency="1" IsSnapToTickEnabled="True" />
+      </Grid>
+
+      <TextBlock Text="Import &amp; export" Classes="section" Margin="0,12,0,0" />
+      <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+        <TextBlock Text="Import from" VerticalAlignment="Center" Classes="secondary" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding ImportFormats}" SelectedItem="{Binding ImportFormat, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+        <Button Grid.Column="2" Content="Choose file…" Click="OnImportClick" />
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Button Content="Export JSON…" Click="OnExportJsonClick" />
+        <Button Content="Export items CSV…" Click="OnExportCsvClick" />
+      </StackPanel>
+      <TextBlock Text="{Binding DataStatus}" Classes="secondary" IsVisible="{Binding DataStatus, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+
+      <TextBlock Text="This device" Classes="section" Margin="0,12,0,0" />
+      <ItemsControl ItemsSource="{Binding Capabilities}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:CapabilityRow">
+            <Grid ColumnDefinitions="220,*" Margin="0,3">
+              <TextBlock Text="{Binding Name}" Classes="secondary" />
+              <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" />
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

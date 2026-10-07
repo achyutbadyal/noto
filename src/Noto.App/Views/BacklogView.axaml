@@ -1,0 +1,16 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.BacklogView"
+             x:DataType="vm:BacklogViewModel">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="24,12,24,16">
+    <v:PromptBar Grid.Row="0" DataContext="{Binding Decisions}" Margin="0,0,0,12" />
+    <v:SectionsList Grid.Row="1" DataContext="{Binding}" />
+    <StackPanel Grid.Row="2" Spacing="6" Margin="0,8,0,0">
+      <TextBox Text="{Binding Add.Text, Mode=TwoWay}" Watermark="+ Add to backlog…  (n)" AutomationProperties.Name="Add to backlog"
+               KeyDown="OnAddKeyDown" />
+      <TextBlock Text="{Binding Add.Error}" Classes="error" IsVisible="{Binding Add.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+  </Grid>
+</UserControl>

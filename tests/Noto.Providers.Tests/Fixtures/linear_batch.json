@@ -1,0 +1,27 @@
+{
+  "data": {
+    "i0": {
+      "identifier": "ENG-12",
+      "title": "Retry failed syncs",
+      "url": "https://linear.app/acme/issue/ENG-12",
+      "description": "d",
+      "estimate": 3,
+      "state": { "name": "In Review", "type": "started" },
+      "assignee": { "name": "Dana", "avatarUrl": null },
+      "cycle": { "number": 7 },
+      "labels": { "nodes": [{ "name": "sync" }] }
+    },
+    "i1": {
+      "identifier": "ENG-13",
+      "title": "Docs",
+      "url": "https://linear.app/acme/issue/ENG-13",
+      "description": null,
+      "estimate": null,
+      "state": { "name": "Done", "type": "completed" },
+      "assignee": null,
+      "cycle": null,
+      "labels": { "nodes": [] }
+    },
+    "i2": null
+  }
+}

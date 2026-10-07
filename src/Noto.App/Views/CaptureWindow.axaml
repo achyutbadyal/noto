@@ -1,0 +1,31 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Noto.App.ViewModels"
+        xmlns:v="using:Noto.App.Views"
+        x:Class="Noto.App.Views.CaptureWindow"
+        x:DataType="vm:CaptureViewModel"
+        Width="560" SizeToContent="Height" CanResize="False" ShowInTaskbar="False" Topmost="True"
+        WindowStartupLocation="CenterScreen" SystemDecorations="None" Background="Transparent"
+        TransparencyLevelHint="Transparent" Title="Noto quick capture">
+  <!-- The only surface with a shadow besides popovers (docs/07 §11.2) -->
+  <Border Classes="panel" Background="{DynamicResource RaisedBrush}" Padding="16" Margin="12"
+          BoxShadow="0 8 32 0 #55000000">
+    <StackPanel Spacing="10">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+        <TextBox x:Name="CaptureBox" Text="{Binding Add.Text, Mode=TwoWay}" Watermark="Capture…  tomorrow ~30m !2 @waiting:name /workspace"
+                 v:Behaviors.FocusWhenVisible="True" AutomationProperties.Name="Quick capture" />
+        <ComboBox Grid.Column="1" ItemsSource="{Binding Workspaces}" SelectedItem="{Binding Selected, Mode=OneWay}" MinWidth="130"
+                  AutomationProperties.Name="Workspace" SelectionChanged="OnWorkspaceChanged">
+          <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:WorkspaceChoice"><TextBlock Text="{Binding Name}" /></DataTemplate></ComboBox.ItemTemplate>
+        </ComboBox>
+      </Grid>
+      <ItemsControl ItemsSource="{Binding Add.Chips}" IsVisible="{Binding Add.Chips.Count}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><Border Classes="chip"><TextBlock Text="{Binding}" FontSize="12" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <CheckBox IsChecked="{Binding AttachPage, Mode=TwoWay}" IsVisible="{Binding HasAttachOffer}" Content="{Binding AttachText}" />
+      <TextBlock Text="{Binding Status}" Classes="error" IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <TextBlock Text="Enter saves · Esc closes · Tab switches workspace" Classes="hint" FontSize="11" />
+    </StackPanel>
+  </Border>
+</Window>

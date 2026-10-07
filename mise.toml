@@ -1,0 +1,11 @@
+[tools]
+dotnet = "10"
+
+[tasks.build]
+run = "dotnet build Noto.sln"
+
+[tasks.test]
+run = "dotnet test Noto.sln"
+
+[env]
+DOTNET_CLI_TELEMETRY_OPTOUT = "1"

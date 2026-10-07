@@ -1,0 +1,25 @@
+{
+  "data": {
+    "r0": {
+      "pullRequest": {
+        "title": "Add rich preview support",
+        "state": "OPEN",
+        "merged": false,
+        "isDraft": false,
+        "mergeable": "MERGEABLE",
+        "reviewDecision": "REVIEW_REQUIRED",
+        "additions": 342,
+        "deletions": 28,
+        "changedFiles": 3,
+        "author": { "login": "achyut", "avatarUrl": null },
+        "latestOpinionatedReviews": { "nodes": [] },
+        "commits": {
+          "nodes": [
+            { "commit": { "statusCheckRollup": { "state": "PENDING" } } }
+          ]
+        },
+        "reviewRequests": { "nodes": [] }
+      }
+    }
+  }
+}

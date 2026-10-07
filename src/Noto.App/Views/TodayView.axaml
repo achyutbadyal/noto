@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.TodayView"
+             x:DataType="vm:TodayViewModel">
+  <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" Margin="24,12,24,16">
+    <!-- carry-over banner -->
+    <Border Grid.Row="0" Classes="raised" Padding="12,8" Margin="0,0,0,12"
+            IsVisible="{Binding BannerText, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="{Binding BannerText}" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Classes="accent" Content="Review  ⌘⇧R" Padding="12,4"
+                Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- 14-day completion strip -->
+    <ItemsControl Grid.Row="1" ItemsSource="{Binding Strip.Bars}" Margin="0,0,0,12" AutomationProperties.Name="Last 14 days">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="4" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:DayBarViewModel">
+          <Button Padding="2" Height="36" VerticalContentAlignment="Bottom"
+                  Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}" CommandParameter="{Binding}"
+                  ToolTip.Tip="{Binding Tooltip}" AutomationProperties.Name="{Binding AutomationName}">
+            <StackPanel Spacing="2" VerticalAlignment="Bottom">
+              <Border Width="14" Height="{Binding Height}" CornerRadius="2" VerticalAlignment="Bottom"
+                      Background="{DynamicResource AccentBrush}" Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}" />
+              <TextBlock Text="{Binding Label}" FontSize="9" Classes="hint" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- capacity bar and pace forecast -->
+    <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4" DataContext="{Binding}">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12" IsVisible="{Binding Capacity, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Text="Capacity" Classes="secondary" VerticalAlignment="Center" />
+        <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding Capacity.Percent}"
+                     Classes.over="{Binding Capacity.IsOver}" VerticalAlignment="Center"
+                     AutomationProperties.Name="{Binding Capacity.AutomationName}" />
+        <TextBlock Grid.Column="2" Text="{Binding Capacity.Text}" VerticalAlignment="Center" />
+        <TextBlock Grid.Column="3" Text="{Binding Capacity.StatusText}" VerticalAlignment="Center" />
+      </Grid>
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <Button Classes="link" Content="{Binding Capacity.SuggestText}" Command="{Binding ApplyDeferCommand}" Padding="0"
+                IsVisible="{Binding Capacity.HasSuggestion}" />
+        <TextBlock Text="{Binding Capacity.Footnote}" Classes="hint" FontSize="11" IsVisible="{Binding Capacity.Footnote, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      </StackPanel>
+      <TextBlock Text="{Binding ForecastText}" Classes="secondary" IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+
+    <v:PromptBar Grid.Row="3" DataContext="{Binding Decisions}" Margin="0,0,0,12" />
+
+    <Panel Grid.Row="4">
+      <v:SectionsList DataContext="{Binding}" />
+      <TextBlock Text="{Binding EmptyText}" Classes="secondary" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding IsEmpty}" />
+    </Panel>
+
+    <!-- inline add: "+ Add to today…" with token chips -->
+    <StackPanel Grid.Row="5" Spacing="6" Margin="0,8,0,0">
+      <ItemsControl ItemsSource="{Binding Add.Chips}" IsVisible="{Binding Add.Chips.Count}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String"><Border Classes="chip"><TextBlock Text="{Binding}" FontSize="12" /></Border></DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBox x:Name="AddBox" Text="{Binding Add.Text, Mode=TwoWay}" Watermark="+ Add to today…  (n)   ~30m  !2  tomorrow  @waiting:name"
+               AutomationProperties.Name="Add to today" KeyDown="OnAddKeyDown" />
+      <TextBlock Text="{Binding Add.Error}" Classes="error" IsVisible="{Binding Add.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    </StackPanel>
+  </Grid>
+</UserControl>

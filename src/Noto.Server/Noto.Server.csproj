@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>Noto.Server</RootNamespace>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <!-- `dotnet publish -r <rid> -p:PublishSingleFile=true` yields the single-binary self-host build. -->
+    <SelfContained Condition="'$(PublishSingleFile)' == 'true'">true</SelfContained>
+    <EnableCompressionInSingleFile Condition="'$(PublishSingleFile)' == 'true'">true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(PublishSingleFile)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Noto.Core\Noto.Core.csproj" />
+    <ProjectReference Include="..\Noto.Sync\Noto.Sync.csproj" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.12" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Noto.Server.Tests" />
+  </ItemGroup>
+</Project>

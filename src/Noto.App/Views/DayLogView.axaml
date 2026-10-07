@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             x:Class="Noto.App.Views.DayLogView"
+             x:DataType="vm:DayLogViewModel">
+  <ScrollViewer>
+    <StackPanel MaxWidth="720" Margin="24" Spacing="12">
+      <TextBlock Text="{Binding Title}" Classes="title" />
+      <TextBlock Text="{Binding Summary}" Classes="secondary" />
+      <ItemsControl ItemsSource="{Binding Sections}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DayLogSection">
+            <StackPanel Margin="0,8,0,0" IsVisible="{Binding Entries.Count}">
+              <TextBlock Text="{Binding Header}" Classes="section" Margin="0,0,0,4" />
+              <ItemsControl ItemsSource="{Binding Entries}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DayLogEntry">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="hint" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

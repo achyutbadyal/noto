@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="Ical.Net" Version="5.2.3" />
+    <PackageReference Include="Markdig" Version="1.4.0" />
+    <PackageReference Include="UUIDNext" Version="4.2.4" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,41 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.ItemRowView"
+             x:DataType="vm:ItemRowViewModel">
+  <Border Classes="row" Classes.focused="{Binding IsFocused}" Classes.selected="{Binding IsSelected}"
+          AutomationProperties.Name="{Binding AutomationName}"
+          PointerPressed="OnPointerPressed" DoubleTapped="OnDoubleTapped">
+    <Grid ColumnDefinitions="3,3,Auto,*,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+      <!-- 3px pressure bar: hot and stale only, never the only signal (the carry glyph says it too) -->
+      <Border Grid.Column="0" Classes="bar" Classes.hot="{Binding BarHot}" Classes.stale="{Binding BarStale}" />
+
+      <Border Grid.Column="1" Width="3" CornerRadius="2" IsVisible="{Binding HasWorkspaceAccent}"
+              Background="{Binding WorkspaceAccent, Converter={x:Static v:RowConverters.Accent}}" />
+
+      <!-- status glyph doubles as the complete toggle -->
+      <Button Grid.Column="2" Content="{Binding Glyph}" Command="{Binding ToggleCompleteCommand}"
+              Padding="4,0" MinWidth="24" FontSize="15" Focusable="False"
+              AutomationProperties.Name="Toggle complete" />
+
+      <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,4">
+        <TextBlock Text="{Binding Breadcrumb}" IsVisible="{Binding HasBreadcrumb}" Classes="hint" FontSize="11" />
+        <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" IsVisible="{Binding !IsEditing}"
+                   TextDecorations="{Binding IsDone, Converter={x:Static v:RowConverters.Strike}}" />
+        <TextBox x:Name="EditBox" Text="{Binding Owner.EditText, Mode=TwoWay}" IsVisible="{Binding IsEditing}"
+                 v:Behaviors.FocusWhenVisible="True" MinHeight="26" Padding="6,2" />
+      </StackPanel>
+
+      <TextBlock Grid.Column="4" Text="{Binding ExtraText}" IsVisible="{Binding HasExtra}" VerticalAlignment="Center" Classes="hint" FontSize="12" />
+      <Border Grid.Column="5" Classes="stuck" IsVisible="{Binding IsStuck}" VerticalAlignment="Center">
+        <TextBlock Text="stuck?" FontSize="11" Classes="carry stale" />
+      </Border>
+
+      <TextBlock Grid.Column="6" Text="{Binding CarryText}" IsVisible="{Binding HasCarry}" VerticalAlignment="Center"
+                 Classes="carry" Classes.warm="{Binding IsWarm}" Classes.hot="{Binding IsHot}" Classes.stale="{Binding IsStale}" />
+      <TextBlock Grid.Column="7" Text="{Binding EstimateText}" IsVisible="{Binding HasEstimate}" VerticalAlignment="Center" Classes="hint" />
+      <TextBlock Grid.Column="8" Text="{Binding PriorityText}" IsVisible="{Binding HasPriority}" VerticalAlignment="Center" Classes="hint" />
+    </Grid>
+  </Border>
+</UserControl>

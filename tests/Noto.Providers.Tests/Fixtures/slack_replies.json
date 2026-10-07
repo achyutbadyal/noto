@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "messages": [
+    {
+      "ts": "1700000000.123456",
+      "user": "U1",
+      "text": "Can we review the new sync design before Friday?",
+      "reactions": [{ "name": "white_check_mark", "count": 1 }]
+    },
+    { "ts": "1700000100.000100", "user": "U2", "text": "Looking now" },
+    { "ts": "1700000200.000200", "user": "U1", "text": "Thanks" }
+  ]
+}

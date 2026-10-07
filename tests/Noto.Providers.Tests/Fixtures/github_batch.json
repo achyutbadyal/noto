@@ -1,0 +1,66 @@
+{
+  "data": {
+    "r0": {
+      "pullRequest": {
+        "title": "Add rich preview support",
+        "state": "OPEN",
+        "merged": false,
+        "isDraft": false,
+        "mergeable": "MERGEABLE",
+        "reviewDecision": "APPROVED",
+        "additions": 342,
+        "deletions": 28,
+        "changedFiles": 3,
+        "url": "https://github.com/noto/noto-app/pull/482",
+        "author": {
+          "login": "achyut",
+          "avatarUrl": "https://avatars.example/a.png"
+        },
+        "latestOpinionatedReviews": {
+          "nodes": [
+            { "state": "APPROVED" },
+            { "state": "APPROVED" },
+            { "state": "COMMENTED" }
+          ]
+        },
+        "commits": {
+          "nodes": [
+            { "commit": { "statusCheckRollup": { "state": "SUCCESS" } } }
+          ]
+        },
+        "reviewRequests": { "nodes": [] }
+      }
+    },
+    "r1": {
+      "pullRequest": {
+        "title": "Fix sync cursor",
+        "state": "MERGED",
+        "merged": true,
+        "isDraft": false,
+        "mergeable": "UNKNOWN",
+        "reviewDecision": "APPROVED",
+        "additions": 5,
+        "deletions": 1,
+        "changedFiles": 1,
+        "url": "https://github.com/noto/noto-app/pull/483",
+        "author": { "login": "dana", "avatarUrl": null },
+        "latestOpinionatedReviews": { "nodes": [{ "state": "APPROVED" }] },
+        "commits": { "nodes": [{ "commit": { "statusCheckRollup": null } }] },
+        "reviewRequests": { "nodes": [] }
+      }
+    },
+    "r2": {
+      "issue": {
+        "title": "Crash on empty title",
+        "state": "OPEN",
+        "url": "https://github.com/noto/noto-app/issues/12",
+        "bodyText": "Steps to reproduce...",
+        "author": { "login": "sam", "avatarUrl": null },
+        "assignees": { "nodes": [{ "login": "achyut" }] },
+        "comments": { "totalCount": 4 },
+        "labels": { "nodes": [{ "name": "bug" }] }
+      }
+    },
+    "r3": null
+  }
+}

@@ -1,0 +1,27 @@
+services:
+  noto-api:
+    build:
+      context: ../..
+      dockerfile: src/Noto.Server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgresql://noto:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/noto
+      JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY}
+      PUBLIC_URL: ${PUBLIC_URL:?set PUBLIC_URL} # used for OAuth callback URLs
+      # Optional, enables the gateway for each provider:
+      # GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET, SLACK_CLIENT_ID / ..., ATLASSIAN_CLIENT_ID / ...
+    depends_on:
+      - db
+
+  db:
+    image: postgres:17-alpine
+    volumes:
+      - noto-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: noto
+      POSTGRES_USER: noto
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+
+volumes:
+  noto-data:

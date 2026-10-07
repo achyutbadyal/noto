@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.ShutdownView"
+             x:DataType="vm:ShutdownViewModel">
+  <ScrollViewer>
+    <StackPanel MaxWidth="680" Margin="24" Spacing="16" HorizontalAlignment="Center">
+      <TextBlock Text="{Binding StepNumber, StringFormat='Shutdown · step {0} of 3'}" Classes="section" />
+      <TextBlock Text="{Binding StepTitle}" Classes="title" />
+
+      <!-- 1. done today -->
+      <StackPanel Spacing="8" IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsDoneStep}}">
+        <ItemsControl ItemsSource="{Binding DoneRows}">
+          <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ItemRowViewModel"><v:ItemRowView /></DataTemplate></ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <Button Classes="accent" Content="Continue  Enter" HorizontalAlignment="Left" Padding="14,6" Command="{Binding NextCommand}" />
+      </StackPanel>
+
+      <!-- 2. decide what's left -->
+      <ContentControl IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNotDoneStep}}" Content="{Binding Review}" IsTabStop="False"
+                      x:Name="ReviewHost" />
+      <Button Content="Continue  Enter" HorizontalAlignment="Left" Command="{Binding NextCommand}"
+              IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNotDoneStep}}" />
+
+      <!-- 3. one line for tomorrow -->
+      <StackPanel Spacing="8" IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNoteStep}}">
+        <TextBox Text="{Binding Note, Mode=TwoWay}" Watermark="Anything to remember for tomorrow? (optional)" v:Behaviors.FocusWhenVisible="True"
+                 AutomationProperties.Name="Note for tomorrow" />
+        <Button Classes="accent" Content="Finish shutdown" HorizontalAlignment="Left" Padding="14,6" Command="{Binding FinishCommand}" />
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

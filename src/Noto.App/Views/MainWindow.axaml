@@ -1,0 +1,172 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Noto.App.ViewModels"
+        xmlns:l="using:Noto.App.Logic"
+        xmlns:v="using:Noto.App.Views"
+        x:Class="Noto.App.Views.MainWindow"
+        x:DataType="vm:ShellViewModel"
+        Title="Noto" Width="1240" Height="800" MinWidth="720" MinHeight="480"
+        Background="{DynamicResource CanvasBrush}">
+  <Panel>
+    <Grid ColumnDefinitions="Auto,*,Auto">
+
+      <!-- Sidebar: workspaces on top, Review / Insights / Settings at the bottom -->
+      <Border Grid.Column="0" Width="{Binding SidebarWidth}" Background="{DynamicResource SurfaceBrush}"
+              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+        <DockPanel Margin="8" LastChildFill="True">
+          <StackPanel DockPanel.Dock="Bottom" Spacing="2">
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding StartReviewFromUiCommand}" AutomationProperties.Name="Review">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="◷" /><TextBlock Text="Review" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="Insights" AutomationProperties.Name="Insights">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="◎" /><TextBlock Text="Insights" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="TodayAll" AutomationProperties.Name="Today, all workspaces">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="⌂" /><TextBlock Text="Today (all)" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="WeeklyReview" AutomationProperties.Name="Weekly review">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="▦" /><TextBlock Text="Weekly review" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="Shutdown" AutomationProperties.Name="Shutdown">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="☾" /><TextBlock Text="Shutdown" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            </Button>
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Command="{Binding GoToCommand}" CommandParameter="Settings" AutomationProperties.Name="Settings">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="⚙" /><TextBlock Text="Settings" IsVisible="{Binding IsSidebarExpanded}" /></StackPanel>
+            </Button>
+          </StackPanel>
+
+          <StackPanel Spacing="2">
+            <TextBlock Text="NOTO" Classes="section" Margin="8,6,0,10" IsVisible="{Binding IsSidebarExpanded}" />
+            <ItemsControl ItemsSource="{Binding Workspaces}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WorkspaceTabViewModel">
+                  <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="0"
+                          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickWorkspaceCommand}" CommandParameter="{Binding}"
+                          AutomationProperties.Name="{Binding AutomationName}">
+                    <Border Classes="tab" Classes.selected="{Binding IsSelected}" CornerRadius="6" Padding="0,6,8,6">
+                      <Grid ColumnDefinitions="3,Auto,*,Auto" ColumnSpacing="10">
+                        <Border Width="3" CornerRadius="2" Background="{Binding Color, Converter={x:Static v:RowConverters.Accent}}" />
+                        <TextBlock Grid.Column="1" Text="{Binding Icon}" />
+                        <TextBlock Grid.Column="2" Text="{Binding Name}" IsVisible="{Binding $parent[Window].((vm:ShellViewModel)DataContext).IsSidebarExpanded}" />
+                        <Border Grid.Column="3" Classes="chip" IsVisible="{Binding HasBadge}"><TextBlock Text="{Binding BadgeText}" FontSize="11" /></Border>
+                      </Grid>
+                    </Border>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" AutomationProperties.Name="New workspace">
+              <StackPanel Orientation="Horizontal" Spacing="10"><TextBlock Text="＋" /><TextBlock Text="New workspace" IsVisible="{Binding IsSidebarExpanded}" Classes="secondary" /></StackPanel>
+              <Button.Flyout>
+                <Flyout>
+                  <ItemsControl ItemsSource="{Binding Templates}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="x:String">
+                        <Button Content="{Binding}" HorizontalAlignment="Stretch"
+                                Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).NewWorkspaceCommand}" CommandParameter="{Binding}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
+        </DockPanel>
+      </Border>
+
+      <!-- Main column: header + page -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Margin="24,14,24,18">
+          <TextBlock Text="{Binding HeaderTitle}" Classes="title" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" IsVisible="{Binding IsListPage}">
+            <Button Content="◀" Command="{Binding StepDayCommand}" CommandParameter="-1" AutomationProperties.Name="Previous day" />
+            <Button Content="▶" Command="{Binding StepDayCommand}" CommandParameter="1" AutomationProperties.Name="Next day" />
+          </StackPanel>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" Margin="12,0,0,0" IsVisible="{Binding IsListPage}">
+            <Button Content="Today" Command="{Binding GoToCommand}" CommandParameter="Today" />
+            <Button Content="Backlog" Command="{Binding GoToCommand}" CommandParameter="Backlog" />
+          </StackPanel>
+          <TextBlock Grid.Column="3" Text="{Binding FocusText, StringFormat='⏱ {0}'}" VerticalAlignment="Center" IsVisible="{Binding FocusText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <Button Grid.Column="4" Command="{Binding OpenCommandBarCommand}" AutomationProperties.Name="Command bar">
+            <TextBlock Text="⌘K  Ask or jump…" Classes="secondary" />
+          </Button>
+          <Button Grid.Column="5" Content="?" Command="{Binding ShowHelpCommand}" AutomationProperties.Name="Keyboard shortcuts" />
+        </Grid>
+
+        <TextBlock Grid.Row="0" Text="{Binding WeekOutcomes}" Classes="secondary" VerticalAlignment="Bottom" Margin="24,0,0,-8" FontSize="12"
+                   IsVisible="{Binding WeekOutcomes, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        <ContentControl Grid.Row="1" Content="{Binding Content}" IsTabStop="False" />
+      </Grid>
+
+      <!-- Inspector (⌘I) -->
+      <Border Grid.Column="2" Width="320" IsVisible="{Binding ShowInspector}" Background="{DynamicResource RaisedBrush}"
+              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1,0,0,0">
+        <v:InspectorView DataContext="{Binding Inspector}" />
+      </Border>
+    </Grid>
+
+    <!-- Command bar (⌘K) -->
+    <Border IsVisible="{Binding CommandBar.IsOpen}" Background="#80000000" PointerPressed="OnScrimPressed">
+      <Border Classes="panel" Width="580" VerticalAlignment="Top" Margin="0,90,0,0" Padding="12" HorizontalAlignment="Center"
+              Background="{DynamicResource RaisedBrush}" PointerPressed="OnPanelPressed">
+        <StackPanel Spacing="8" DataContext="{Binding CommandBar}" x:DataType="vm:CommandBarViewModel">
+          <TextBox x:Name="BarBox" Text="{Binding Text, Mode=TwoWay}" Watermark="Ask or jump…  or type to add: Review PR tomorrow ~30m !2"
+                   v:Behaviors.FocusWhenVisible="True" AutomationProperties.Name="Command bar" />
+          <ItemsControl ItemsSource="{Binding Chips}" IsVisible="{Binding Chips.Count}">
+            <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate><DataTemplate x:DataType="x:String"><Border Classes="chip"><TextBlock Text="{Binding}" FontSize="12" /></Border></DataTemplate></ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <ListBox ItemsSource="{Binding Results}" SelectedIndex="{Binding SelectedIndex, Mode=TwoWay}" MaxHeight="360"
+                   Background="Transparent" AutomationProperties.Name="Results">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:CommandResult">
+                <Grid ColumnDefinitions="24,*,Auto" Tapped="OnResultTapped">
+                  <TextBlock Text="{Binding Glyph}" Classes="secondary" />
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Detail}" Classes="hint" FontSize="12" IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding Shortcut}" Classes="hint" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Keyboard help (?) -->
+    <Border IsVisible="{Binding IsHelpOpen}" Background="#80000000" PointerPressed="OnHelpScrimPressed">
+      <Border Classes="panel" Width="640" MaxHeight="620" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="20"
+              Background="{DynamicResource RaisedBrush}" PointerPressed="OnPanelPressed">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="Keyboard shortcuts" Classes="title" Margin="0,0,0,12" />
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Shortcuts}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="l:Binding">
+                  <Grid ColumnDefinitions="110,*,Auto" Margin="0,2">
+                    <TextBlock Text="{Binding Display}" FontWeight="SemiBold" />
+                    <TextBlock Grid.Column="1" Text="{Binding Description}" />
+                    <TextBlock Grid.Column="2" Text="{Binding Scope}" Classes="hint" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Border>
+    </Border>
+
+    <!-- Undo toast: no confirmation dialogs, every action is undoable -->
+    <Border Classes="panel toast" IsVisible="{Binding Toast.IsVisible}" Background="{DynamicResource RaisedBrush}"
+            VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,24" Padding="16,10"
+            AutomationProperties.Name="{Binding Toast.Message}">
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <TextBlock Text="{Binding Toast.Message}" VerticalAlignment="Center" />
+        <Button Classes="link" Content="Undo  ⌘Z" Command="{Binding Toast.UndoCommand}" IsVisible="{Binding Toast.CanUndo}" />
+        <Button Content="✕" Command="{Binding Toast.DismissCommand}" AutomationProperties.Name="Dismiss" />
+      </StackPanel>
+    </Border>
+  </Panel>
+</Window>

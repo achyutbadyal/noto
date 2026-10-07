@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             xmlns:v="using:Noto.App.Views"
+             x:Class="Noto.App.Views.PromptBar"
+             x:DataType="vm:DecisionController">
+  <!-- Inline question for Defer…, Waiting on…, Break down, Drop reason, Estimate -->
+  <Border Classes="panel" Padding="12" IsVisible="{Binding Prompt, Converter={x:Static ObjectConverters.IsNotNull}}">
+    <StackPanel Spacing="8">
+      <TextBlock Text="{Binding Prompt.Title}" FontWeight="SemiBold" />
+      <TextBox Text="{Binding Prompt.Text, Mode=TwoWay}" Watermark="{Binding Prompt.Hint}" IsVisible="{Binding Prompt.IsTextual}"
+               v:Behaviors.FocusWhenVisible="True" AutomationProperties.Name="{Binding Prompt.Title}" />
+      <ItemsControl ItemsSource="{Binding DropReasonOptions}" IsVisible="{Binding Prompt.IsDropReason}">
+        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="8" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:DropReasonOption">
+            <Button Classes="key" Content="{Binding Label}" Padding="10,4"
+                    Command="{Binding $parent[ItemsControl].((vm:DecisionController)DataContext).ChooseDropReasonCommand}"
+                    CommandParameter="{Binding Digit}" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TextBlock Text="{Binding Prompt.Hint}" Classes="hint" IsVisible="{Binding Prompt.IsDropReason}" />
+      <TextBlock Text="{Binding Prompt.Error}" Classes="error" IsVisible="{Binding Prompt.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+        <Button Content="Cancel (Esc)" Command="{Binding CancelCommand}" />
+        <Button Classes="accent" Content="OK (Enter)" Command="{Binding SubmitCommand}" IsVisible="{Binding Prompt.IsTextual}" />
+      </StackPanel>
+    </StackPanel>
+  </Border>
+</UserControl>

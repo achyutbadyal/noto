@@ -1,0 +1,116 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- Base text: system UI font, tabular numerals for counts and times -->
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+    <Setter Property="FontFeatures" Value="+tnum" />
+  </Style>
+  <Style Selector="TextBlock.secondary"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}" /></Style>
+  <Style Selector="TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource Text3Brush}" /></Style>
+  <Style Selector="TextBlock.section">
+    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="0.6" />
+  </Style>
+  <Style Selector="TextBlock.title"><Setter Property="FontSize" Value="20" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+  <Style Selector="TextBlock.error"><Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" /></Style>
+
+  <!-- Pressure: static signals, never color alone (the glyph and text carry the meaning too) -->
+  <Style Selector="TextBlock.carry.warm"><Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" /></Style>
+  <Style Selector="TextBlock.carry.hot"><Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" /></Style>
+  <Style Selector="TextBlock.carry.stale"><Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" /></Style>
+  <Style Selector="Border.bar"><Setter Property="Width" Value="3" /><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="Border.bar.hot"><Setter Property="Background" Value="{DynamicResource PressureHotBrush}" /></Style>
+  <Style Selector="Border.bar.stale"><Setter Property="Background" Value="{DynamicResource PressureStaleBrush}" /></Style>
+
+  <!-- Surfaces -->
+  <Style Selector="Border.panel">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+  </Style>
+  <Style Selector="Border.raised">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="8,2" />
+  </Style>
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="6,1" />
+  </Style>
+  <Style Selector="Border.stuck">
+    <Setter Property="BorderBrush" Value="{DynamicResource PressureStaleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Padding" Value="6,0" />
+  </Style>
+
+  <!-- Rows -->
+  <Style Selector="Border.row">
+    <Setter Property="MinHeight" Value="{DynamicResource RowHeight}" />
+    <Setter Property="Padding" Value="0,0,12,0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.row.focused"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+  <Style Selector="Border.row.selected">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Border.row:pointerover"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+  <Style Selector="Border.row:pointerover TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}" /></Style>
+
+  <Style Selector="Border.tab"><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="Border.tab.selected"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+
+  <!-- Buttons -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+  <Style Selector="Button.accent /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource CanvasBrush}" />
+  </Style>
+  <Style Selector="Button.key /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="Button:disabled /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource Text3Brush}" />
+  </Style>
+  <Style Selector="Button.link"><Setter Property="Foreground" Value="{DynamicResource LinkBrush}" /></Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+    <Setter Property="CornerRadius" Value="6" />
+  </Style>
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement, TextBox:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+  </Style>
+  <Style Selector="ComboBox"><Setter Property="Background" Value="{DynamicResource RaisedBrush}" /></Style>
+  <Style Selector="ProgressBar">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="MinHeight" Value="8" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+  <Style Selector="ProgressBar.over"><Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" /></Style>
+
+  <!-- Motion: only when the OS isn't asking for reduced motion (the window adds the "motion" class) -->
+  <Style Selector="Window.motion Border.toast">
+    <Setter Property="Transitions">
+      <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" /></Transitions>
+    </Setter>
+  </Style>
+</Styles>

@@ -1,0 +1,17 @@
+{
+  "issues": [
+    {
+      "key": "PROJ-2",
+      "fields": {
+        "summary": "Waiting on legal",
+        "status": {
+          "name": "In Progress",
+          "statusCategory": { "key": "indeterminate" }
+        },
+        "assignee": null,
+        "priority": { "name": "Medium" },
+        "labels": []
+      }
+    }
+  ]
+}

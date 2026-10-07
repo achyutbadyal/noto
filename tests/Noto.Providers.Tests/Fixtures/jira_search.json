@@ -1,0 +1,41 @@
+{
+  "issues": [
+    {
+      "key": "PROJ-1",
+      "fields": {
+        "summary": "Ship the importer",
+        "status": {
+          "name": "In Progress",
+          "statusCategory": { "key": "indeterminate" }
+        },
+        "assignee": { "displayName": "Dana" },
+        "priority": { "name": "High" },
+        "labels": ["backend"],
+        "customfield_10016": 5
+      }
+    },
+    {
+      "key": "PROJ-2",
+      "fields": {
+        "summary": "Waiting on legal",
+        "status": {
+          "name": "Blocked",
+          "statusCategory": { "key": "indeterminate" }
+        },
+        "assignee": null,
+        "priority": { "name": "Medium" },
+        "labels": []
+      }
+    },
+    {
+      "key": "PROJ-3",
+      "fields": {
+        "summary": "Old chore",
+        "status": { "name": "Done", "statusCategory": { "key": "done" } },
+        "assignee": { "displayName": "Sam" },
+        "priority": { "name": "Low" },
+        "labels": []
+      }
+    }
+  ]
+}

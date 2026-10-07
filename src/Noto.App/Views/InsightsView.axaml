@@ -1,0 +1,52 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Noto.App.ViewModels"
+             x:Class="Noto.App.Views.InsightsView"
+             x:DataType="vm:InsightsViewModel">
+  <ScrollViewer>
+    <StackPanel MaxWidth="720" Margin="24" Spacing="16" HorizontalAlignment="Center">
+      <TextBlock Text="{Binding StreakText}" Classes="secondary" IsVisible="{Binding StreakText.Length}" />
+      <TextBlock Text="{Binding EmptyText}" Classes="secondary" TextWrapping="Wrap" IsVisible="{Binding HasEmpty}" />
+
+      <ItemsControl ItemsSource="{Binding Cards}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:InsightCard">
+            <Border Classes="panel" Padding="20" Margin="0,0,0,12" AutomationProperties.Name="{Binding Headline}">
+              <StackPanel Spacing="8">
+                <TextBlock Text="{Binding Headline}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding Detail}" Classes="secondary" IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <ItemsControl ItemsSource="{Binding Rows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:InsightRow">
+                      <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="12" Margin="0,3">
+                        <TextBlock Text="{Binding Label}" Classes="secondary" />
+                        <ProgressBar Grid.Column="1" Minimum="0" Maximum="1" Value="{Binding Fraction}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Text="{Binding Suggestion, StringFormat='→ {0}'}" Foreground="{DynamicResource LinkBrush}"
+                           IsVisible="{Binding Suggestion, Converter={x:Static ObjectConverters.IsNotNull}}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <StackPanel IsVisible="{Binding HasOldest}" Spacing="4">
+        <TextBlock Text="OLDEST OPEN ITEMS" Classes="section" />
+        <ItemsControl ItemsSource="{Binding OldestOpen}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:InsightRow">
+              <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="hint" />
+              </Grid>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
