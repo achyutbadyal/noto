@@ -85,7 +85,7 @@
                     <Grid>
                       <!-- Workspace colour tick, pinned to the row's left edge so it lines up with the icons. -->
                       <Border Classes="wsBar" CornerRadius="2" Background="{Binding Color, Converter={x:Static v:RowConverters.Accent}}" />
-                      <Grid Classes="wsRow" ColumnDefinitions="Auto,*,Auto" Margin="8,0,0,0">
+                      <Grid Classes="wsRow" ColumnDefinitions="Auto,*,Auto">
                         <PathIcon Width="16" Height="16" VerticalAlignment="Center"
                                   Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}" />
                         <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"

@@ -1,3 +1,5 @@
+using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Styling;
@@ -48,8 +50,8 @@ public sealed class ScreenshotTests : IDisposable
         return (window, shell);
     }
 
-    // Pump the dispatcher so transitions (sidebar width, overlay fade, page fade) finish, then capture.
-    static async Task SnapAsync(MainWindow window, string name)
+    // Pump the dispatcher so transitions (sidebar width, overlay fade, page fade) finish.
+    static async Task SettleAsync()
     {
         for (var i = 0; i < 40; i++)
         {
@@ -57,6 +59,11 @@ public sealed class ScreenshotTests : IDisposable
             await Task.Delay(10);
         }
         Dispatcher.UIThread.RunJobs();
+    }
+
+    static async Task SnapAsync(MainWindow window, string name)
+    {
+        await SettleAsync();
         var frame = window.CaptureRenderedFrame();
         frame.ShouldNotBeNull();
         if (OutDir is { } dir)
@@ -192,5 +199,46 @@ public sealed class ScreenshotTests : IDisposable
         shell.IsSidebarCollapsed.ShouldBeTrue();
         shell.SidebarWidth.ShouldBe(56);
         await SnapAsync(window, "rail-light");
+    }
+
+    // In the icon rail every row must centre its icon on the button, so workspace and nav icons line up.
+    [AvaloniaFact]
+    public async Task Collapsed_rail_centres_workspace_and_nav_icons()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Light);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        await SettleAsync(); // let the sidebar's item containers realise before measuring
+
+        var buttons = window.GetVisualDescendants().OfType<Button>().ToList();
+        var workspace = buttons.First(b => b.Classes.Contains("wsTab"));
+        var nav = buttons.First(b => b.Classes.Contains("nav") && !b.Classes.Contains("wsTab"));
+
+        // Expanded: the workspace icon sits on the same inset as the nav icons.
+        IconCentre(workspace).ShouldBe(IconCentre(nav), 0.5,
+            $"expanded icon alignment [ws={IconCentre(workspace):F2} nav={IconCentre(nav):F2}]");
+
+        shell.ToggleSidebarCommand.Execute(null);
+        await SettleAsync();
+
+        var workspaceIcon = IconCentre(workspace);
+        var navIcon = IconCentre(nav);
+        var report = $"ws btn={workspace.Bounds.Width:F2} icon={workspaceIcon:F2} | nav btn={nav.Bounds.Width:F2} icon={navIcon:F2}";
+
+        // Collapsed: each icon is centred on its own button...
+        workspaceIcon.ShouldBe(workspace.Bounds.Width / 2, 0.5, $"workspace icon centre vs button centre [{report}]");
+        navIcon.ShouldBe(nav.Bounds.Width / 2, 0.5, $"nav icon centre vs button centre [{report}]");
+        // ...and the two rows line up with each other.
+        workspace.Bounds.Width.ShouldBe(nav.Bounds.Width, 0.5, $"workspace vs nav button width [{report}]");
+        workspaceIcon.ShouldBe(navIcon, 0.5, $"workspace vs nav icon centre [{report}]");
+    }
+
+    // X of the row's icon centre, relative to the button.
+    static double IconCentre(Button button)
+    {
+        var icon = button.GetVisualDescendants().OfType<PathIcon>().First();
+        var origin = icon.TranslatePoint(new Point(0, 0), button) ?? new Point();
+        return origin.X + icon.Bounds.Width / 2;
     }
 }
