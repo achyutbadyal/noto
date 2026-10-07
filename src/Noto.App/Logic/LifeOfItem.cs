@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using Noto.Core.Derivations;
 using Noto.Core.Models;
 using Noto.Core.Time;
@@ -54,10 +55,24 @@ public static class LifeOfItem
     static string? Text(ItemEvent e)
     {
         string? Field(string name) => e.Data?[name]?.GetValue<string>();
+
+        int? Number(string name)
+        {
+            var node = e.Data?[name];
+            if (node is null || node.GetValueKind() == JsonValueKind.Null)
+                return null;
+            return node.GetValue<int>();
+        }
+
         static string Date(string? iso) =>
             iso is null
                 ? "no date"
                 : DateOnly.Parse(iso).ToString("MMM d", CultureInfo.InvariantCulture);
+
+        // "estimate 30m → 1h", "priority none → P2" — the value, not just that something changed.
+        static string Minutes(int? value) => value is null ? "none" : Duration.Short(value.Value);
+        static string Priority(int? value) => value is null or 0 ? "none" : $"P{value}";
+        static string Slot(string? value) => value is null ? "anytime" : value.ToLowerInvariant();
 
         return e.Type switch
         {
@@ -83,14 +98,22 @@ public static class LifeOfItem
             ItemEventType.Completed => "completed",
             ItemEventType.Reopened => "reopened",
             ItemEventType.Dropped => $"dropped ({Humanize(Field("reason"))})",
-            ItemEventType.Restored => e.Data?["from"] is null ? "restored" : null,
+            ItemEventType.Deleted => "deleted",
+            ItemEventType.Restored => "restored",
             ItemEventType.StuckReasonGiven => $"stuck: {Field("reason")?.Replace('_', ' ')}",
             ItemEventType.BrokenDown =>
                 $"broken into {e.Data?["child_ids"]?.AsArray().Count} steps",
             ItemEventType.TitleChanged => "renamed",
-            ItemEventType.EstimateChanged => "estimate changed",
-            ItemEventType.PriorityChanged => "priority changed",
-            ItemEventType.DueDateChanged => "due date changed",
+            ItemEventType.EstimateChanged =>
+                $"estimate {Minutes(Number("from"))} → {Minutes(Number("to"))}",
+            ItemEventType.PriorityChanged =>
+                $"priority {Priority(Number("from"))} → {Priority(Number("to"))}",
+            ItemEventType.DueDateChanged => $"due {Date(Field("from"))} → {Date(Field("to"))}",
+            ItemEventType.TimeOfDayChanged =>
+                $"day part {Slot(Field("from"))} → {Slot(Field("to"))}",
+            ItemEventType.ColumnChanged => Field("to") is { } column
+                ? $"moved to {column}"
+                : "moved out of a column",
             ItemEventType.FocusStopped when (e.Data?["minutes"]?.GetValue<int>() ?? 0) > 0 =>
                 $"focused {e.Data!["minutes"]!.GetValue<int>()} min",
             _ => null,

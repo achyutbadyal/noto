@@ -79,6 +79,152 @@
           </Grid>
         </StackPanel>
 
+        <!-- editable attributes: each change is a real command, so it lands in the activity log below -->
+        <StackPanel Spacing="8">
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock
+              Text="EDIT"
+              Classes="section"
+              VerticalAlignment="Center"
+              ToolTip.Tip="Every change here is recorded in the activity log below and can be undone with ⌘Z."
+            />
+            <Button
+              Grid.Column="1"
+              Classes="info"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Editing}"
+              AutomationProperties.Name="About editing and deleting"
+              ToolTip.Tip="What you can change, and where changes are recorded"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+          </Grid>
+          <Grid
+            ColumnDefinitions="84,*"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+            ColumnSpacing="8"
+            RowSpacing="8"
+          >
+            <TextBlock Text="Title" Classes="secondary" VerticalAlignment="Center" />
+            <TextBox
+              Grid.Column="1"
+              Text="{Binding TitleEdit, Mode=TwoWay}"
+              KeyDown="OnTitleKeyDown"
+              LostFocus="OnTitleLostFocus"
+              AutomationProperties.Name="Title"
+            />
+
+            <TextBlock
+              Grid.Row="1"
+              Text="Time"
+              Classes="secondary"
+              VerticalAlignment="Center"
+              ToolTip.Tip="An estimate, counted against today's capacity."
+            />
+            <ComboBox
+              Grid.Row="1"
+              Grid.Column="1"
+              ItemsSource="{Binding Estimates}"
+              SelectedItem="{Binding Estimate, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Estimate"
+              ToolTip.Tip="An estimate, counted against today's capacity."
+            />
+
+            <TextBlock
+              Grid.Row="2"
+              Text="Priority"
+              Classes="secondary"
+              VerticalAlignment="Center"
+              ToolTip.Tip="1 is highest. It decides the order when the workspace sorts by priority."
+            />
+            <ComboBox
+              Grid.Row="2"
+              Grid.Column="1"
+              ItemsSource="{Binding Priorities}"
+              SelectedItem="{Binding Priority, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Priority"
+              ToolTip.Tip="1 is highest. It decides the order when the workspace sorts by priority."
+            />
+
+            <TextBlock
+              Grid.Row="3"
+              Text="When"
+              Classes="secondary"
+              VerticalAlignment="Center"
+              ToolTip.Tip="The day this is planned for. Someday keeps it out of today without dropping it."
+            />
+            <ComboBox
+              Grid.Row="3"
+              Grid.Column="1"
+              ItemsSource="{Binding Whens}"
+              SelectedItem="{Binding When, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="When"
+              ToolTip.Tip="The day this is planned for. Someday keeps it out of today without dropping it."
+            />
+
+            <TextBlock
+              Grid.Row="4"
+              Text="Due"
+              Classes="secondary"
+              VerticalAlignment="Center"
+              ToolTip.Tip="A deadline. Overdue items are pinned on top in the Deadline layout."
+            />
+            <ComboBox
+              Grid.Row="4"
+              Grid.Column="1"
+              ItemsSource="{Binding Dues}"
+              SelectedItem="{Binding Due, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Due date"
+              ToolTip.Tip="A deadline. Overdue items are pinned on top in the Deadline layout."
+            />
+
+            <TextBlock
+              Grid.Row="5"
+              Text="Day part"
+              Classes="secondary"
+              VerticalAlignment="Center"
+              ToolTip.Tip="When in the day you mean to do it. Used by the Habit layout's ordering."
+            />
+            <ComboBox
+              Grid.Row="5"
+              Grid.Column="1"
+              ItemsSource="{Binding TimesOfDay}"
+              SelectedItem="{Binding TimeOfDay, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Time of day"
+              ToolTip.Tip="When in the day you mean to do it. Used by the Habit layout's ordering."
+            />
+
+            <TextBlock
+              Grid.Row="6"
+              Text="Waiting on"
+              Classes="secondary"
+              VerticalAlignment="Center"
+              ToolTip.Tip="Who or what you are blocked on. Setting this moves the item to Waiting on."
+            />
+            <TextBox
+              Grid.Row="6"
+              Grid.Column="1"
+              Text="{Binding WaitingOn, Mode=TwoWay}"
+              Watermark="Nobody"
+              KeyDown="OnWaitingKeyDown"
+              LostFocus="OnWaitingLostFocus"
+              AutomationProperties.Name="Waiting on"
+              ToolTip.Tip="Who or what you are blocked on. Setting this moves the item to Waiting on."
+            />
+          </Grid>
+          <TextBlock
+            Text="{Binding Error}"
+            Classes="error"
+            TextWrapping="Wrap"
+            IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+          />
+        </StackPanel>
+
         <!-- stuck prompt: intervention, not punishment -->
         <Border
           Classes="raised"
@@ -173,6 +319,19 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+        </StackPanel>
+
+        <!-- Delete is a soft delete: undoable, and recoverable from Settings -->
+        <StackPanel Spacing="8">
+          <Border Classes="hairline" />
+          <Button
+            Classes="danger"
+            Content="Delete task"
+            HorizontalAlignment="Left"
+            Command="{Binding DeleteCommand}"
+            AutomationProperties.Name="Delete task"
+            ToolTip.Tip="Deletes the task. Nothing is destroyed — ⌘Z brings it straight back."
+          />
         </StackPanel>
       </StackPanel>
     </StackPanel>

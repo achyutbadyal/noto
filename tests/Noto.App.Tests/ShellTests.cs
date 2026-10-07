@@ -306,6 +306,55 @@ public sealed class ShellTests : IDisposable
     }
 
     [Fact]
+    public async Task Editing_an_attribute_in_the_inspector_writes_an_activity_log_entry()
+    {
+        await _shell.InitializeAsync();
+        var id = await _app.AddAsync("Ship the release notes", AppFixture.Today, 30);
+        await _shell.GoAsync(AppPage.Today);
+        var today = (TodayViewModel)_shell.Content!;
+        today.SetFocus(today.FlatRows.First(r => r.Id == id));
+        await _shell.RefreshAsync();
+
+        var inspector = _shell.Inspector;
+        inspector.Item!.Id.ShouldBe(id);
+        inspector.Estimate!.Minutes.ShouldBe(30);
+        inspector.Priority!.Value.ShouldBe(0);
+
+        inspector.Estimate = FieldOptions.Durations.First(o => o.Minutes == 90);
+        inspector.Priority = FieldOptions.Priorities.First(o => o.Value == 2);
+        inspector.Due = FieldOptions.Dues.First(o => o.InDays == 3);
+        inspector.TimeOfDay = FieldOptions.TimesOfDay.First(o => o.Value == TimeOfDay.Morning);
+        await Task.Delay(250);
+
+        var item = await _app.GetAsync(id);
+        item.EstimateMinutes.ShouldBe(90);
+        item.Priority.ShouldBe(2);
+        item.DueDate.ShouldBe(AppFixture.Today.AddDays(3));
+        item.TimeOfDay.ShouldBe(TimeOfDay.Morning);
+
+        // The log records the values, not just that something changed.
+        var life = inspector.Life.Select(l => l.Text).ToList();
+        life.ShouldContain("estimate 30m → 1h 30m");
+        life.ShouldContain("priority none → P2");
+        life.ShouldContain("day part anytime → morning");
+
+        // Renaming commits on demand rather than per keystroke.
+        inspector.TitleEdit = "Ship the release notes v2";
+        await inspector.CommitTitleCommand.ExecuteAsync(null);
+        await Task.Delay(120);
+        (await _app.GetAsync(id)).Title.ShouldBe("Ship the release notes v2");
+
+        // Deleting is a soft delete, and it is undoable.
+        await inspector.DeleteCommand.ExecuteAsync(null);
+        await Task.Delay(150);
+        (await _app.GetAsync(id)).DeletedAt.ShouldNotBeNull();
+
+        await _shell.UndoAsync();
+        await Task.Delay(150);
+        (await _app.GetAsync(id)).DeletedAt.ShouldBeNull();
+    }
+
+    [Fact]
     public async Task Review_is_reachable_by_shortcut_and_says_so_when_nothing_is_carried()
     {
         await _shell.InitializeAsync();

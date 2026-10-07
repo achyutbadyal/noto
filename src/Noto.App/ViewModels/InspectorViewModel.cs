@@ -26,6 +26,7 @@ public sealed partial class InspectorViewModel : ObservableObject
     readonly AppServices _services;
     Guid _workspaceId;
     WorkspaceSnapshot? _snapshot;
+    bool _loading;
 
     public InspectorViewModel(AppServices services)
     {
@@ -37,8 +38,40 @@ public sealed partial class InspectorViewModel : ObservableObject
     public ObservableCollection<LifeLine> Life { get; } = [];
     public ObservableCollection<ItemRowViewModel> Subtasks { get; } = [];
 
+    // Every attribute the domain supports, editable in place. Each change runs a real command, so it
+    // lands in the activity log below and stays undoable (docs/07 §10.2).
+    public IReadOnlyList<DurationOption> Estimates => FieldOptions.Durations;
+    public IReadOnlyList<PriorityOption> Priorities => FieldOptions.Priorities;
+    public IReadOnlyList<WhenOption> Whens => FieldOptions.Whens;
+    public IReadOnlyList<DueOption> Dues => FieldOptions.Dues;
+    public IReadOnlyList<TimeOfDayOption> TimesOfDay => FieldOptions.TimesOfDay;
+
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasItem))]
     TodoItem? _item;
+
+    [ObservableProperty]
+    string _titleEdit = "";
+
+    [ObservableProperty]
+    DurationOption? _estimate;
+
+    [ObservableProperty]
+    PriorityOption? _priority;
+
+    [ObservableProperty]
+    WhenOption? _when;
+
+    [ObservableProperty]
+    DueOption? _due;
+
+    [ObservableProperty]
+    TimeOfDayOption? _timeOfDay;
+
+    [ObservableProperty]
+    string _waitingOn = "";
+
+    [ObservableProperty]
+    string? _error;
 
     [ObservableProperty]
     string _notes = "";
@@ -83,12 +116,22 @@ public sealed partial class InspectorViewModel : ObservableObject
         _snapshot = snapshot;
         _workspaceId = snapshot.Workspace.Id;
         var item = itemId is { } id ? snapshot.Find(id) : null;
+        _loading = true;
         Item = item;
         Life.Clear();
         Subtasks.Clear();
+        Error = null;
         if (item is null)
         {
             ShowStuckPrompt = false;
+            TitleEdit = "";
+            Estimate = null;
+            Priority = null;
+            When = null;
+            Due = null;
+            TimeOfDay = null;
+            WaitingOn = "";
+            _loading = false;
             return;
         }
 
@@ -97,6 +140,13 @@ public sealed partial class InspectorViewModel : ObservableObject
         CarryText = metrics.Carry.ToString();
         DefersText = metrics.Defers.ToString();
         Notes = item.Notes ?? "";
+        TitleEdit = item.Title;
+        Estimate = FieldOptions.DurationFor(item.EstimateMinutes);
+        Priority = FieldOptions.PriorityFor(item.Priority);
+        When = FieldOptions.WhenFor(item, snapshot.Today);
+        Due = FieldOptions.DueFor(item.DueDate, snapshot.Today);
+        TimeOfDay = FieldOptions.TimeOfDayFor(item.TimeOfDay);
+        WaitingOn = item.WaitingOn ?? "";
         StateText = ItemLabels.StateWord(
             item,
             snapshot.Today,
@@ -135,6 +185,117 @@ public sealed partial class InspectorViewModel : ObservableObject
             Life.Add(line);
         OnPropertyChanged(nameof(HasSubtasks));
         OnPropertyChanged(nameof(HasLife));
+        _loading = false;
+    }
+
+    // ---- editing ----
+    // The setters below fire from the UI only (LoadAsync sets them under _loading), so each one is a
+    // deliberate user edit. They run the same commands the rest of the app uses, which means the change
+    // shows up in the activity log and ⌘Z undoes it.
+
+    // The title is committed on Enter or when the box loses focus (not per keystroke), like the row editor.
+    partial void OnEstimateChanged(DurationOption? value)
+    {
+        if (value is not null)
+            _ = SaveAsync(new SetEstimate(Item!.Id, value.Minutes), "Changed estimate");
+    }
+
+    partial void OnPriorityChanged(PriorityOption? value)
+    {
+        if (value is not null)
+            _ = SaveAsync(new SetPriority(Item!.Id, value.Value), $"Priority {value.Value}");
+    }
+
+    partial void OnWhenChanged(WhenOption? value)
+    {
+        if (value is null || _snapshot is not { } snap)
+            return;
+        ItemCommand command;
+        if (value.Someday)
+            command = new SetSomeday(Item!.Id, true);
+        else if (value.Kind == PlanKind.Unschedule)
+            command = new PlanItem(Item!.Id, null, PlanKind.Unschedule);
+        else if (value.OffsetDays is { } offset)
+            command = new PlanItem(
+                Item!.Id,
+                snap.Today.AddDays(offset),
+                value.Kind ?? PlanKind.Plan
+            );
+        else
+            return;
+        _ = SaveAsync(command, $"Planned for {value.Label.ToLowerInvariant()}");
+    }
+
+    partial void OnDueChanged(DueOption? value)
+    {
+        if (value is null || _snapshot is not { } snap)
+            return;
+        var due = value.InDays is { } days ? snap.Today.AddDays(days) : (DateOnly?)null;
+        _ = SaveAsync(new SetDueDate(Item!.Id, due), due is null ? "Cleared the due date" : "Set a due date");
+    }
+
+    partial void OnTimeOfDayChanged(TimeOfDayOption? value)
+    {
+        if (value is not null)
+            _ = SaveAsync(new SetTimeOfDay(Item!.Id, value.Value), "Changed time of day");
+    }
+
+    async Task SaveTitleAsync()
+    {
+        if (_loading || Item is not { } item)
+            return;
+        var title = TitleEdit.Trim();
+        if (title.Length == 0 || title == item.Title)
+            return;
+        await SaveAsync(new RenameItem(item.Id, title), "Renamed");
+    }
+
+    [RelayCommand]
+    public async Task CommitTitleAsync() => await SaveTitleAsync();
+
+    [RelayCommand]
+    public async Task WaitingChangedAsync()
+    {
+        if (_loading || Item is not { } item)
+            return;
+        var on = WaitingOn.Trim();
+        if (on.Length == 0)
+        {
+            if (item.Status == ItemStatus.Waiting)
+                await SaveAsync(new EndWaiting(item.Id), "No longer waiting");
+            return;
+        }
+        if (on == item.WaitingOn)
+            return;
+        await SaveAsync(new StartWaiting(item.Id, on), $"Waiting on {on}");
+    }
+
+    // Deleting is a soft delete and stays undoable; the toast offers the undo.
+    [RelayCommand]
+    public async Task DeleteAsync()
+    {
+        if (Item is not { } item)
+            return;
+        await SaveAsync(new DeleteItem(item.Id), $"Deleted “{item.Title}”");
+    }
+
+    async Task SaveAsync(ItemCommand command, string label)
+    {
+        if (_loading || Item is null)
+            return;
+        try
+        {
+            Error = null;
+            await _services.Runner.RunAsync(command, label);
+        }
+        // Some transitions are not valid from every state (Someday on a waiting item, say). Say so
+        // instead of throwing away a fire-and-forget task, and snap the controls back to reality.
+        catch (CommandException e)
+        {
+            Error = e.Message;
+            if (_snapshot is { } snap)
+                await LoadAsync(Item.Id, snap);
+        }
     }
 
     string Schedule(TodoItem item)

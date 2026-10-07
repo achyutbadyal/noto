@@ -35,6 +35,7 @@ public static class HelpTopicIds
     public const string Order = "order";
     public const string Pressure = "pressure";
     public const string Carry = "carry";
+    public const string Editing = "editing";
     public const string Review = "review";
     public const string Shutdown = "shutdown";
     public const string Weekly = "weekly";
@@ -371,6 +372,45 @@ public static class HelpContent
                             "First thing tomorrow",
                             "A deliberate one-day defer — it will not be counted as carry twice."
                         ),
+                    ]
+                ),
+            ]
+        ),
+        new(
+            HelpTopicIds.Editing,
+            "Editing, deleting, restoring",
+            "Change any field of a task, and get anything back.",
+            "planned",
+            [
+                new(
+                    "Everything is editable",
+                    "Select a task and the inspector on the right lists its fields. Changing one runs the same action the keyboard does — nothing is a special case.",
+                    [
+                        new("Title", "Type a new one and press Enter, or click away."),
+                        new("Time", "An estimate: 15 min, 30 min, 1 hr, 1.5 hr… It counts against today's capacity."),
+                        new("Priority", "1 is highest. It decides the order when the workspace sorts by priority."),
+                        new("When", "Today, tomorrow, in a week, Someday, or Unscheduled."),
+                        new("Due", "A deadline. Overdue items are pinned on top in the Deadline layout."),
+                        new("Day part", "Morning, midday, afternoon or evening — used by the habit grid's order."),
+                        new("Waiting on", "Name who or what is blocking it; the task moves to Waiting on."),
+                        new("Notes", "Free markdown."),
+                    ]
+                ),
+                new(
+                    "Every change is recorded",
+                    "Each edit is written to the item's history, which is what \"Life of this item\" at the bottom of the inspector shows — with the values, not just that something changed:",
+                    [
+                        new("Example", "estimate 30m → 1h · priority none → P2 · due Oct 12 → no date"),
+                        new("Why keep it", "It is how Noto answers \"why is this still here?\" without guessing."),
+                        new("Undo", "Every change is one ⌘Z. Nothing here needs a confirmation dialog."),
+                    ]
+                ),
+                new(
+                    "Deleting",
+                    "Nothing is ever destroyed outright.",
+                    [
+                        new("Delete a task", "Inspector → Delete task. The row leaves your lists, and ⌘Z brings it straight back."),
+                        new("Drop is different", "Dropping (⌫) keeps the task and records why you let it go; deleting hides it entirely."),
                     ]
                 ),
             ]
