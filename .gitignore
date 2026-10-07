@@ -6,3 +6,6 @@ obj/
 *.db
 *.db-*
 dist/
+
+# Local tooling state (never commit)
+.workbuddy-ai/
