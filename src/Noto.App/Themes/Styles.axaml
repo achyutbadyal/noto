@@ -239,6 +239,36 @@
   <Style Selector="Button.nav.selected PathIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
   <Style Selector="Button.nav.selected TextBlock"><Setter Property="Foreground" Value="{DynamicResource Text1Brush}" /></Style>
 
+  <!-- Collapsed rail: no padding, so the single remaining icon centres exactly in the 40px button. -->
+  <Style Selector="Button.nav.collapsed">
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Padding" Value="0,6" />
+  </Style>
+
+  <!-- Workspace row: colour tick pinned to the left edge, then icon / name / count. -->
+  <Style Selector="Border.wsBar">
+    <Setter Property="Width" Value="3" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Stretch" />
+    <Setter Property="Margin" Value="0,5,0,5" />
+  </Style>
+  <Style Selector="Border.wsDot"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.wsBadge"><Setter Property="IsVisible" Value="False" /></Style>
+  <!-- Only one rule ever turns visibility on, guarded by the sidebar state, so nothing depends on
+       selector-specificity ordering. -->
+  <Style Selector="Button.wsTab:not(.collapsed) Border.wsBadge.show"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Button.wsTab.collapsed Border.wsDot.show"><Setter Property="IsVisible" Value="True" /></Style>
+
+  <!-- Collapsed workspace tab: keep the button full width so the dot can sit in its corner, and centre the icon. -->
+  <Style Selector="Button.wsTab.collapsed">
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="Button.wsTab.collapsed Grid.wsRow">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Margin" Value="0" />
+  </Style>
+  <Style Selector="Button.wsTab.collapsed Border.wsBar"><Setter Property="IsVisible" Value="False" /></Style>
+
   <!-- Segmented control -->
   <Style Selector="Button.seg">
     <Setter Property="Padding" Value="12,4" />

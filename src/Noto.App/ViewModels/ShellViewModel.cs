@@ -44,7 +44,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowInspector), nameof(IsListPage), nameof(IsToday), nameof(IsBacklog), nameof(IsTodayAll))] AppPage _page = AppPage.Today;
     [ObservableProperty] object? _content;
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowInspector))] bool _isInspectorOpen = true;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(SidebarWidth), nameof(EffectiveSidebarExpanded))] bool _isSidebarExpanded = true;
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(SidebarWidth), nameof(EffectiveSidebarExpanded), nameof(IsSidebarCollapsed))] bool _isSidebarExpanded = true;
     [ObservableProperty] bool _isHelpOpen;
     [ObservableProperty] string _headerTitle = "";
     [ObservableProperty] string? _focusText;
@@ -52,7 +52,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
 
     // Viewport-driven layout: the window pushes its width here so the shell can adapt instead of clipping.
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsCompact), nameof(IsNarrow), nameof(ShowToolbarLabels), nameof(EffectiveSidebarExpanded), nameof(SidebarWidth), nameof(ShowInspector))]
+    [NotifyPropertyChangedFor(nameof(IsCompact), nameof(IsNarrow), nameof(ShowToolbarLabels), nameof(EffectiveSidebarExpanded), nameof(IsSidebarCollapsed), nameof(SidebarWidth), nameof(ShowInspector))]
     double _viewportWidth = 1240;
 
     // Below ~880px the sidebar collapses to its icon rail and the toolbar drops its labels.
@@ -62,6 +62,8 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public bool ShowToolbarLabels => !IsCompact;
 
     public bool EffectiveSidebarExpanded => IsSidebarExpanded && !IsCompact;
+    // True whenever the sidebar is showing its icon rail (either user-collapsed or auto-collapsed).
+    public bool IsSidebarCollapsed => !EffectiveSidebarExpanded;
 
     public bool ShowInspector => IsInspectorOpen && !IsNarrow && Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll;
     public double SidebarWidth => EffectiveSidebarExpanded ? 232 : 56;

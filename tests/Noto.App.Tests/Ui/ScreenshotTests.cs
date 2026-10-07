@@ -48,8 +48,14 @@ public sealed class ScreenshotTests : IDisposable
         return (window, shell);
     }
 
-    static void Snap(MainWindow window, string name)
+    // Pump the dispatcher so transitions (sidebar width, overlay fade, page fade) finish, then capture.
+    static async Task SnapAsync(MainWindow window, string name)
     {
+        for (var i = 0; i < 40; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10);
+        }
         Dispatcher.UIThread.RunJobs();
         var frame = window.CaptureRenderedFrame();
         frame.ShouldNotBeNull();
@@ -71,10 +77,10 @@ public sealed class ScreenshotTests : IDisposable
 
         window.GetVisualDescendants().OfType<ItemRowView>().Count().ShouldBeGreaterThanOrEqualTo(4);
         window.GetVisualDescendants().OfType<InspectorView>().ShouldNotBeEmpty();
-        Snap(window, "today-dark");
+        await SnapAsync(window, "today-dark");
 
         Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
-        Snap(window, "today-light");
+        await SnapAsync(window, "today-light");
     }
 
     [AvaloniaFact]
@@ -87,11 +93,11 @@ public sealed class ScreenshotTests : IDisposable
         Dispatcher.UIThread.RunJobs();
 
         window.GetVisualDescendants().OfType<ReviewView>().ShouldNotBeEmpty();
-        Snap(window, "review-dark");
+        await SnapAsync(window, "review-dark");
 
         await shell.HandleKeyAsync(KeyChord.Of("d"));
         Dispatcher.UIThread.RunJobs();
-        Snap(window, "review-prompt-dark");
+        await SnapAsync(window, "review-prompt-dark");
     }
 
     [AvaloniaFact]
@@ -106,18 +112,18 @@ public sealed class ScreenshotTests : IDisposable
         shell.CommandBar.Text = "dep";
         await shell.CommandBar.UpdateAsync();
         Dispatcher.UIThread.RunJobs();
-        Snap(window, "commandbar-dark");
+        await SnapAsync(window, "commandbar-dark");
         shell.CommandBar.Close();
 
         await shell.GoAsync(AppPage.Settings);
-        Snap(window, "settings-dark");
+        await SnapAsync(window, "settings-dark");
 
         await shell.GoAsync(AppPage.Insights);
-        Snap(window, "insights-dark");
+        await SnapAsync(window, "insights-dark");
 
         await shell.GoAsync(AppPage.Today);
         shell.IsHelpOpen = true;
-        Snap(window, "help-dark");
+        await SnapAsync(window, "help-dark");
     }
 
     [AvaloniaFact]
@@ -143,15 +149,15 @@ public sealed class ScreenshotTests : IDisposable
             await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => preset.ApplyTo(ws));
             await shell.RefreshAsync();
             if (name == "habits") await shell.HandleKeyAsync(KeyChord.Of("x"));
-            Snap(window, name + "-dark");
+            await SnapAsync(window, name + "-dark");
         }
 
         await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => BuiltInPresets.Sprint.ApplyTo(ws));
         await shell.RefreshAsync();
         await shell.GoAsync(AppPage.TodayAll);
-        Snap(window, "todayall-dark");
+        await SnapAsync(window, "todayall-dark");
         await shell.GoAsync(AppPage.WeeklyReview);
-        Snap(window, "weekly-dark");
+        await SnapAsync(window, "weekly-dark");
     }
 
     // A narrow window must adapt (collapse the sidebar, hide the inspector) instead of clipping.
@@ -172,12 +178,19 @@ public sealed class ScreenshotTests : IDisposable
         shell.EffectiveSidebarExpanded.ShouldBeFalse();
         shell.SidebarWidth.ShouldBe(56);
         shell.ShowInspector.ShouldBeFalse();
-        Snap(window, "narrow-light");
+        await SnapAsync(window, "narrow-light");
 
         shell.ViewportWidth = 1240;
         Dispatcher.UIThread.RunJobs();
         shell.ShowInspector.ShouldBeTrue();
         shell.EffectiveSidebarExpanded.ShouldBeTrue();
         shell.SidebarWidth.ShouldBe(232);
+
+        // User-collapsed rail at full width: icons must sit centred in the 56px rail.
+        shell.ToggleSidebarCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        shell.IsSidebarCollapsed.ShouldBeTrue();
+        shell.SidebarWidth.ShouldBe(56);
+        await SnapAsync(window, "rail-light");
     }
 }

@@ -43,10 +43,10 @@ mise exec -- dotnet run --project src/Noto.Desktop
 
 Options:
 
-| Flag                | Effect                                                       |
-| ------------------- | ------------------------------------------------------------ |
-| `--data-dir <path>` | Use a different data directory (handy for a throwaway DB)    |
-| `--capture`         | Start with the quick-capture panel open                      |
+| Flag                | Effect                                                    |
+| ------------------- | --------------------------------------------------------- |
+| `--data-dir <path>` | Use a different data directory (handy for a throwaway DB) |
+| `--capture`         | Start with the quick-capture panel open                   |
 
 Your data lives in a single SQLite file, `noto.db`, in:
 
@@ -82,15 +82,15 @@ mise exec -- dotnet run --project src/Noto.Server --urls http://localhost:8080
 
 With no `DATABASE_URL` it uses SQLite under `DATA_DIR` (default `./noto-data`).
 
-| Variable                                    | Purpose                                                              |
-| ------------------------------------------- | -------------------------------------------------------------------- |
-| `JWT_SIGNING_KEY` (required)                | Signs access tokens; at least 32 characters                          |
-| `PUBLIC_URL` (required)                     | Absolute http(s) URL of the server                                   |
-| `DATABASE_URL` / `DB`                       | `postgresql://...` for Postgres; `DB=sqlite` (default without a URL) |
-| `DATA_DIR`                                  | SQLite location (default `./noto-data`)                              |
-| `PORT`                                      | Listen port in the container (default 8080)                          |
-| `CORS_ORIGINS`                              | Comma-separated allowed browser origins                              |
-| `<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET`   | Enable the gateway OAuth for GitHub, Slack, Atlassian, ...           |
+| Variable                                  | Purpose                                                              |
+| ----------------------------------------- | -------------------------------------------------------------------- |
+| `JWT_SIGNING_KEY` (required)              | Signs access tokens; at least 32 characters                          |
+| `PUBLIC_URL` (required)                   | Absolute http(s) URL of the server                                   |
+| `DATABASE_URL` / `DB`                     | `postgresql://...` for Postgres; `DB=sqlite` (default without a URL) |
+| `DATA_DIR`                                | SQLite location (default `./noto-data`)                              |
+| `PORT`                                    | Listen port in the container (default 8080)                          |
+| `CORS_ORIGINS`                            | Comma-separated allowed browser origins                              |
+| `<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` | Enable the gateway OAuth for GitHub, Slack, Atlassian, ...           |
 
 More options (rate limits, Argon2 cost, `GATEWAY_ALLOW_PRIVATE_HOSTS`) are in `src/Noto.Server/Config/ServerConfig.cs`.
 
