@@ -82,12 +82,20 @@ generators (`CommunityToolkit.Mvvm` and `Avalonia.Generators`) — restart it, a
 
 ### Install (publish a self-contained build)
 
+To package and install a native Mac `.app` bundle (which includes the custom app icon and can be launched from `/Applications`):
+
 ```sh
-mise exec -- dotnet publish src/Noto.Desktop -c Release -r osx-arm64 --self-contained -o dist/noto-desktop
+mise run install:mac
+```
+
+If you only want to build the plain executable binaries for other platforms (e.g. Windows/Linux or raw Mac binary):
+
+```sh
+mise run publish:desktop     # Uses TARGET_RID=osx-arm64 by default
 ./dist/noto-desktop/Noto.Desktop
 ```
 
-Replace `osx-arm64` with `osx-x64`, `win-x64`, or `linux-x64` as needed. This produces a plain folder (about 115 MB); there is no `.app` bundle, installer, or code signing yet. macOS features that need permissions (notifications, capture-with-context) will prompt on first use, and an unsigned build may need to be allowed under System Settings > Privacy & Security.
+You can set `TARGET_RID` to `osx-x64`, `win-x64`, or `linux-x64` as needed. Note that the plain desktop build produces a folder (about 115 MB) without an installer or code signing. macOS features that need permissions (notifications, capture-with-context) will prompt on first use, and an unsigned build may need to be allowed under System Settings > Privacy & Security.
 
 ## Run the sync server (optional)
 

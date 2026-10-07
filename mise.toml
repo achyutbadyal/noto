@@ -100,6 +100,23 @@ run = "dotnet list Noto.sln package --outdated"
 description = "Publish a self-contained desktop build to dist/noto-desktop (TARGET_RID overrides the RID)"
 run = "dotnet publish src/Noto.Desktop -c Release -r ${TARGET_RID:-osx-arm64} --self-contained -o dist/noto-desktop"
 
+[tasks."publish:mac"]
+description = "Publish and package into a macOS Noto.app bundle (required for the app icon to appear in the Dock)"
+depends = ["publish:desktop"]
+run = "./scripts/package_mac.sh"
+
+[tasks."install:mac"]
+description = "Package and install the Noto.app bundle to /Applications"
+depends = ["publish:mac"]
+run = """
+#!/bin/bash
+set -e
+echo "Installing to /Applications/Noto.app..."
+rm -rf /Applications/Noto.app
+cp -a dist/Noto.app /Applications/
+echo "Successfully installed. You can now launch Noto from your Applications folder."
+"""
+
 # ---------------------------------------------------------------------------
 # CI
 # ---------------------------------------------------------------------------
