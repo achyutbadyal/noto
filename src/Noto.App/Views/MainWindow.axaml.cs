@@ -56,14 +56,40 @@ public partial class MainWindow : Window
     void Attach(ShellViewModel? shell)
     {
         if (_shell is not null)
+        {
             _shell.PropertyChanged -= OnShellPropertyChanged;
+            _shell.CommandBar.PropertyChanged -= OnCommandBarChanged;
+        }
         _shell = shell;
         if (shell is null)
             return;
 
         shell.PropertyChanged += OnShellPropertyChanged;
+        shell.CommandBar.PropertyChanged += OnCommandBarChanged;
         shell.Appearance.Changed += ApplyAppearance;
         ApplyAppearance();
+    }
+
+    // The command bar's overlay fades (Opacity + IsHitTestVisible) instead of toggling IsVisible, so a
+    // focus-when-visible behaviour never fires — it has to be focused when it opens, or ⌘K leaves the
+    // caret wherever it was and typing goes to the wrong box.
+    void OnCommandBarChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(CommandBarViewModel.IsOpen))
+            return;
+        if (_shell?.CommandBar.IsOpen == true)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                BarBox.Focus();
+                BarBox.CaretIndex = BarBox.Text?.Length ?? 0;
+            });
+            return;
+        }
+        // Closing has to give focus back, or the field stays focused (while invisible) and single-key
+        // list shortcuts keep being treated as typing.
+        if (BarBox.IsFocused)
+            Dispatcher.UIThread.Post(() => TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus());
     }
 
     void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)

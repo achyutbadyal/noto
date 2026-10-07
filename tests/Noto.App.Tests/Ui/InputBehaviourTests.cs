@@ -62,4 +62,63 @@ public sealed class InputBehaviourTests
             app.Dispose();
         }
     }
+
+    // The command bar's overlay fades instead of toggling IsVisible, so focus has to be moved by hand.
+    // Without it, Cmd-K left the caret in whatever field was last used and typing went there instead.
+    [AvaloniaFact]
+    public async Task Opening_the_command_bar_focuses_its_field_and_closing_gives_focus_back()
+    {
+        var app = new AppFixture();
+        try
+        {
+            var shell = new ShellViewModel(app.Services);
+            var window = new MainWindow
+            {
+                DataContext = shell,
+                Width = 1240,
+                Height = 800,
+            };
+            window.Show();
+            await shell.InitializeAsync();
+            await shell.GoAsync(AppPage.Today);
+            await SettleAsync();
+
+            var addBox = window
+                .GetVisualDescendants()
+                .OfType<TextBox>()
+                .First(t => t.Name == "AddBox");
+            addBox.Focus();
+            Dispatcher.UIThread.RunJobs();
+            addBox.IsFocused.ShouldBeTrue("the field should start focused");
+
+            await shell.CommandBar.OpenAsync();
+            await SettleAsync();
+
+            var bar = window
+                .GetVisualDescendants()
+                .OfType<TextBox>()
+                .First(t => t.Name == "BarBox");
+            bar.IsFocused.ShouldBeTrue("opening the command bar takes focus");
+            addBox.IsFocused.ShouldBeFalse();
+
+            shell.CommandBar.Close();
+            await SettleAsync();
+            bar.IsFocused.ShouldBeFalse(
+                "closing hands focus back so single-key shortcuts work again"
+            );
+        }
+        finally
+        {
+            app.Dispose();
+        }
+    }
+
+    static async Task SettleAsync()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10);
+        }
+    }
 }

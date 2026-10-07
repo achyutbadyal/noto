@@ -541,7 +541,6 @@
               BorderThickness="0"
               Background="Transparent"
               Watermark="Ask or jump…  or type to add: Review PR tomorrow ~30m !2"
-              v:Behaviors.FocusWhenVisible="True"
               AutomationProperties.Name="Command bar"
             />
           </Grid>
