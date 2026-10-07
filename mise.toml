@@ -72,12 +72,12 @@ description = "Check CSharpier formatting without writing — use this in CI"
 run = "dotnet tool restore && dotnet csharpier check ."
 
 [tasks.lint]
-description = "Check whitespace, style and analyzer rules with dotnet format (no writes)"
-run = "dotnet format Noto.sln --verify-no-changes"
+description = "Check analyzers and code style with dotnet format (formatting itself is CSharpier's job)"
+run = "dotnet format analyzers Noto.sln --verify-no-changes && dotnet format style Noto.sln --verify-no-changes"
 
 [tasks."lint:fix"]
-description = "Apply whitespace, style and analyzer fixes with dotnet format"
-run = "dotnet format Noto.sln"
+description = "Apply analyzer and code-style fixes with dotnet format"
+run = "dotnet format analyzers Noto.sln && dotnet format style Noto.sln"
 
 # ---------------------------------------------------------------------------
 # Housekeeping
@@ -101,4 +101,4 @@ run = "dotnet publish src/Noto.Desktop -c Release -r ${TARGET_RID:-osx-arm64} --
 
 [tasks.ci]
 description = "What CI should run: format check, lint, build, test"
-run = "dotnet tool restore && dotnet csharpier check . && dotnet format Noto.sln --verify-no-changes && dotnet build Noto.sln && dotnet test Noto.sln"
+run = "dotnet tool restore && dotnet csharpier check . && dotnet format analyzers Noto.sln --verify-no-changes && dotnet format style Noto.sln --verify-no-changes && dotnet build Noto.sln && dotnet test Noto.sln"

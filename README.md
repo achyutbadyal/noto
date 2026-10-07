@@ -75,6 +75,11 @@ The database is created and migrated on first launch. Delete the folder to start
 
 Open `Noto.sln` in Rider, Visual Studio, or VS Code (C# Dev Kit). Set `src/Noto.Desktop` as the startup project.
 
+If the editor floods you with "does not exist in the current context" / "no defining declaration found
+for partial method" errors while `mise run build` is clean, its language server is not running the source
+generators (`CommunityToolkit.Mvvm` and `Avalonia.Generators`) — restart it, and if that fails delete every
+`obj/` and `bin/` and reload. See `CLAUDE.md › Source generators`.
+
 ### Install (publish a self-contained build)
 
 ```sh

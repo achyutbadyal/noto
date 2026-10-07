@@ -1,0 +1,9 @@
+root = true
+
+# Formatting is owned by CSharpier (see `mise run fmt`, pinned in .config/dotnet-tools.json).
+# Roslyn's own formatting analyzer (IDE0055, "Fix whitespace formatting") disagrees with CSharpier on
+# where to break long lines, so it is switched off here. Without this, editors report hundreds of
+# IDE0055 squiggles on this (unformatted) codebase while `dotnet build` reports zero warnings.
+# Use `mise run fmt:check` to check formatting and `mise run lint` for analyzers/style.
+[*.cs]
+dotnet_diagnostic.IDE0055.severity = none
