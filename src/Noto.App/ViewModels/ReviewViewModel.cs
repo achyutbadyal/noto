@@ -8,13 +8,20 @@ using Noto.Core.Models;
 
 namespace Noto.App.ViewModels;
 
-public enum ReviewMode { Morning, Shutdown }
+public enum ReviewMode
+{
+    Morning,
+    Shutdown,
+}
 
 public sealed partial class ReviewEntry(ItemRowViewModel row) : ObservableObject
 {
     public ItemRowViewModel Row { get; } = row;
-    [ObservableProperty] string? _decision;
+
+    [ObservableProperty]
+    string? _decision;
     public bool IsDecided => Decision is not null;
+
     partial void OnDecisionChanged(string? value) => OnPropertyChanged(nameof(IsDecided));
 }
 
@@ -40,26 +47,56 @@ public sealed partial class ReviewViewModel : ObservableObject
     public ObservableCollection<ReviewEntry> Entries { get; } = [];
     public WorkspaceSnapshot? Snapshot { get; private set; }
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(Current), nameof(ProgressText), nameof(CurrentTitle), nameof(CurrentDetail))] int _index;
-    [ObservableProperty] string _greeting = "";
-    [ObservableProperty] string? _dayNote;
-    [ObservableProperty] string? _message;
-    [ObservableProperty] CapacityViewModel? _capacity;
-    [ObservableProperty] string? _keepAllText;
-    [ObservableProperty] bool _isComplete;
-    [ObservableProperty] ReviewSuggestion? _suggestion;
+    [
+        ObservableProperty,
+        NotifyPropertyChangedFor(
+            nameof(Current),
+            nameof(ProgressText),
+            nameof(CurrentTitle),
+            nameof(CurrentDetail)
+        )
+    ]
+    int _index;
+
+    [ObservableProperty]
+    string _greeting = "";
+
+    [ObservableProperty]
+    string? _dayNote;
+
+    [ObservableProperty]
+    string? _message;
+
+    [ObservableProperty]
+    CapacityViewModel? _capacity;
+
+    [ObservableProperty]
+    string? _keepAllText;
+
+    [ObservableProperty]
+    bool _isComplete;
+
+    [ObservableProperty]
+    ReviewSuggestion? _suggestion;
 
     public event Action? Closed;
 
     public ReviewEntry? Current => Index >= 0 && Index < Entries.Count ? Entries[Index] : null;
-    public string ProgressText => Entries.Count == 0 ? "" : $"{Math.Min(Index + 1, Entries.Count)} / {Entries.Count}";
+    public string ProgressText =>
+        Entries.Count == 0 ? "" : $"{Math.Min(Index + 1, Entries.Count)} / {Entries.Count}";
     public bool IsShutdown => Mode == ReviewMode.Shutdown;
     public string CurrentTitle => Current?.Row.Title ?? "";
 
-    public string CurrentDetail => Current is not { } e ? "" :
-        $"{(e.Row.Metrics.Age == 0 ? "created today" : $"created {e.Row.Metrics.Age} day{(e.Row.Metrics.Age == 1 ? "" : "s")} ago")}" +
-        (e.Row.Metrics.Carry > 0 ? $" · carried {e.Row.Metrics.Carry}×" : "") +
-        (e.Row.Metrics.Defers > 0 ? $" · deferred {(e.Row.Metrics.Defers == 1 ? "once" : $"{e.Row.Metrics.Defers}×")}" : "");
+    public string CurrentDetail =>
+        Current is not { } e
+            ? ""
+            : $"{(e.Row.Metrics.Age == 0 ? "created today" : $"created {e.Row.Metrics.Age} day{(e.Row.Metrics.Age == 1 ? "" : "s")} ago")}"
+                + (e.Row.Metrics.Carry > 0 ? $" · carried {e.Row.Metrics.Carry}×" : "")
+                + (
+                    e.Row.Metrics.Defers > 0
+                        ? $" · deferred {(e.Row.Metrics.Defers == 1 ? "once" : $"{e.Row.Metrics.Defers}×")}"
+                        : ""
+                );
 
     public string SuggestionText => Suggestion is { } s ? $"Noto noticed: {s.Text}  [{s.Key}]" : "";
     public bool HasSuggestion => Suggestion is not null;
@@ -79,12 +116,30 @@ public sealed partial class ReviewViewModel : ObservableObject
         var byId = snap.Items.ToDictionary(i => i.Id);
 
         var items = IsShutdown
-            ? snap.Items.Where(i => i.Status == ItemStatus.Open && !i.IsContainer && !i.IsSomeday && i.PlannedFor <= snap.Today)
-                .OrderByDescending(i => snap.MetricsOf(i).Carry).ThenByDescending(i => i.Priority).ToList()
+            ? snap
+                .Items.Where(i =>
+                    i.Status == ItemStatus.Open
+                    && !i.IsContainer
+                    && !i.IsSomeday
+                    && i.PlannedFor <= snap.Today
+                )
+                .OrderByDescending(i => snap.MetricsOf(i).Carry)
+                .ThenByDescending(i => i.Priority)
+                .ToList()
             : snap.NeedsDecision;
 
         Entries.Clear();
-        foreach (var item in items) Entries.Add(new ReviewEntry(ItemRowFactory.Create(item, snap, isNow: snap.Workspace.NowItemId == item.Id, byId)));
+        foreach (var item in items)
+            Entries.Add(
+                new ReviewEntry(
+                    ItemRowFactory.Create(
+                        item,
+                        snap,
+                        isNow: snap.Workspace.NowItemId == item.Id,
+                        byId
+                    )
+                )
+            );
         Index = 0;
         _decided.Clear();
 
@@ -94,7 +149,8 @@ public sealed partial class ReviewViewModel : ObservableObject
             Greeting = $"Good morning. {n} item{(n == 1 ? "" : "s")} carried over from yesterday.";
             DayNote = await _services.DayNotes.GetAsync(_workspaceId, snap.Today.AddDays(-1));
         }
-        else Greeting = $"{Entries.Count} item{(Entries.Count == 1 ? "" : "s")} not done today.";
+        else
+            Greeting = $"{Entries.Count} item{(Entries.Count == 1 ? "" : "s")} not done today.";
 
         Refresh();
     }
@@ -108,17 +164,29 @@ public sealed partial class ReviewViewModel : ObservableObject
             return handled;
         }
         var binding = KeyMap.Resolve(KeyScope.Review, chord);
-        if (binding is null) return false;
+        if (binding is null)
+            return false;
 
         switch (binding.Action)
         {
-            case AppAction.PrevReview: Step(-1); return true;
-            case AppAction.NextReview: Step(1); return true;
-            case AppAction.Escape: Skip(); return true;
+            case AppAction.PrevReview:
+                Step(-1);
+                return true;
+            case AppAction.NextReview:
+                Step(1);
+                return true;
+            case AppAction.Escape:
+                Skip();
+                return true;
         }
 
-        if (Current is not { } entry) return true;
-        if (entry.IsDecided) { Message = "Already decided. ⌘Z undoes the last decision."; return true; }
+        if (Current is not { } entry)
+            return true;
+        if (entry.IsDecided)
+        {
+            Message = "Already decided. ⌘Z undoes the last decision.";
+            return true;
+        }
         Message = null;
 
         var kind = binding.Action switch
@@ -132,11 +200,16 @@ public sealed partial class ReviewViewModel : ObservableObject
             AppAction.AlreadyDone => IsShutdown ? DecisionKind.Complete : DecisionKind.AlreadyDone,
             _ => (DecisionKind?)null,
         };
-        if (kind is null) return false;
+        if (kind is null)
+            return false;
 
         _pending = entry;
         await Decisions.BeginAsync(kind.Value, [entry.Row.Item], Context);
-        if (Decisions.Prompt is null && Decisions.Message is { } blocked) { Message = blocked; _pending = null; }
+        if (Decisions.Prompt is null && Decisions.Message is { } blocked)
+        {
+            Message = blocked;
+            _pending = null;
+        }
         await FinishDecisionAsync();
         return true;
     }
@@ -148,7 +221,11 @@ public sealed partial class ReviewViewModel : ObservableObject
         {
             _pending = entry;
             Index = Entries.IndexOf(entry);
-            await Decisions.BeginAsync(IsShutdown ? DecisionKind.KeepTomorrow : DecisionKind.KeepToday, [entry.Row.Item], Context);
+            await Decisions.BeginAsync(
+                IsShutdown ? DecisionKind.KeepTomorrow : DecisionKind.KeepToday,
+                [entry.Row.Item],
+                Context
+            );
             await FinishDecisionAsync();
         }
     }
@@ -162,9 +239,11 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     public async Task<bool> UndoAsync()
     {
-        if (_decided.Count == 0) return false;
+        if (_decided.Count == 0)
+            return false;
         var entry = _decided[^1];
-        if (await _services.Undo.UndoLastAsync() is null) return false;
+        if (await _services.Undo.UndoLastAsync() is null)
+            return false;
 
         _decided.RemoveAt(_decided.Count - 1);
         entry.Decision = null;
@@ -182,11 +261,13 @@ public sealed partial class ReviewViewModel : ObservableObject
     {
         if (!CanSkip && Entries.Any(e => !e.IsDecided))
         {
-            Message = "In this workspace every carried item needs a decision. Defer them one by one.";
+            Message =
+                "In this workspace every carried item needs a decision. Defer them one by one.";
             return;
         }
         // Dismissing keeps the banner on Today; the morning review won't reopen until tomorrow.
-        if (!IsShutdown) _services.UiState.Set(DismissKey(_workspaceId), Snapshot?.Today.ToString("yyyy-MM-dd"));
+        if (!IsShutdown)
+            _services.UiState.Set(DismissKey(_workspaceId), Snapshot?.Today.ToString("yyyy-MM-dd"));
         Closed?.Invoke();
     }
 
@@ -194,7 +275,8 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     void Step(int delta)
     {
-        if (Entries.Count == 0) return;
+        if (Entries.Count == 0)
+            return;
         Index = Math.Clamp(Index + delta, 0, Entries.Count - 1);
         Refresh();
     }
@@ -203,7 +285,8 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     void OnDecided(string label)
     {
-        if (_pending is not { } entry) return;
+        if (_pending is not { } entry)
+            return;
         _pending = null;
         entry.Decision = label;
         _decided.Add(entry);
@@ -213,7 +296,8 @@ public sealed partial class ReviewViewModel : ObservableObject
     // Runs after the command finished: refresh the live meter, then move to the next undecided item.
     async Task FinishDecisionAsync()
     {
-        if (_justDecided is not { } entry) return;
+        if (_justDecided is not { } entry)
+            return;
         _justDecided = null;
         await RefreshSnapshotAsync();
         Advance(entry);
@@ -221,18 +305,34 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     void Advance(ReviewEntry decidedEntry)
     {
-        var next = Entries.Skip(Entries.IndexOf(decidedEntry) + 1).FirstOrDefault(e => !e.IsDecided)
-                   ?? Entries.FirstOrDefault(e => !e.IsDecided);
-        if (next is null) { IsComplete = true; Index = Math.Max(0, Entries.Count - 1); }
-        else { IsComplete = false; Index = Entries.IndexOf(next); }
+        var next =
+            Entries.Skip(Entries.IndexOf(decidedEntry) + 1).FirstOrDefault(e => !e.IsDecided)
+            ?? Entries.FirstOrDefault(e => !e.IsDecided);
+        if (next is null)
+        {
+            IsComplete = true;
+            Index = Math.Max(0, Entries.Count - 1);
+        }
+        else
+        {
+            IsComplete = false;
+            Index = Entries.IndexOf(next);
+        }
         Refresh();
     }
 
     async Task RefreshSnapshotAsync() => Snapshot = await _services.Reader.LoadAsync(_workspaceId);
 
-    partial void OnSuggestionChanged(ReviewSuggestion? value) { OnPropertyChanged(nameof(SuggestionText)); OnPropertyChanged(nameof(HasSuggestion)); }
+    partial void OnSuggestionChanged(ReviewSuggestion? value)
+    {
+        OnPropertyChanged(nameof(SuggestionText));
+        OnPropertyChanged(nameof(HasSuggestion));
+    }
+
     partial void OnMessageChanged(string? value) => OnPropertyChanged(nameof(HasMessage));
+
     partial void OnDayNoteChanged(string? value) => OnPropertyChanged(nameof(HasDayNote));
+
     partial void OnKeepAllTextChanged(string? value) => OnPropertyChanged(nameof(HasKeepAll));
 
     void Refresh()
@@ -241,9 +341,12 @@ public sealed partial class ReviewViewModel : ObservableObject
         OnPropertyChanged(nameof(CurrentDetail));
         OnPropertyChanged(nameof(Current));
         OnPropertyChanged(nameof(ProgressText));
-        if (Snapshot is not { } snap) return;
+        if (Snapshot is not { } snap)
+            return;
 
-        Suggestion = Current is { IsDecided: false } c ? ReviewSuggestions.For(c.Row.Item, c.Row.Metrics, snap.Thresholds) : null;
+        Suggestion = Current is { IsDecided: false } c
+            ? ReviewSuggestions.For(c.Row.Item, c.Row.Metrics, snap.Thresholds)
+            : null;
 
         // Live meter: only what's already committed to today; undecided carried items aren't counted yet.
         var view = snap.Today_;
@@ -253,14 +356,24 @@ public sealed partial class ReviewViewModel : ObservableObject
             Planned = view.Planned.Where(i => i.PlannedFor == snap.Today).ToList(),
             Now = view.Now?.PlannedFor == snap.Today ? view.Now : null,
         };
-        var summary = CapacityBar.Compute(snap.Workspace, committed, snap.MetricsOf, snap.FallbackMinutes);
+        var summary = CapacityBar.Compute(
+            snap.Workspace,
+            committed,
+            snap.MetricsOf,
+            snap.FallbackMinutes
+        );
         Capacity = new CapacityViewModel(summary, usesEstimates: false);
 
         var pending = Entries.Where(e => !e.IsDecided).Select(e => e.Row.Item).ToList();
-        int Cost(TodoItem i) => snap.Workspace.CapacityUnit == CapacityUnit.Items ? 1 : i.EstimateMinutes ?? snap.FallbackMinutes;
+        int Cost(TodoItem i) =>
+            snap.Workspace.CapacityUnit == CapacityUnit.Items
+                ? 1
+                : i.EstimateMinutes ?? snap.FallbackMinutes;
         var after = summary.Committed + pending.Sum(Cost);
         var cap = new CapacityViewModel(summary with { Committed = after }, false);
-        KeepAllText = IsShutdown || pending.Count == 0 ? null
-            : after > summary.Capacity ? $"This puts you at {cap.UsedText} of {cap.TotalText}" : $"Fits: {cap.UsedText} of {cap.TotalText}";
+        KeepAllText =
+            IsShutdown || pending.Count == 0 ? null
+            : after > summary.Capacity ? $"This puts you at {cap.UsedText} of {cap.TotalText}"
+            : $"Fits: {cap.UsedText} of {cap.TotalText}";
     }
 }

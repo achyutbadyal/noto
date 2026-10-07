@@ -7,7 +7,11 @@ namespace Noto.Core.Presets;
 public static class ItemOrdering
 {
     public static IReadOnlyList<TodoItem> Sort(
-        IEnumerable<TodoItem> items, SortOrderMode order, Func<TodoItem, ItemMetrics> metrics, DateOnly today)
+        IEnumerable<TodoItem> items,
+        SortOrderMode order,
+        Func<TodoItem, ItemMetrics> metrics,
+        DateOnly today
+    )
     {
         var ranked = order switch
         {
@@ -21,8 +25,9 @@ public static class ItemOrdering
                 .OrderBy(i => DueGroup(i, today))
                 .ThenBy(i => i.DueDate ?? DateOnly.MaxValue)
                 .ThenByDescending(i => i.Priority),
-            SortOrderMode.TimeOfDay => items
-                .OrderBy(i => i.TimeOfDay is { } t ? (int)t : int.MaxValue),
+            SortOrderMode.TimeOfDay => items.OrderBy(i =>
+                i.TimeOfDay is { } t ? (int)t : int.MaxValue
+            ),
             _ => items.OrderBy(_ => 0),
         };
 
@@ -31,5 +36,7 @@ public static class ItemOrdering
 
     // overdue first, then dated, then undated
     static int DueGroup(TodoItem i, DateOnly today) =>
-        i.DueDate is null ? 2 : i.DueDate < today ? 0 : 1;
+        i.DueDate is null ? 2
+        : i.DueDate < today ? 0
+        : 1;
 }

@@ -23,7 +23,10 @@ public static class ThemeTokens
         ["pressure-stale"] = "#FF8078",
     };
 
-    public static readonly IReadOnlyDictionary<string, string> Light = new Dictionary<string, string>
+    public static readonly IReadOnlyDictionary<string, string> Light = new Dictionary<
+        string,
+        string
+    >
     {
         ["canvas"] = "#F2F2F7",
         ["surface"] = "#FFFFFF",
@@ -43,28 +46,45 @@ public static class ThemeTokens
 
     // Foreground tokens that must reach WCAG AA (4.5:1) on every background token below.
     public static readonly IReadOnlyList<string> TextTokens =
-        ["text-1", "text-2", "text-3", "link", "done", "pressure-warm", "pressure-hot", "pressure-stale"];
+    [
+        "text-1",
+        "text-2",
+        "text-3",
+        "link",
+        "done",
+        "pressure-warm",
+        "pressure-hot",
+        "pressure-stale",
+    ];
 
-    public static readonly IReadOnlyList<string> Backgrounds = ["canvas", "surface", "sidebar", "raised"];
+    public static readonly IReadOnlyList<string> Backgrounds =
+    [
+        "canvas",
+        "surface",
+        "sidebar",
+        "raised",
+    ];
 
     // Ten workspace accents, tuned per theme. Used for bars and accents (non-text, 3:1).
-    public static readonly IReadOnlyDictionary<string, (string Dark, string Light)> Accents = new Dictionary<string, (string, string)>
-    {
-        ["blue"] = ("#5B9BFF", "#2F5FD0"),
-        ["teal"] = ("#3CCBB8", "#0F7F70"),
-        ["orange"] = ("#F29B4B", "#B8560C"),
-        ["purple"] = ("#C98BF0", "#8E3FB5"),
-        ["pink"] = ("#F0708F", "#C2284F"),
-        ["green"] = ("#8BCB5A", "#3F7F17"),
-        ["gold"] = ("#E4C247", "#8A6A00"),
-        ["indigo"] = ("#8B97F5", "#4350C0"),
-        ["stone"] = ("#B5A394", "#6F5F50"),
-        ["sky"] = ("#4FB8E8", "#0B6FA0"),
-    };
+    public static readonly IReadOnlyDictionary<string, (string Dark, string Light)> Accents =
+        new Dictionary<string, (string, string)>
+        {
+            ["blue"] = ("#5B9BFF", "#2F5FD0"),
+            ["teal"] = ("#3CCBB8", "#0F7F70"),
+            ["orange"] = ("#F29B4B", "#B8560C"),
+            ["purple"] = ("#C98BF0", "#8E3FB5"),
+            ["pink"] = ("#F0708F", "#C2284F"),
+            ["green"] = ("#8BCB5A", "#3F7F17"),
+            ["gold"] = ("#E4C247", "#8A6A00"),
+            ["indigo"] = ("#8B97F5", "#4350C0"),
+            ["stone"] = ("#B5A394", "#6F5F50"),
+            ["sky"] = ("#4FB8E8", "#0B6FA0"),
+        };
 
     public static string AccentFor(string? name, bool dark)
     {
-        if (name is not null && name.StartsWith('#')) return name;
+        if (name is not null && name.StartsWith('#'))
+            return name;
         var key = name is not null && Accents.ContainsKey(name) ? name : "blue";
         return dark ? Accents[key].Dark : Accents[key].Light;
     }

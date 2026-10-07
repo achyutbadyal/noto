@@ -9,11 +9,13 @@ public sealed record SyncRequest(
     [property: JsonPropertyName("cursor")] long Cursor,
     [property: JsonPropertyName("workspaces")] IReadOnlyList<Guid> Workspaces,
     [property: JsonPropertyName("limit")] int Limit,
-    [property: JsonPropertyName("ops")] IReadOnlyList<Op> Ops);
+    [property: JsonPropertyName("ops")] IReadOnlyList<Op> Ops
+);
 
 public sealed record RejectedOp(
     [property: JsonPropertyName("op_id")] Guid OpId,
-    [property: JsonPropertyName("code")] string Code);
+    [property: JsonPropertyName("code")] string Code
+);
 
 public sealed record SyncResponse(
     [property: JsonPropertyName("accepted_op_ids")] IReadOnlyList<Guid> AcceptedOpIds,
@@ -21,21 +23,25 @@ public sealed record SyncResponse(
     [property: JsonPropertyName("ops")] IReadOnlyList<Op> Ops,
     [property: JsonPropertyName("next_cursor")] long NextCursor,
     [property: JsonPropertyName("has_more")] bool HasMore,
-    [property: JsonPropertyName("server_hlc")] string ServerHlc);
+    [property: JsonPropertyName("server_hlc")] string ServerHlc
+);
 
 public sealed record SnapshotRow(
     [property: JsonPropertyName("id")] Guid Id,
     [property: JsonPropertyName("row")] JsonObject Row,
-    [property: JsonPropertyName("field_clocks")] IReadOnlyDictionary<string, string> FieldClocks);
+    [property: JsonPropertyName("field_clocks")] IReadOnlyDictionary<string, string> FieldClocks
+);
 
 public sealed record SnapshotPage(
     [property: JsonPropertyName("seq")] long Seq,
     [property: JsonPropertyName("entity_type")] string EntityType,
     [property: JsonPropertyName("rows")] IReadOnlyList<SnapshotRow> Rows,
-    [property: JsonPropertyName("next_after")] string? NextAfter);
+    [property: JsonPropertyName("next_after")] string? NextAfter
+);
 
 public sealed record ServerWorkspaces(
-    [property: JsonPropertyName("workspaces")] IReadOnlyList<Guid> Workspaces);
+    [property: JsonPropertyName("workspaces")] IReadOnlyList<Guid> Workspaces
+);
 
 [JsonSerializable(typeof(SyncRequest))]
 [JsonSerializable(typeof(SyncResponse))]
@@ -46,7 +52,13 @@ public sealed partial class ProtocolJson : JsonSerializerContext;
 public interface ISyncTransport
 {
     Task<SyncResponse> SyncAsync(SyncRequest request, CancellationToken ct = default);
-    Task<SnapshotPage> SnapshotAsync(Guid workspaceId, string entityType, string? after, int limit, CancellationToken ct = default);
+    Task<SnapshotPage> SnapshotAsync(
+        Guid workspaceId,
+        string entityType,
+        string? after,
+        int limit,
+        CancellationToken ct = default
+    );
     Task<IReadOnlyList<Guid>> ListWorkspacesAsync(CancellationToken ct = default);
     Task DeleteWorkspaceAsync(Guid workspaceId, CancellationToken ct = default);
 }
@@ -55,7 +67,8 @@ public interface ISyncTransport
 public sealed class CursorAheadException() : Exception("Cursor is ahead of the server");
 
 // Network/server failure; sync is retried later and never blocks the user.
-public sealed class SyncTransportException(string message, Exception? inner = null) : Exception(message, inner);
+public sealed class SyncTransportException(string message, Exception? inner = null)
+    : Exception(message, inner);
 
 public sealed record SyncOptions
 {

@@ -4,7 +4,14 @@ using Noto.Core.Derivations;
 
 namespace Noto.App.ViewModels;
 
-public sealed record DayBarViewModel(DateOnly Day, double Height, string Label, string Tooltip, bool IsToday, bool IsSelected)
+public sealed record DayBarViewModel(
+    DateOnly Day,
+    double Height,
+    string Label,
+    string Tooltip,
+    bool IsToday,
+    bool IsSelected
+)
 {
     public string AutomationName => Tooltip;
 }
@@ -24,17 +31,40 @@ public sealed partial class DayStripViewModel : ObservableObject
         for (var offset = Days - 1; offset >= 0; offset--)
         {
             var day = today.AddDays(-offset);
-            var label = day.ToString("ddd MMM d", System.Globalization.CultureInfo.InvariantCulture);
+            var label = day.ToString(
+                "ddd MMM d",
+                System.Globalization.CultureInfo.InvariantCulture
+            );
             if (!byDay.TryGetValue(day, out var stats))
             {
                 var empty = day == today ? $"{label}: today" : $"{label}: nothing planned";
-                Bars.Add(new(day, 3, day.ToString("ddd")[..1], empty, day == today, day == (selected ?? today)));
+                Bars.Add(
+                    new(
+                        day,
+                        3,
+                        day.ToString("ddd")[..1],
+                        empty,
+                        day == today,
+                        day == (selected ?? today)
+                    )
+                );
                 continue;
             }
 
             var rate = stats.CompletionRate ?? 0;
-            var tooltip = stats.CompletionRate is null ? $"{label}: nothing planned" : $"{label}: done {stats.Done} of {stats.Done + stats.OpenAtEnd}";
-            Bars.Add(new(day, Math.Max(3, rate * MaxHeight), day.ToString("ddd")[..1], tooltip, day == today, day == (selected ?? today)));
+            var tooltip = stats.CompletionRate is null
+                ? $"{label}: nothing planned"
+                : $"{label}: done {stats.Done} of {stats.Done + stats.OpenAtEnd}";
+            Bars.Add(
+                new(
+                    day,
+                    Math.Max(3, rate * MaxHeight),
+                    day.ToString("ddd")[..1],
+                    tooltip,
+                    day == today,
+                    day == (selected ?? today)
+                )
+            );
         }
     }
 }

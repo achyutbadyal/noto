@@ -6,7 +6,12 @@ using Noto.App.Services;
 
 namespace Noto.App.ViewModels;
 
-public enum ShutdownStep { Done, NotDone, Note }
+public enum ShutdownStep
+{
+    Done,
+    NotDone,
+    Note,
+}
 
 // Evening shutdown in three steps: acknowledge what got done, decide the rest, leave a note (docs/07 §4.3).
 public sealed partial class ShutdownViewModel : ObservableObject
@@ -26,17 +31,21 @@ public sealed partial class ShutdownViewModel : ObservableObject
     public ReviewViewModel Review { get; }
     public ObservableCollection<ItemRowViewModel> DoneRows { get; } = [];
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(StepTitle), nameof(StepNumber))] ShutdownStep _step;
-    [ObservableProperty] string _note = "";
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(StepTitle), nameof(StepNumber))]
+    ShutdownStep _step;
+
+    [ObservableProperty]
+    string _note = "";
 
     public event Action? Finished;
 
-    public string StepTitle => Step switch
-    {
-        ShutdownStep.Done => $"Done today ({DoneRows.Count})",
-        ShutdownStep.NotDone => "Not done",
-        _ => "Anything to remember for tomorrow?",
-    };
+    public string StepTitle =>
+        Step switch
+        {
+            ShutdownStep.Done => $"Done today ({DoneRows.Count})",
+            ShutdownStep.NotDone => "Not done",
+            _ => "Anything to remember for tomorrow?",
+        };
 
     public int StepNumber => (int)Step + 1;
 
@@ -47,7 +56,8 @@ public sealed partial class ShutdownViewModel : ObservableObject
         var byId = snap.Items.ToDictionary(i => i.Id);
 
         DoneRows.Clear();
-        foreach (var item in snap.Today_.DoneToday) DoneRows.Add(ItemRowFactory.Create(item, snap, false, byId));
+        foreach (var item in snap.Today_.DoneToday)
+            DoneRows.Add(ItemRowFactory.Create(item, snap, false, byId));
         await Review.LoadAsync();
         Note = await _services.DayNotes.GetAsync(_workspaceId, _today) ?? "";
         Step = ShutdownStep.Done;
@@ -75,7 +85,8 @@ public sealed partial class ShutdownViewModel : ObservableObject
     [RelayCommand]
     public async Task FinishAsync()
     {
-        if (Note.Trim().Length > 0) await _services.DayNotes.SetAsync(_workspaceId, _today, Note.Trim());
+        if (Note.Trim().Length > 0)
+            await _services.DayNotes.SetAsync(_workspaceId, _today, Note.Trim());
         Finished?.Invoke();
     }
 
@@ -84,14 +95,30 @@ public sealed partial class ShutdownViewModel : ObservableObject
         switch (Step)
         {
             case ShutdownStep.Done:
-                if (chord.Key is "Enter" or "ArrowRight") { await NextAsync(); return true; }
-                if (chord.Key == "Escape") { Finished?.Invoke(); return true; }
+                if (chord.Key is "Enter" or "ArrowRight")
+                {
+                    await NextAsync();
+                    return true;
+                }
+                if (chord.Key == "Escape")
+                {
+                    Finished?.Invoke();
+                    return true;
+                }
                 return false;
             case ShutdownStep.NotDone:
-                if (Review.IsComplete && chord.Key == "Enter") { await NextAsync(); return true; }
+                if (Review.IsComplete && chord.Key == "Enter")
+                {
+                    await NextAsync();
+                    return true;
+                }
                 return await Review.HandleKeyAsync(chord);
             default:
-                if (chord.Key == "Escape") { Finished?.Invoke(); return true; }
+                if (chord.Key == "Escape")
+                {
+                    Finished?.Invoke();
+                    return true;
+                }
                 return false; // typing the note
         }
     }

@@ -15,9 +15,11 @@ public partial class TodayView : UserControl
         InitializeComponent();
         DataContextChanged += (_, _) =>
         {
-            if (_vm is not null) _vm.NewItemRequested -= FocusAddBox;
+            if (_vm is not null)
+                _vm.NewItemRequested -= FocusAddBox;
             _vm = DataContext as TodayViewModel;
-            if (_vm is not null) _vm.NewItemRequested += FocusAddBox;
+            if (_vm is not null)
+                _vm.NewItemRequested += FocusAddBox;
         };
     }
 
@@ -26,7 +28,8 @@ public partial class TodayView : UserControl
     // Enter adds; Backspace at the end of a recognized token removes the whole token; Escape leaves the box.
     async void OnAddKeyDown(object? sender, KeyEventArgs e)
     {
-        if (_vm is null) return;
+        if (_vm is null)
+            return;
         switch (e.Key)
         {
             case Key.Enter:
@@ -38,7 +41,9 @@ public partial class TodayView : UserControl
                 _vm.Add.Text = "";
                 TopLevel.GetTopLevel(this)?.FocusManager?.ClearFocus();
                 break;
-            case Key.Back when AddBox.SelectionStart == AddBox.SelectionEnd && AddBox.CaretIndex == (AddBox.Text?.Length ?? 0):
+            case Key.Back
+                when AddBox.SelectionStart == AddBox.SelectionEnd
+                    && AddBox.CaretIndex == (AddBox.Text?.Length ?? 0):
                 var before = _vm.Add.Text;
                 var after = TokenParser.RemoveTrailingToken(before, _vm.Snapshot?.Today ?? default);
                 if (before.Length - after.Length > 1)

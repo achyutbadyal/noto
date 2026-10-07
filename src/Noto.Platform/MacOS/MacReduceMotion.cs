@@ -25,7 +25,8 @@ public sealed class MacReduceMotion : IReduceMotion, IDisposable
     void Poll()
     {
         var now = Read();
-        if (now == _last) return;
+        if (now == _last)
+            return;
         _last = now;
         Changed?.Invoke();
     }
@@ -33,9 +34,13 @@ public sealed class MacReduceMotion : IReduceMotion, IDisposable
     static bool Read()
     {
         var cls = Native.objc_getClass("NSWorkspace");
-        if (cls == IntPtr.Zero) return false;
+        if (cls == IntPtr.Zero)
+            return false;
         var workspace = Native.MsgSend(cls, Native.sel_registerName("sharedWorkspace"));
-        return workspace != IntPtr.Zero &&
-               Native.MsgSendBool(workspace, Native.sel_registerName("accessibilityDisplayShouldReduceMotion")) != 0;
+        return workspace != IntPtr.Zero
+            && Native.MsgSendBool(
+                workspace,
+                Native.sel_registerName("accessibilityDisplayShouldReduceMotion")
+            ) != 0;
     }
 }

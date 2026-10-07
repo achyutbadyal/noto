@@ -23,7 +23,10 @@ public sealed class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && ShellFactory is not null)
+        if (
+            ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+            && ShellFactory is not null
+        )
         {
             var shell = ShellFactory();
             var window = new MainWindow { DataContext = shell };

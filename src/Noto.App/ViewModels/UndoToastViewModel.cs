@@ -20,9 +20,14 @@ public sealed partial class UndoToastViewModel : ObservableObject
         undo.Undone += entry => Show($"Undid: {entry.Label}", canUndo: false);
     }
 
-    [ObservableProperty] string _message = "";
-    [ObservableProperty] bool _isVisible;
-    [ObservableProperty] bool _canUndo;
+    [ObservableProperty]
+    string _message = "";
+
+    [ObservableProperty]
+    bool _isVisible;
+
+    [ObservableProperty]
+    bool _canUndo;
 
     public event Action<string>? MessageShown;
 
@@ -35,12 +40,16 @@ public sealed partial class UndoToastViewModel : ObservableObject
 
         _hide?.Cancel();
         var cts = _hide = new CancellationTokenSource();
-        _ = Task.Delay(Visible, cts.Token).ContinueWith(t =>
-        {
-            if (t.IsCanceled) return;
-            if (_context is null) IsVisible = false;
-            else _context.Post(_ => IsVisible = false, null);
-        });
+        _ = Task.Delay(Visible, cts.Token)
+            .ContinueWith(t =>
+            {
+                if (t.IsCanceled)
+                    return;
+                if (_context is null)
+                    IsVisible = false;
+                else
+                    _context.Post(_ => IsVisible = false, null);
+            });
     }
 
     [RelayCommand]

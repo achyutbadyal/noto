@@ -7,7 +7,8 @@ public sealed class InMemoryKeyring : IKeyring
 {
     readonly ConcurrentDictionary<(string, string), string> _secrets = new();
 
-    public Capability Capability => Capability.Unsupported("No OS keyring on this platform: secrets are kept in memory only.");
+    public Capability Capability =>
+        Capability.Unsupported("No OS keyring on this platform: secrets are kept in memory only.");
 
     public Task SetAsync(string service, string account, string secret)
     {

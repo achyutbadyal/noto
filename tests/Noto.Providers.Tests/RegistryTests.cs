@@ -5,16 +5,29 @@ namespace Noto.Providers.Tests;
 
 public class RegistryTests
 {
-    static ProviderRegistry Registry() => new([
-        new GitHubProvider(), new JiraProvider(), new LinearProvider(), new SlackProvider(), new GitLabProvider(),
-        new NotionProvider(), new ConfluenceProvider(), new FigmaProvider(), new OpenGraphProvider(),
-    ]);
+    static ProviderRegistry Registry() =>
+        new([
+            new GitHubProvider(),
+            new JiraProvider(),
+            new LinearProvider(),
+            new SlackProvider(),
+            new GitLabProvider(),
+            new NotionProvider(),
+            new ConfluenceProvider(),
+            new FigmaProvider(),
+            new OpenGraphProvider(),
+        ]);
 
-    static AppConnection Conn(string provider, string? instance = null) => new()
-    {
-        Id = Guid.CreateVersion7(), ProviderId = provider, InstanceUrl = instance, DisplayLabel = "x",
-        AuthMethod = AuthMethod.PersonalToken, ConnectedAt = DateTimeOffset.UnixEpoch,
-    };
+    static AppConnection Conn(string provider, string? instance = null) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(),
+            ProviderId = provider,
+            InstanceUrl = instance,
+            DisplayLabel = "x",
+            AuthMethod = AuthMethod.PersonalToken,
+            ConnectedAt = DateTimeOffset.UnixEpoch,
+        };
 
     [Fact]
     public void Matches_fixed_host_provider_with_its_connection()
@@ -40,7 +53,11 @@ public class RegistryTests
         var acme = Conn("slack", "https://acme-corp.slack.com");
         var other = Conn("slack", "https://other.slack.com");
 
-        var match = Registry().Match(new Uri("https://other.slack.com/archives/C1/p1700000000123456"), [acme, other])!;
+        var match = Registry()
+            .Match(
+                new Uri("https://other.slack.com/archives/C1/p1700000000123456"),
+                [acme, other]
+            )!;
 
         match.Connection.ShouldBe(other);
     }
@@ -49,7 +66,9 @@ public class RegistryTests
     public void Self_hosted_jira_matches_by_instance_host()
     {
         var jira = Conn("jira", "https://jira.acme.com");
-        Registry().Match(new Uri("https://jira.acme.com/browse/PROJ-1"), [jira])!.Connection.ShouldBe(jira);
+        Registry()
+            .Match(new Uri("https://jira.acme.com/browse/PROJ-1"), [jira])!
+            .Connection.ShouldBe(jira);
     }
 
     [Fact]
@@ -65,14 +84,18 @@ public class RegistryTests
     public void Github_enterprise_matches_through_its_connection()
     {
         var ghes = Conn("github", "https://ghe.acme.com");
-        Registry().Match(new Uri("https://ghe.acme.com/a/b/pull/3"), [ghes])!.Connection.ShouldBe(ghes);
+        Registry()
+            .Match(new Uri("https://ghe.acme.com/a/b/pull/3"), [ghes])!
+            .Connection.ShouldBe(ghes);
     }
 
     [Fact]
     public void Connection_for_a_different_host_does_not_capture_the_url()
     {
         var ghes = Conn("github", "https://ghe.acme.com");
-        Registry().Match(new Uri("https://github.com/a/b/pull/3"), [ghes])!.Connection.ShouldBeNull();
+        Registry()
+            .Match(new Uri("https://github.com/a/b/pull/3"), [ghes])!
+            .Connection.ShouldBeNull();
     }
 
     [Theory]

@@ -20,23 +20,31 @@ public static class ThemeBuilder
 
     public static void SetAccent(Application app, string? accentName)
     {
-        foreach (var (variant, dark) in new[] { (ThemeVariant.Dark, true), (ThemeVariant.Light, false) })
+        foreach (
+            var (variant, dark) in new[] { (ThemeVariant.Dark, true), (ThemeVariant.Light, false) }
+        )
         {
-            if (app.Resources.ThemeDictionaries[variant] is not ResourceDictionary dict) continue;
+            if (app.Resources.ThemeDictionaries[variant] is not ResourceDictionary dict)
+                continue;
             var color = Color.Parse(ThemeTokens.AccentFor(accentName, dark));
             dict["AccentBrush"] = new SolidColorBrush(color);
             // A soft, translucent accent used for selections and sidebar highlights (macOS "tinted" look).
-            dict["AccentSoftBrush"] = new SolidColorBrush(Color.FromArgb(dark ? (byte)0x3A : (byte)0x24, color.R, color.G, color.B));
-            dict["AccentBorderBrush"] = new SolidColorBrush(Color.FromArgb(dark ? (byte)0x66 : (byte)0x4D, color.R, color.G, color.B));
+            dict["AccentSoftBrush"] = new SolidColorBrush(
+                Color.FromArgb(dark ? (byte)0x3A : (byte)0x24, color.R, color.G, color.B)
+            );
+            dict["AccentBorderBrush"] = new SolidColorBrush(
+                Color.FromArgb(dark ? (byte)0x66 : (byte)0x4D, color.R, color.G, color.B)
+            );
         }
     }
 
-    public static ThemeVariant? Variant(ViewModels.ThemeChoice choice) => choice switch
-    {
-        ViewModels.ThemeChoice.Light => ThemeVariant.Light,
-        ViewModels.ThemeChoice.Dark => ThemeVariant.Dark,
-        _ => ThemeVariant.Default,
-    };
+    public static ThemeVariant? Variant(ViewModels.ThemeChoice choice) =>
+        choice switch
+        {
+            ViewModels.ThemeChoice.Light => ThemeVariant.Light,
+            ViewModels.ThemeChoice.Dark => ThemeVariant.Dark,
+            _ => ThemeVariant.Default,
+        };
 
     static ResourceDictionary Build(IReadOnlyDictionary<string, string> tokens, bool dark)
     {
@@ -47,7 +55,9 @@ public static class ThemeBuilder
             dict[Key(name) + "Color"] = Color.Parse(hex);
         }
         // A translucent separator used for hairlines between chrome regions.
-        dict["HairlineBrush"] = new SolidColorBrush(Color.FromArgb(dark ? (byte)0x1F : (byte)0x17, 0x80, 0x80, 0x88));
+        dict["HairlineBrush"] = new SolidColorBrush(
+            Color.FromArgb(dark ? (byte)0x1F : (byte)0x17, 0x80, 0x80, 0x88)
+        );
         return dict;
     }
 

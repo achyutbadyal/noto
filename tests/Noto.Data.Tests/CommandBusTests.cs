@@ -15,7 +15,13 @@ public sealed class CommandBusTests : IDisposable
     public CommandBusTests()
     {
         _bus = new CommandBus(_uow, _clock, Guid.CreateVersion7());
-        _uow.RunAsync(async s => { await s.Workspaces.UpsertAsync(_ws); return 0; }).GetAwaiter().GetResult();
+        _uow.RunAsync(async s =>
+            {
+                await s.Workspaces.UpsertAsync(_ws);
+                return 0;
+            })
+            .GetAwaiter()
+            .GetResult();
     }
 
     public void Dispose() => _uow.Dispose();
@@ -23,12 +29,16 @@ public sealed class CommandBusTests : IDisposable
     async Task<Guid> CreateAsync(string title = "Deploy", DateOnly? plannedFor = null)
     {
         var id = Guid.CreateVersion7();
-        await _bus.SendAsync(new CreateItem(id, _ws.Id, title, plannedFor ?? new DateOnly(2026, 10, 7)));
+        await _bus.SendAsync(
+            new CreateItem(id, _ws.Id, title, plannedFor ?? new DateOnly(2026, 10, 7))
+        );
         return id;
     }
 
     Task<TodoItem> Load(Guid id) => _uow.RunAsync(async s => (await s.Items.GetAsync(id))!);
-    Task<IReadOnlyList<ItemEvent>> Events(Guid id) => _uow.RunAsync(s => s.Events.ListForItemAsync(id));
+
+    Task<IReadOnlyList<ItemEvent>> Events(Guid id) =>
+        _uow.RunAsync(s => s.Events.ListForItemAsync(id));
 
     [Fact]
     public async Task Create_persists_item_and_a_created_event()
@@ -56,7 +66,8 @@ public sealed class CommandBusTests : IDisposable
         var reopened = await Load(id);
         reopened.Status.ShouldBe(ItemStatus.Open);
         reopened.CompletedOn.ShouldBeNull();
-        (await Events(id)).Select(e => e.Type)
+        (await Events(id))
+            .Select(e => e.Type)
             .ShouldBe([ItemEventType.Created, ItemEventType.Completed, ItemEventType.Reopened]);
     }
 
@@ -98,7 +109,9 @@ public sealed class CommandBusTests : IDisposable
     public async Task Defer_requires_a_future_date()
     {
         var id = await CreateAsync();
-        await Should.ThrowAsync<CommandException>(() => _bus.SendAsync(new PlanItem(id, new DateOnly(2026, 10, 7), PlanKind.Defer)));
+        await Should.ThrowAsync<CommandException>(() =>
+            _bus.SendAsync(new PlanItem(id, new DateOnly(2026, 10, 7), PlanKind.Defer))
+        );
     }
 
     [Fact]
@@ -150,7 +163,9 @@ public sealed class CommandBusTests : IDisposable
         var id = await CreateAsync();
         await _bus.SendAsync(new CompleteItem(id));
 
-        await Should.ThrowAsync<CommandException>(() => _bus.SendAsync(new StartWaiting(id, "bob")));
+        await Should.ThrowAsync<CommandException>(() =>
+            _bus.SendAsync(new StartWaiting(id, "bob"))
+        );
 
         (await Events(id)).Count.ShouldBe(2);
     }
@@ -174,7 +189,10 @@ public sealed class CommandBusTests : IDisposable
         var parent = await Load(id);
         parent.IsContainer.ShouldBeTrue();
         parent.PlannedFor.ShouldBeNull();
-        var kids = (await _uow.RunAsync(s => s.Items.ListAsync(_ws.Id))).Where(i => i.ParentId == id).OrderBy(i => i.Title).ToList();
+        var kids = (await _uow.RunAsync(s => s.Items.ListAsync(_ws.Id)))
+            .Where(i => i.ParentId == id)
+            .OrderBy(i => i.Title)
+            .ToList();
         kids.Count.ShouldBe(3);
         kids.Single(k => k.Title == "design").PlannedFor.ShouldBe(new DateOnly(2026, 10, 7));
         kids.Where(k => k.Title != "design").ShouldAllBe(k => k.PlannedFor == null);
@@ -198,8 +216,12 @@ public sealed class CommandBusTests : IDisposable
     public async Task Break_down_needs_two_to_five_titles()
     {
         var id = await CreateAsync();
-        await Should.ThrowAsync<CommandException>(() => _bus.SendAsync(new BreakDown(id, ["only one"])));
-        await Should.ThrowAsync<CommandException>(() => _bus.SendAsync(new BreakDown(id, ["1", "2", "3", "4", "5", "6"])));
+        await Should.ThrowAsync<CommandException>(() =>
+            _bus.SendAsync(new BreakDown(id, ["only one"]))
+        );
+        await Should.ThrowAsync<CommandException>(() =>
+            _bus.SendAsync(new BreakDown(id, ["1", "2", "3", "4", "5", "6"]))
+        );
     }
 
     [Fact]
@@ -211,7 +233,9 @@ public sealed class CommandBusTests : IDisposable
         await _bus.SendAsync(new SetDueDate(id, new DateOnly(2026, 10, 20)));
 
         var item = await Load(id);
-        (item.EstimateMinutes, item.Priority, item.DueDate).ShouldBe((45, 3, new DateOnly(2026, 10, 20)));
+        (item.EstimateMinutes, item.Priority, item.DueDate).ShouldBe(
+            (45, 3, new DateOnly(2026, 10, 20))
+        );
 
         await _bus.UndoAsync(r.UndoToken);
         (await Load(id)).EstimateMinutes.ShouldBeNull();

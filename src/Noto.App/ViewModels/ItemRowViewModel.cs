@@ -12,6 +12,7 @@ public sealed partial class ItemRowViewModel : ObservableObject
 {
     public required TodoItem Item { get; init; }
     public required ItemMetrics Metrics { get; init; }
+
     // Semantic icon name (resolved to a monochrome vector by IconConverters); never an emoji.
     public required string Glyph { get; init; }
     public required bool IsNow { get; init; }
@@ -23,6 +24,7 @@ public sealed partial class ItemRowViewModel : ObservableObject
     public required string PriorityText { get; init; }
     public required string AutomationName { get; init; }
     public string? Breadcrumb { get; init; }
+
     // Set on Today (all): the 3px workspace colour bar.
     public string? WorkspaceAccent { get; set; }
     public bool HasWorkspaceAccent => WorkspaceAccent is not null;
@@ -43,10 +45,17 @@ public sealed partial class ItemRowViewModel : ObservableObject
     public bool IsWaiting => Item.Status == ItemStatus.Waiting;
     public bool IsDropped => Item.Status == ItemStatus.Dropped;
 
-    [ObservableProperty] bool _isFocused;
-    [ObservableProperty] bool _isSelected;
-    [ObservableProperty] bool _isEditing;
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasExtra))] string? _extraText;
+    [ObservableProperty]
+    bool _isFocused;
+
+    [ObservableProperty]
+    bool _isSelected;
+
+    [ObservableProperty]
+    bool _isEditing;
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasExtra))]
+    string? _extraText;
     public bool HasExtra => ExtraText is not null;
 
     // Set by the owning list so row-level clicks reach it.
@@ -58,13 +67,15 @@ public sealed partial class ItemRowViewModel : ObservableObject
     [RelayCommand]
     async Task ToggleCompleteAsync()
     {
-        if (Owner is { } owner) await owner.ToggleCompleteCommand.ExecuteAsync(this);
+        if (Owner is { } owner)
+            await owner.ToggleCompleteCommand.ExecuteAsync(this);
     }
 
     [RelayCommand]
     void Edit()
     {
-        if (Owner is not { } owner) return;
+        if (Owner is not { } owner)
+            return;
         owner.SetFocus(this);
         owner.BeginEdit();
     }
@@ -73,15 +84,26 @@ public sealed partial class ItemRowViewModel : ObservableObject
 public static class ItemRowFactory
 {
     public static ItemRowViewModel Create(
-        TodoItem item, WorkspaceSnapshot snap, bool isNow = false, IReadOnlyDictionary<Guid, TodoItem>? byId = null)
+        TodoItem item,
+        WorkspaceSnapshot snap,
+        bool isNow = false,
+        IReadOnlyDictionary<Guid, TodoItem>? byId = null
+    )
     {
         var metrics = snap.MetricsOf(item);
         var live = item.Status is ItemStatus.Open or ItemStatus.Waiting;
         var pressure = live ? snap.Thresholds.StateOf(metrics.Carry) : PressureState.Fresh;
-        var stuck = live && !item.IsSomeday && snap.Thresholds.IsStuck(metrics.Carry, metrics.Defers);
-        var usesFallback = item.EstimateMinutes is null && snap.Workspace.CapacityUnit == CapacityUnit.Minutes && live;
+        var stuck =
+            live && !item.IsSomeday && snap.Thresholds.IsStuck(metrics.Carry, metrics.Defers);
+        var usesFallback =
+            item.EstimateMinutes is null
+            && snap.Workspace.CapacityUnit == CapacityUnit.Minutes
+            && live;
 
-        string? breadcrumb = item.ParentId is { } pid && byId?.GetValueOrDefault(pid) is { } parent ? parent.Title : null;
+        string? breadcrumb =
+            item.ParentId is { } pid && byId?.GetValueOrDefault(pid) is { } parent
+                ? parent.Title
+                : null;
 
         return new ItemRowViewModel
         {
@@ -91,21 +113,34 @@ public static class ItemRowFactory
             IsNow = isNow && item.Status == ItemStatus.Open,
             CarryText = live && metrics.Carry > 0 ? metrics.Carry.ToString() : "",
             Pressure = pressure,
-            ShowBar = snap.Workspace.Pressure != Pressure.Gentle && pressure is PressureState.Hot or PressureState.Stale,
+            ShowBar =
+                snap.Workspace.Pressure != Pressure.Gentle
+                && pressure is PressureState.Hot or PressureState.Stale,
             IsStuck = stuck,
-            EstimateText = item.EstimateMinutes is { } e ? $"~{Duration.Short(e)}" : usesFallback ? $"~{Duration.Short(snap.FallbackMinutes)}*" : "",
+            EstimateText =
+                item.EstimateMinutes is { } e ? $"~{Duration.Short(e)}"
+                : usesFallback ? $"~{Duration.Short(snap.FallbackMinutes)}*"
+                : "",
             PriorityText = item.Priority > 0 ? $"!{item.Priority}" : "",
-            AutomationName = ItemLabels.Describe(item, metrics, snap.Today, isNow, stuck, usesFallback ? snap.FallbackMinutes : null),
+            AutomationName = ItemLabels.Describe(
+                item,
+                metrics,
+                snap.Today,
+                isNow,
+                stuck,
+                usesFallback ? snap.FallbackMinutes : null
+            ),
             Breadcrumb = breadcrumb,
         };
     }
 
     // planned / now / waiting / done / dropped — resolved to a vector icon in the view.
-    static string GlyphFor(TodoItem item, bool isNow) => item.Status switch
-    {
-        ItemStatus.Done => "done",
-        ItemStatus.Dropped => "dropped",
-        ItemStatus.Waiting => "waiting",
-        _ => isNow ? "now" : "planned",
-    };
+    static string GlyphFor(TodoItem item, bool isNow) =>
+        item.Status switch
+        {
+            ItemStatus.Done => "done",
+            ItemStatus.Dropped => "dropped",
+            ItemStatus.Waiting => "waiting",
+            _ => isNow ? "now" : "planned",
+        };
 }

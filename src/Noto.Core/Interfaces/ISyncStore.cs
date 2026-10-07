@@ -9,7 +9,10 @@ public interface ISyncRowStore
 {
     Task<System.Text.Json.Nodes.JsonObject?> LoadAsync(string entityType, Guid id);
     Task SaveAsync(string entityType, System.Text.Json.Nodes.JsonObject row);
-    Task<IReadOnlyList<System.Text.Json.Nodes.JsonObject>> ListAsync(string entityType, Guid workspaceId);
+    Task<IReadOnlyList<System.Text.Json.Nodes.JsonObject>> ListAsync(
+        string entityType,
+        Guid workspaceId
+    );
 }
 
 public interface ISyncStore

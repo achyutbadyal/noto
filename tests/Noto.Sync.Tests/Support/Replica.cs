@@ -42,22 +42,33 @@ public sealed class Replica : IDisposable
     {
         var ws = new Workspace
         {
-            Id = id ?? Guid.CreateVersion7(), Name = name, TimeZone = "UTC", TzFollowsDevice = false,
+            Id = id ?? Guid.CreateVersion7(),
+            Name = name,
+            TimeZone = "UTC",
+            TzFollowsDevice = false,
             CreatedAt = DateTimeOffset.Parse("2026-10-01T00:00:00Z"),
         };
         await Bus.SaveWorkspaceAsync(ws);
         return ws;
     }
 
-    public async Task<Guid> AddItemAsync(Guid workspaceId, string title = "Task", DateOnly? planned = null)
+    public async Task<Guid> AddItemAsync(
+        Guid workspaceId,
+        string title = "Task",
+        DateOnly? planned = null
+    )
     {
         var id = Guid.CreateVersion7();
-        await Bus.SendAsync(new CreateItem(id, workspaceId, title, planned ?? new DateOnly(2026, 10, 7)));
+        await Bus.SendAsync(
+            new CreateItem(id, workspaceId, title, planned ?? new DateOnly(2026, 10, 7))
+        );
         return id;
     }
 
     public Task<TodoItem?> ItemAsync(Guid id) => Db.RunAsync(s => s.Items.GetAsync(id));
-    public Task<IReadOnlyList<Op>> PendingAsync() => Db.RunAsync(s => s.Sync.ListPendingAsync(100_000));
+
+    public Task<IReadOnlyList<Op>> PendingAsync() =>
+        Db.RunAsync(s => s.Sync.ListPendingAsync(100_000));
 
     public void Dispose() => Db.Dispose();
 }

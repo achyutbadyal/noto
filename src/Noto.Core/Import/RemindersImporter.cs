@@ -8,13 +8,27 @@ namespace Noto.Core.Import;
 public static class RemindersImporter
 {
     // EventKit/RFC 5545 priority: 1–4 high, 5 medium, 6–9 low, 0 none.
-    static int Priority(int p) => p switch { 0 => 0, <= 4 => 3, 5 => 2, _ => 1 };
+    static int Priority(int p) =>
+        p switch
+        {
+            0 => 0,
+            <= 4 => 3,
+            5 => 2,
+            _ => 1,
+        };
 
     public static IReadOnlyList<ImportedItem> Parse(string content)
     {
         Calendar calendar;
-        try { calendar = Calendar.Load(content) ?? throw new ImportFormatException("Not an iCalendar file"); }
-        catch (Exception e) when (e is not ImportFormatException) { throw new ImportFormatException("Not an iCalendar file"); }
+        try
+        {
+            calendar =
+                Calendar.Load(content) ?? throw new ImportFormatException("Not an iCalendar file");
+        }
+        catch (Exception e) when (e is not ImportFormatException)
+        {
+            throw new ImportFormatException("Not an iCalendar file");
+        }
 
         return calendar.Todos.Select(ToItem).OfType<ImportedItem>().ToList();
     }
@@ -22,7 +36,8 @@ public static class RemindersImporter
     static ImportedItem? ToItem(Todo t)
     {
         var title = t.Summary?.Trim();
-        if (string.IsNullOrEmpty(title)) return null;
+        if (string.IsNullOrEmpty(title))
+            return null;
         var done = string.Equals(t.Status, "COMPLETED", StringComparison.OrdinalIgnoreCase);
         return new ImportedItem(
             title,
@@ -31,7 +46,8 @@ public static class RemindersImporter
             Priority: Priority(t.Priority),
             IsDone: done,
             CompletedOn: done ? Day(t.Completed) : null,
-            Tags: t.Categories?.ToList() ?? []);
+            Tags: t.Categories?.ToList() ?? []
+        );
     }
 
     static DateOnly? Day(CalDateTime? d) => d is null ? null : DateOnly.FromDateTime(d.Value);

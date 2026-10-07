@@ -3,8 +3,17 @@ using System.Text.Json.Serialization;
 
 namespace Noto.Core.Models;
 
-public enum MissedBehavior { Carry, Skip }
-public enum TargetPeriod { Week, Month }
+public enum MissedBehavior
+{
+    Carry,
+    Skip,
+}
+
+public enum TargetPeriod
+{
+    Week,
+    Month,
+}
 
 public sealed class RecurrenceRule
 {
@@ -29,18 +38,26 @@ public sealed class RecurrenceRule
 
 // What each generated instance copies. Editing it affects instances not yet generated.
 public sealed record RuleTemplate(
-    string Title, string? Notes = null, int? EstimateMinutes = null, int Priority = 0,
-    TimeOfDay? TimeOfDay = null, IReadOnlyList<Guid>? TagIds = null)
+    string Title,
+    string? Notes = null,
+    int? EstimateMinutes = null,
+    int Priority = 0,
+    TimeOfDay? TimeOfDay = null,
+    IReadOnlyList<Guid>? TagIds = null
+)
 {
-    public string ToJson() => new JsonObject
-    {
-        ["title"] = Title,
-        ["notes"] = Notes,
-        ["estimate_minutes"] = EstimateMinutes,
-        ["priority"] = Priority,
-        ["time_of_day"] = TimeOfDay?.ToString(),
-        ["tag_ids"] = new JsonArray((TagIds ?? []).Select(t => (JsonNode)t.ToString()).ToArray()),
-    }.ToJsonString();
+    public string ToJson() =>
+        new JsonObject
+        {
+            ["title"] = Title,
+            ["notes"] = Notes,
+            ["estimate_minutes"] = EstimateMinutes,
+            ["priority"] = Priority,
+            ["time_of_day"] = TimeOfDay?.ToString(),
+            ["tag_ids"] = new JsonArray(
+                (TagIds ?? []).Select(t => (JsonNode)t.ToString()).ToArray()
+            ),
+        }.ToJsonString();
 
     public static RuleTemplate FromJson(string json)
     {
@@ -51,6 +68,7 @@ public sealed record RuleTemplate(
             o["estimate_minutes"]?.GetValue<int>(),
             o["priority"]?.GetValue<int>() ?? 0,
             o["time_of_day"]?.GetValue<string>() is { } t ? Enum.Parse<TimeOfDay>(t) : null,
-            o["tag_ids"]?.AsArray().Select(n => Guid.Parse(n!.GetValue<string>())).ToList() ?? []);
+            o["tag_ids"]?.AsArray().Select(n => Guid.Parse(n!.GetValue<string>())).ToList() ?? []
+        );
     }
 }

@@ -18,15 +18,18 @@ public sealed class FocusSession(ICommandBus bus, WorkspaceActions workspaces, I
 
     public bool IsActive => ItemId is not null;
     public TimeSpan Elapsed => IsActive ? clock.UtcNow - _startedAt : TimeSpan.Zero;
-    public TimeSpan Remaining => IsActive ? TimeSpan.FromTicks(Math.Max(0, (Duration - Elapsed).Ticks)) : TimeSpan.Zero;
+    public TimeSpan Remaining =>
+        IsActive ? TimeSpan.FromTicks(Math.Max(0, (Duration - Elapsed).Ticks)) : TimeSpan.Zero;
 
     public event Action? Changed;
 
     public async Task ToggleAsync(Guid workspaceId, TodoItem item)
     {
         var wasThis = ItemId == item.Id;
-        if (IsActive) await StopAsync();
-        if (!wasThis) await StartAsync(workspaceId, item);
+        if (IsActive)
+            await StopAsync();
+        if (!wasThis)
+            await StartAsync(workspaceId, item);
     }
 
     public async Task StartAsync(Guid workspaceId, TodoItem item, TimeSpan? duration = null)
@@ -43,7 +46,8 @@ public sealed class FocusSession(ICommandBus bus, WorkspaceActions workspaces, I
 
     public async Task StopAsync()
     {
-        if (ItemId is not { } id) return;
+        if (ItemId is not { } id)
+            return;
         var minutes = (int)Math.Round(Elapsed.TotalMinutes);
         ItemId = null;
         await workspaces.SetNowAsync(WorkspaceId, null);

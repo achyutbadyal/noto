@@ -1,27 +1,55 @@
-<Application xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Noto.App.ViewModels"
-             xmlns:views="using:Noto.App.Views"
-             x:Class="Noto.App.App"
-             RequestedThemeVariant="Default">
+<Application
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:views="using:Noto.App.Views"
+  x:Class="Noto.App.App"
+  RequestedThemeVariant="Default"
+>
   <Application.Styles>
     <FluentTheme />
     <StyleInclude Source="avares://Noto.App/Themes/Styles.axaml" />
   </Application.Styles>
 
   <Application.DataTemplates>
-    <DataTemplate DataType="vm:TodayViewModel"><views:TodayView /></DataTemplate>
-    <DataTemplate DataType="vm:BacklogViewModel"><views:BacklogView /></DataTemplate>
-    <DataTemplate DataType="vm:ReviewViewModel"><views:ReviewView /></DataTemplate>
-    <DataTemplate DataType="vm:ShutdownViewModel"><views:ShutdownView /></DataTemplate>
-    <DataTemplate DataType="vm:InsightsViewModel"><views:InsightsView /></DataTemplate>
-    <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
-    <DataTemplate DataType="vm:DayLogViewModel"><views:DayLogView /></DataTemplate>
-    <DataTemplate DataType="vm:OnboardingViewModel"><views:OnboardingView /></DataTemplate>
-    <DataTemplate DataType="vm:BoardViewModel"><views:BoardView /></DataTemplate>
-    <DataTemplate DataType="vm:TimelineViewModel"><views:ListPageView /></DataTemplate>
-    <DataTemplate DataType="vm:HabitGridViewModel"><views:HabitGridView /></DataTemplate>
-    <DataTemplate DataType="vm:TodayAllViewModel"><views:TodayAllView /></DataTemplate>
-    <DataTemplate DataType="vm:WeeklyReviewViewModel"><views:WeeklyReviewView /></DataTemplate>
+    <DataTemplate DataType="vm:TodayViewModel">
+      <views:TodayView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:BacklogViewModel">
+      <views:BacklogView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ReviewViewModel">
+      <views:ReviewView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:ShutdownViewModel">
+      <views:ShutdownView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:InsightsViewModel">
+      <views:InsightsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:SettingsViewModel">
+      <views:SettingsView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:DayLogViewModel">
+      <views:DayLogView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:OnboardingViewModel">
+      <views:OnboardingView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:BoardViewModel">
+      <views:BoardView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:TimelineViewModel">
+      <views:ListPageView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:HabitGridViewModel">
+      <views:HabitGridView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:TodayAllViewModel">
+      <views:TodayAllView />
+    </DataTemplate>
+    <DataTemplate DataType="vm:WeeklyReviewViewModel">
+      <views:WeeklyReviewView />
+    </DataTemplate>
   </Application.DataTemplates>
 </Application>

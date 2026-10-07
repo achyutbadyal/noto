@@ -1,7 +1,7 @@
 using Avalonia;
-using NotoApp = Noto.App.App;
 using Noto.App.Views;
 using Noto.Platform.Abstractions;
+using NotoApp = Noto.App.App;
 
 namespace Noto.Desktop;
 
@@ -14,10 +14,22 @@ static class Program
     {
         _composition = new Composition(DataDirectoryFrom(args));
         NotoApp.ShellFactory = _composition.CreateShell;
-        NotoApp.WindowCreated += (shell, window) => HostIntegration.Attach(_composition, shell, window, startWithCapture: args.Contains("--capture"));
+        NotoApp.WindowCreated += (shell, window) =>
+            HostIntegration.Attach(
+                _composition,
+                shell,
+                window,
+                startWithCapture: args.Contains("--capture")
+            );
 
-        try { return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args); }
-        finally { _composition.Dispose(); }
+        try
+        {
+            return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+        }
+        finally
+        {
+            _composition.Dispose();
+        }
     }
 
     public static AppBuilder BuildAvaloniaApp() =>

@@ -1,17 +1,29 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Noto.App.ViewModels"
-             xmlns:l="using:Noto.App.Logic"
-             xmlns:v="using:Noto.App.Views"
-             x:Class="Noto.App.Views.InspectorView"
-             x:DataType="vm:InspectorViewModel">
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:l="using:Noto.App.Logic"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.InspectorView"
+  x:DataType="vm:InspectorViewModel"
+>
   <ScrollViewer>
     <StackPanel Margin="16" Spacing="14">
-      <TextBlock Text="Select an item to see its details." Classes="hint" TextWrapping="Wrap" IsVisible="{Binding !HasItem}" />
+      <TextBlock
+        Text="Select an item to see its details."
+        Classes="hint"
+        TextWrapping="Wrap"
+        IsVisible="{Binding !HasItem}"
+      />
 
       <StackPanel Spacing="14" IsVisible="{Binding HasItem}">
         <StackPanel Spacing="3">
-          <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+          <TextBlock
+            Text="{Binding Title}"
+            FontSize="18"
+            FontWeight="SemiBold"
+            TextWrapping="Wrap"
+          />
           <TextBlock Text="{Binding ScheduleText}" Classes="secondary" TextWrapping="Wrap" />
           <TextBlock Text="{Binding StateText}" Classes="hint" />
         </StackPanel>
@@ -39,22 +51,47 @@
         <Border Classes="raised" Padding="12" IsVisible="{Binding ShowStuckPrompt}">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
-              <PathIcon Data="{v:Icon stuck}" Width="14" Height="14" Foreground="{DynamicResource PressureStaleBrush}" VerticalAlignment="Top" Margin="0,2,0,0" />
+              <PathIcon
+                Data="{v:Icon stuck}"
+                Width="14"
+                Height="14"
+                Foreground="{DynamicResource PressureStaleBrush}"
+                VerticalAlignment="Top"
+                Margin="0,2,0,0"
+              />
               <TextBlock Grid.Column="1" Text="{Binding StuckPromptText}" TextWrapping="Wrap" />
             </Grid>
             <ItemsControl ItemsSource="{Binding Reasons}">
-              <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:StuckReasonOption">
-                  <Button Classes="key" Content="{Binding Label}" Padding="10,4"
-                          Command="{Binding $parent[UserControl].((vm:InspectorViewModel)DataContext).ChooseOptionCommand}" CommandParameter="{Binding}" />
+                  <Button
+                    Classes="key"
+                    Content="{Binding Label}"
+                    Padding="10,4"
+                    Command="{Binding $parent[UserControl].((vm:InspectorViewModel)DataContext).ChooseOptionCommand}"
+                    CommandParameter="{Binding}"
+                  />
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <TextBlock Text="{Binding FixPrompt}" Foreground="{DynamicResource LinkBrush}" TextWrapping="Wrap" IsVisible="{Binding HasFix}" />
+            <TextBlock
+              Text="{Binding FixPrompt}"
+              Foreground="{DynamicResource LinkBrush}"
+              TextWrapping="Wrap"
+              IsVisible="{Binding HasFix}"
+            />
             <WrapPanel Orientation="Horizontal" IsVisible="{Binding HasFix}">
               <Button Content="Now · 25 min" Command="{Binding MakeNowCommand}" Margin="0,0,8,6" />
-              <Button Content="First thing tomorrow" Command="{Binding ScheduleTomorrowCommand}" Margin="0,0,8,6" />
+              <Button
+                Content="First thing tomorrow"
+                Command="{Binding ScheduleTomorrowCommand}"
+                Margin="0,0,8,6"
+              />
             </WrapPanel>
           </StackPanel>
         </Border>
@@ -62,14 +99,28 @@
 
         <StackPanel Spacing="4">
           <TextBlock Text="NOTES" Classes="section" />
-          <TextBox Text="{Binding Notes, Mode=TwoWay}" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" Watermark="Markdown notes"
-                   LostFocus="OnNotesLostFocus" AutomationProperties.Name="Notes" />
+          <TextBox
+            Text="{Binding Notes, Mode=TwoWay}"
+            AcceptsReturn="True"
+            TextWrapping="Wrap"
+            MinHeight="64"
+            Watermark="Markdown notes"
+            LostFocus="OnNotesLostFocus"
+            AutomationProperties.Name="Notes"
+          />
         </StackPanel>
 
         <StackPanel Spacing="4" IsVisible="{Binding HasSubtasks}">
-          <TextBlock Text="{Binding ContainerProgress, StringFormat='SUBTASKS · {0}'}" Classes="section" />
+          <TextBlock
+            Text="{Binding ContainerProgress, StringFormat='SUBTASKS · {0}'}"
+            Classes="section"
+          />
           <ItemsControl ItemsSource="{Binding Subtasks}">
-            <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ItemRowViewModel"><v:ItemRowView /></DataTemplate></ItemsControl.ItemTemplate>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ItemRowViewModel">
+                <v:ItemRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
 

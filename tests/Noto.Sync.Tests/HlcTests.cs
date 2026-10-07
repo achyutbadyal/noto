@@ -53,7 +53,8 @@ public class HlcTests
     {
         long wall = 1000;
         var clock = new HybridClock(() => wall, A);
-        clock.Next(); clock.Next();
+        clock.Next();
+        clock.Next();
         wall = 2000;
         clock.Next().ShouldBe(new Hlc(2000, 0, A));
     }
@@ -71,10 +72,14 @@ public class HlcTests
     }
 
     [Theory]
-    [InlineData(1000, 1000, 2)]  // same ms: counters merge
-    [InlineData(1000, 900, 2)]   // remote behind local
-    [InlineData(1000, 3000, 2)]  // remote ahead
-    public void Receive_never_lets_the_clock_go_backwards(long localMs, long remoteMs, int remoteCounter)
+    [InlineData(1000, 1000, 2)] // same ms: counters merge
+    [InlineData(1000, 900, 2)] // remote behind local
+    [InlineData(1000, 3000, 2)] // remote ahead
+    public void Receive_never_lets_the_clock_go_backwards(
+        long localMs,
+        long remoteMs,
+        int remoteCounter
+    )
     {
         var clock = new HybridClock(() => localMs, A);
         var before = clock.Next();
@@ -90,7 +95,8 @@ public class HlcTests
     [Fact]
     public void A_device_with_a_slow_clock_wins_again_once_it_has_heard_from_peers()
     {
-        long fastWall = 10_000, slowWall = 1_000;
+        long fastWall = 10_000,
+            slowWall = 1_000;
         var fast = new HybridClock(() => fastWall, B);
         var slow = new HybridClock(() => slowWall, A);
 
@@ -106,7 +112,8 @@ public class HlcTests
     {
         long wall = 1000;
         var first = new HybridClock(() => wall, A);
-        first.Next(); first.Next();
+        first.Next();
+        first.Next();
         var saved = first.Last;
 
         var restarted = new HybridClock(() => wall, A);

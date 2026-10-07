@@ -9,27 +9,72 @@ namespace Noto.Server.Tests;
 public sealed class SyncAndAccountTests : IDisposable
 {
     readonly ServerFactory _f = new();
+
     public void Dispose() => _f.Dispose();
 
-    string Stamp(Guid device, int counter = 0) => new Hlc(_f.Time.GetUtcNow().ToUnixTimeMilliseconds(), counter, device).ToString();
+    string Stamp(Guid device, int counter = 0) =>
+        new Hlc(_f.Time.GetUtcNow().ToUnixTimeMilliseconds(), counter, device).ToString();
 
-    object WorkspaceInsert(Guid device, Guid ws, string name = "Work") => new
-    {
-        op_id = Guid.NewGuid(), entity_type = "workspace", entity_id = ws, workspace_id = ws, kind = "insert",
-        value = new { id = ws, name, time_zone = "UTC", created_at = "2026-10-01T00:00:00+00:00" }, hlc = Stamp(device), device_id = device,
-    };
+    object WorkspaceInsert(Guid device, Guid ws, string name = "Work") =>
+        new
+        {
+            op_id = Guid.NewGuid(),
+            entity_type = "workspace",
+            entity_id = ws,
+            workspace_id = ws,
+            kind = "insert",
+            value = new
+            {
+                id = ws,
+                name,
+                time_zone = "UTC",
+                created_at = "2026-10-01T00:00:00+00:00",
+            },
+            hlc = Stamp(device),
+            device_id = device,
+        };
 
-    static Task<HttpResponseMessage> Sync(ServerFactory.Session s, long cursor, Guid[] workspaces, object[] ops, int limit = 500) =>
-        s.Client.PostAsJsonAsync("/v1/sync", new { device_id = s.DeviceId, cursor, workspaces, limit, ops });
+    static Task<HttpResponseMessage> Sync(
+        ServerFactory.Session s,
+        long cursor,
+        Guid[] workspaces,
+        object[] ops,
+        int limit = 500
+    ) =>
+        s.Client.PostAsJsonAsync(
+            "/v1/sync",
+            new
+            {
+                device_id = s.DeviceId,
+                cursor,
+                workspaces,
+                limit,
+                ops,
+            }
+        );
 
     [Fact]
     public async Task Push_then_pull_over_http_round_trips_between_two_devices()
     {
         var a = await _f.RegisterAsync("sync@example.com");
         var bDevice = Guid.NewGuid();
-        var login = await _f.CreateClient().PostAsJsonAsync("/v1/auth/login", new { email = "sync@example.com", password = "correct horse battery", device = ServerFactory.Device(bDevice) });
+        var login = await _f.CreateClient()
+            .PostAsJsonAsync(
+                "/v1/auth/login",
+                new
+                {
+                    email = "sync@example.com",
+                    password = "correct horse battery",
+                    device = ServerFactory.Device(bDevice),
+                }
+            );
         var b = a with { Client = _f.CreateClient(), DeviceId = bDevice };
-        b.Client.DefaultRequestHeaders.Authorization = new("Bearer", (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("access_token").GetString());
+        b.Client.DefaultRequestHeaders.Authorization = new(
+            "Bearer",
+            (await login.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("access_token")
+                .GetString()
+        );
         var ws = Guid.NewGuid();
 
         var push = await Sync(a, 0, [ws], [WorkspaceInsert(a.DeviceId, ws)]);
@@ -53,16 +98,38 @@ public sealed class SyncAndAccountTests : IDisposable
     {
         var a = await _f.RegisterAsync("filter@example.com");
         var bDevice = Guid.NewGuid();
-        var login = await _f.CreateClient().PostAsJsonAsync("/v1/auth/login", new { email = "filter@example.com", password = "correct horse battery", device = ServerFactory.Device(bDevice) });
+        var login = await _f.CreateClient()
+            .PostAsJsonAsync(
+                "/v1/auth/login",
+                new
+                {
+                    email = "filter@example.com",
+                    password = "correct horse battery",
+                    device = ServerFactory.Device(bDevice),
+                }
+            );
         var b = a with { Client = _f.CreateClient(), DeviceId = bDevice };
-        b.Client.DefaultRequestHeaders.Authorization = new("Bearer", (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("access_token").GetString());
+        b.Client.DefaultRequestHeaders.Authorization = new(
+            "Bearer",
+            (await login.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("access_token")
+                .GetString()
+        );
         var listed = Guid.NewGuid();
         var unlisted = Guid.NewGuid();
-        await Sync(a, 0, [], [WorkspaceInsert(a.DeviceId, listed), WorkspaceInsert(a.DeviceId, unlisted)]);
+        await Sync(
+            a,
+            0,
+            [],
+            [WorkspaceInsert(a.DeviceId, listed), WorkspaceInsert(a.DeviceId, unlisted)]
+        );
 
         var pull = await (await Sync(b, 0, [listed], [])).Content.ReadFromJsonAsync<JsonElement>();
 
-        pull.GetProperty("ops").EnumerateArray().Select(o => o.GetProperty("workspace_id").GetGuid()).ShouldBe([listed]);
+        pull.GetProperty("ops")
+            .EnumerateArray()
+            .Select(o => o.GetProperty("workspace_id").GetGuid())
+            .ShouldBe([listed]);
     }
 
     [Fact]
@@ -70,22 +137,53 @@ public sealed class SyncAndAccountTests : IDisposable
     {
         var a = await _f.RegisterAsync("page@example.com");
         var bDevice = Guid.NewGuid();
-        var login = await _f.CreateClient().PostAsJsonAsync("/v1/auth/login", new { email = "page@example.com", password = "correct horse battery", device = ServerFactory.Device(bDevice) });
+        var login = await _f.CreateClient()
+            .PostAsJsonAsync(
+                "/v1/auth/login",
+                new
+                {
+                    email = "page@example.com",
+                    password = "correct horse battery",
+                    device = ServerFactory.Device(bDevice),
+                }
+            );
         var b = a with { Client = _f.CreateClient(), DeviceId = bDevice };
-        b.Client.DefaultRequestHeaders.Authorization = new("Bearer", (await login.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("access_token").GetString());
+        b.Client.DefaultRequestHeaders.Authorization = new(
+            "Bearer",
+            (await login.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("access_token")
+                .GetString()
+        );
         var ws = Guid.NewGuid();
-        var ops = Enumerable.Range(0, 5).Select(n => (object)new
-        {
-            op_id = Guid.NewGuid(), entity_type = "workspace", entity_id = ws, workspace_id = ws, kind = "set", field = "name", value = $"n{n}",
-            hlc = Stamp(a.DeviceId, n), device_id = a.DeviceId,
-        }).ToArray();
+        var ops = Enumerable
+            .Range(0, 5)
+            .Select(n =>
+                (object)
+                    new
+                    {
+                        op_id = Guid.NewGuid(),
+                        entity_type = "workspace",
+                        entity_id = ws,
+                        workspace_id = ws,
+                        kind = "set",
+                        field = "name",
+                        value = $"n{n}",
+                        hlc = Stamp(a.DeviceId, n),
+                        device_id = a.DeviceId,
+                    }
+            )
+            .ToArray();
         await Sync(a, 0, [ws], ops);
 
-        var first = await (await Sync(b, 0, [ws], [], limit: 2)).Content.ReadFromJsonAsync<JsonElement>();
+        var first = await (
+            await Sync(b, 0, [ws], [], limit: 2)
+        ).Content.ReadFromJsonAsync<JsonElement>();
         first.GetProperty("ops").GetArrayLength().ShouldBe(2);
         first.GetProperty("has_more").GetBoolean().ShouldBeTrue();
 
-        var second = await (await Sync(b, first.GetProperty("next_cursor").GetInt64(), [ws], [], limit: 10)).Content.ReadFromJsonAsync<JsonElement>();
+        var second = await (
+            await Sync(b, first.GetProperty("next_cursor").GetInt64(), [ws], [], limit: 10)
+        ).Content.ReadFromJsonAsync<JsonElement>();
         second.GetProperty("ops").GetArrayLength().ShouldBe(3);
         second.GetProperty("has_more").GetBoolean().ShouldBeFalse();
     }
@@ -98,7 +196,10 @@ public sealed class SyncAndAccountTests : IDisposable
         var response = await Sync(a, 1_000_000, [], []);
 
         response.StatusCode.ShouldBe(HttpStatusCode.Conflict);
-        (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("code").GetString().ShouldBe("CURSOR_AHEAD");
+        (await response.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("code")
+            .GetString()
+            .ShouldBe("CURSOR_AHEAD");
     }
 
     [Fact]
@@ -106,7 +207,10 @@ public sealed class SyncAndAccountTests : IDisposable
     {
         var a = await _f.RegisterAsync();
         var ws = Guid.NewGuid();
-        var ops = Enumerable.Range(0, 2001).Select(_ => (object)WorkspaceInsert(a.DeviceId, ws)).ToArray();
+        var ops = Enumerable
+            .Range(0, 2001)
+            .Select(_ => (object)WorkspaceInsert(a.DeviceId, ws))
+            .ToArray();
 
         (await Sync(a, 0, [], ops)).StatusCode.ShouldBe(HttpStatusCode.RequestEntityTooLarge);
     }
@@ -115,7 +219,17 @@ public sealed class SyncAndAccountTests : IDisposable
     public async Task Pushing_under_another_devices_id_is_forbidden()
     {
         var a = await _f.RegisterAsync();
-        var response = await a.Client.PostAsJsonAsync("/v1/sync", new { device_id = Guid.NewGuid(), cursor = 0, workspaces = Array.Empty<Guid>(), limit = 10, ops = Array.Empty<object>() });
+        var response = await a.Client.PostAsJsonAsync(
+            "/v1/sync",
+            new
+            {
+                device_id = Guid.NewGuid(),
+                cursor = 0,
+                workspaces = Array.Empty<Guid>(),
+                limit = 10,
+                ops = Array.Empty<object>(),
+            }
+        );
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
@@ -124,12 +238,27 @@ public sealed class SyncAndAccountTests : IDisposable
     {
         var a = await _f.RegisterAsync();
         var ws = Guid.NewGuid();
-        var bad = new { op_id = Guid.NewGuid(), entity_type = "mystery", entity_id = Guid.NewGuid(), workspace_id = ws, kind = "insert", value = new { }, hlc = Stamp(a.DeviceId), device_id = a.DeviceId };
+        var bad = new
+        {
+            op_id = Guid.NewGuid(),
+            entity_type = "mystery",
+            entity_id = Guid.NewGuid(),
+            workspace_id = ws,
+            kind = "insert",
+            value = new { },
+            hlc = Stamp(a.DeviceId),
+            device_id = a.DeviceId,
+        };
 
-        var json = await (await Sync(a, 0, [], [bad, WorkspaceInsert(a.DeviceId, ws)])).Content.ReadFromJsonAsync<JsonElement>();
+        var json = await (
+            await Sync(a, 0, [], [bad, WorkspaceInsert(a.DeviceId, ws)])
+        ).Content.ReadFromJsonAsync<JsonElement>();
 
         json.GetProperty("accepted_op_ids").GetArrayLength().ShouldBe(1);
-        json.GetProperty("rejected")[0].GetProperty("code").GetString().ShouldBe("UNKNOWN_ENTITY_TYPE");
+        json.GetProperty("rejected")[0]
+            .GetProperty("code")
+            .GetString()
+            .ShouldBe("UNKNOWN_ENTITY_TYPE");
     }
 
     [Fact]
@@ -140,12 +269,16 @@ public sealed class SyncAndAccountTests : IDisposable
         var ws = Guid.NewGuid();
         await Sync(a, 0, [], [WorkspaceInsert(a.DeviceId, ws)]);
 
-        var snapshot = await b.Client.GetAsync($"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace");
+        var snapshot = await b.Client.GetAsync(
+            $"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace"
+        );
         var delete = await b.Client.DeleteAsync($"/v1/sync/workspaces/{ws}");
 
         snapshot.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         delete.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
-        (await a.Client.GetAsync($"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace")).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (
+            await a.Client.GetAsync($"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace")
+        ).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -155,13 +288,30 @@ public sealed class SyncAndAccountTests : IDisposable
         var ws = Guid.NewGuid();
         await Sync(a, 0, [], [WorkspaceInsert(a.DeviceId, ws, "Snap")]);
 
-        var snap = await a.Client.GetFromJsonAsync<JsonElement>($"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace");
-        snap.GetProperty("rows")[0].GetProperty("row").GetProperty("name").GetString().ShouldBe("Snap");
-        snap.GetProperty("rows")[0].GetProperty("field_clocks").GetProperty("name").GetString().ShouldNotBeNullOrEmpty();
+        var snap = await a.Client.GetFromJsonAsync<JsonElement>(
+            $"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace"
+        );
+        snap.GetProperty("rows")[0]
+            .GetProperty("row")
+            .GetProperty("name")
+            .GetString()
+            .ShouldBe("Snap");
+        snap.GetProperty("rows")[0]
+            .GetProperty("field_clocks")
+            .GetProperty("name")
+            .GetString()
+            .ShouldNotBeNullOrEmpty();
 
-        (await a.Client.DeleteAsync($"/v1/sync/workspaces/{ws}")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await a.Client.GetAsync($"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
-        (await a.Client.GetFromJsonAsync<JsonElement>("/v1/sync/workspaces")).GetProperty("workspaces").GetArrayLength().ShouldBe(0);
+        (await a.Client.DeleteAsync($"/v1/sync/workspaces/{ws}")).StatusCode.ShouldBe(
+            HttpStatusCode.NoContent
+        );
+        (
+            await a.Client.GetAsync($"/v1/sync/snapshot?workspace_id={ws}&entity_type=workspace")
+        ).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await a.Client.GetFromJsonAsync<JsonElement>("/v1/sync/workspaces"))
+            .GetProperty("workspaces")
+            .GetArrayLength()
+            .ShouldBe(0);
     }
 
     [Fact]
@@ -171,7 +321,11 @@ public sealed class SyncAndAccountTests : IDisposable
         var ws = Guid.NewGuid();
         await Sync(a, 0, [], [WorkspaceInsert(a.DeviceId, ws)]);
 
-        (await a.Client.GetAsync($"/v1/sync/snapshot?workspace_id={ws}&entity_type=app_connection")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (
+            await a.Client.GetAsync(
+                $"/v1/sync/snapshot?workspace_id={ws}&entity_type=app_connection"
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -181,9 +335,15 @@ public sealed class SyncAndAccountTests : IDisposable
         var s = await limited.RegisterAsync();
 
         var codes = new List<HttpStatusCode>();
-        for (var i = 0; i < 4; i++) codes.Add((await Sync(s, 0, [], [])).StatusCode);
+        for (var i = 0; i < 4; i++)
+            codes.Add((await Sync(s, 0, [], [])).StatusCode);
 
-        codes.ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.TooManyRequests, HttpStatusCode.TooManyRequests]);
+        codes.ShouldBe([
+            HttpStatusCode.OK,
+            HttpStatusCode.OK,
+            HttpStatusCode.TooManyRequests,
+            HttpStatusCode.TooManyRequests,
+        ]);
     }
 
     [Fact]
@@ -195,16 +355,32 @@ public sealed class SyncAndAccountTests : IDisposable
 
         var accepted = await a.Client.GetAsync("/v1/account/export");
         accepted.StatusCode.ShouldBe(HttpStatusCode.Accepted);
-        var exportId = (await accepted.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("export_id").GetGuid();
-        var archive = JsonNode.Parse(await a.Client.GetStringAsync($"/v1/account/export/{exportId}"))!;
+        var exportId = (await accepted.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("export_id")
+            .GetGuid();
+        var archive = JsonNode.Parse(
+            await a.Client.GetStringAsync($"/v1/account/export/{exportId}")
+        )!;
         archive["email"]!.GetValue<string>().ShouldBe("gone@example.com");
-        archive["workspaces"]![0]!["rows"]!["workspace"]![0]!["name"]!.GetValue<string>().ShouldBe("Exported");
+        archive["workspaces"]![0]!["rows"]!["workspace"]![0]!["name"]!
+            .GetValue<string>()
+            .ShouldBe("Exported");
 
         (await a.Client.DeleteAsync("/v1/account")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         (await a.Client.GetAsync("/v1/devices")).StatusCode.ShouldBe(HttpStatusCode.Forbidden); // device is gone
-        (await _f.CreateClient().PostAsJsonAsync("/v1/auth/login", new { email = "gone@example.com", password = "correct horse battery", device = ServerFactory.Device(Guid.NewGuid()) }))
-            .StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (
+            await _f.CreateClient()
+                .PostAsJsonAsync(
+                    "/v1/auth/login",
+                    new
+                    {
+                        email = "gone@example.com",
+                        password = "correct horse battery",
+                        device = ServerFactory.Device(Guid.NewGuid()),
+                    }
+                )
+        ).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         using var scope = _f.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<Data.ServerDbContext>();
         db.Ops.Any().ShouldBeFalse();
@@ -216,8 +392,16 @@ public sealed class SyncAndAccountTests : IDisposable
     {
         var a = await _f.RegisterAsync();
         var b = await _f.RegisterAsync();
-        var id = (await (await a.Client.GetAsync("/v1/account/export")).Content.ReadFromJsonAsync<JsonElement>()).GetProperty("export_id").GetGuid();
+        var id = (
+            await (
+                await a.Client.GetAsync("/v1/account/export")
+            ).Content.ReadFromJsonAsync<JsonElement>()
+        )
+            .GetProperty("export_id")
+            .GetGuid();
 
-        (await b.Client.GetAsync($"/v1/account/export/{id}")).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await b.Client.GetAsync($"/v1/account/export/{id}")).StatusCode.ShouldBe(
+            HttpStatusCode.NotFound
+        );
     }
 }

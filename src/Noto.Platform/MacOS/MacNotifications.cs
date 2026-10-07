@@ -10,5 +10,6 @@ public sealed class MacNotifications : INotifications
 
     public async Task ShowAsync(NotificationRequest request) =>
         await AppleScript.RunAsync(
-            $"display notification {AppleScript.Quote(request.Body)} with title {AppleScript.Quote(request.Title)}");
+            $"display notification {AppleScript.Quote(request.Body)} with title {AppleScript.Quote(request.Title)}"
+        );
 }

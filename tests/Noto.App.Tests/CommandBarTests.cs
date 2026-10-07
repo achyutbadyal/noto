@@ -100,9 +100,16 @@ public sealed class CommandBarTests : IDisposable
     [Fact]
     public async Task Search_hits_in_other_workspaces_switch_to_them()
     {
-        var other = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
+        var other = await _app.Services.Workspaces.CreateAsync(
+            "Home",
+            "home",
+            BuiltInPresets.Zen,
+            1
+        );
         var id = Guid.CreateVersion7();
-        await _app.Services.Bus.SendAsync(new Noto.Core.Commands.CreateItem(id, other.Id, "Buy groceries", AppFixture.Today));
+        await _app.Services.Bus.SendAsync(
+            new Noto.Core.Commands.CreateItem(id, other.Id, "Buy groceries", AppFixture.Today)
+        );
         await OpenWithAsync("groceries");
 
         await _shell.HandleKeyAsync(KeyChord.Of("Enter"));
@@ -135,13 +142,20 @@ public sealed class CommandBarTests : IDisposable
 
         await OpenWithAsync("set pressure: gentle");
         await Bar.ExecuteSelectedAsync();
-        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Pressure.ShouldBe(Pressure.Gentle);
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Pressure.ShouldBe(
+            Pressure.Gentle
+        );
     }
 
     [Fact]
     public async Task Slash_opens_the_bar_from_a_list_and_workspace_tokens_route_the_add()
     {
-        var other = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
+        var other = await _app.Services.Workspaces.CreateAsync(
+            "Home",
+            "home",
+            BuiltInPresets.Zen,
+            1
+        );
         await _shell.InitializeAsync();
 
         await _shell.HandleKeyAsync(KeyChord.Of("/"));
@@ -152,7 +166,9 @@ public sealed class CommandBarTests : IDisposable
         Bar.SelectedIndex = Bar.Results.Count - 1;
         await Bar.ExecuteSelectedAsync();
 
-        (await _app.Db.RunAsync(s => s.Items.ListAsync(other.Id))).Single().Title.ShouldBe("Buy milk");
+        (await _app.Db.RunAsync(s => s.Items.ListAsync(other.Id)))
+            .Single()
+            .Title.ShouldBe("Buy milk");
     }
 
     [Fact]

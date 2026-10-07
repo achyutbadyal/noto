@@ -11,8 +11,10 @@ public static class CompletionStreak
         var streak = 0;
         foreach (var day in days.OrderByDescending(d => d.Day))
         {
-            if (day.CompletionRate is not { } rate) continue;
-            if (rate < 1) break;
+            if (day.CompletionRate is not { } rate)
+                continue;
+            if (rate < 1)
+                break;
             streak++;
         }
         return streak;
@@ -20,10 +22,12 @@ public static class CompletionStreak
 
     public static int Longest(IEnumerable<DayStats> days)
     {
-        int best = 0, run = 0;
+        int best = 0,
+            run = 0;
         foreach (var day in days.OrderBy(d => d.Day))
         {
-            if (day.CompletionRate is not { } rate) continue;
+            if (day.CompletionRate is not { } rate)
+                continue;
             run = rate >= 1 ? run + 1 : 0;
             best = Math.Max(best, run);
         }

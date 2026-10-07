@@ -18,7 +18,13 @@ public sealed class DerivationServiceTests : IDisposable
     {
         _bus = new CommandBus(_uow, _clock, Guid.CreateVersion7());
         _derive = new DerivationService(_uow, _clock);
-        _uow.RunAsync(async s => { await s.Workspaces.UpsertAsync(_ws); return 0; }).GetAwaiter().GetResult();
+        _uow.RunAsync(async s =>
+            {
+                await s.Workspaces.UpsertAsync(_ws);
+                return 0;
+            })
+            .GetAwaiter()
+            .GetResult();
     }
 
     public void Dispose() => _uow.Dispose();
@@ -98,7 +104,10 @@ public sealed class DerivationServiceTests : IDisposable
         var start = new DateOnly(2025, 10, 5);
         var rng = new Random(42);
         await Seed(start, days: 365, perDay: 8, rng);
-        _clock.UtcNow = new DateTimeOffset(new DateOnly(2026, 10, 5).ToDateTime(new TimeOnly(10, 0)), TimeSpan.Zero);
+        _clock.UtcNow = new DateTimeOffset(
+            new DateOnly(2026, 10, 5).ToDateTime(new TimeOnly(10, 0)),
+            TimeSpan.Zero
+        );
 
         var sw = Stopwatch.StartNew();
         var view = await _derive.GetTodayAsync(_ws.Id);
@@ -131,29 +140,71 @@ public sealed class DerivationServiceTests : IDisposable
                 var at = new DateTimeOffset(day.ToDateTime(new TimeOnly(9, 0)), TimeSpan.Zero);
                 var item = new TodoItem
                 {
-                    Id = Guid.CreateVersion7(), WorkspaceId = _ws.Id, Title = $"t{d}-{n}", PlannedFor = day,
-                    CreatedAt = at, CreatedTz = "UTC", ManualRank = "a",
+                    Id = Guid.CreateVersion7(),
+                    WorkspaceId = _ws.Id,
+                    Title = $"t{d}-{n}",
+                    PlannedFor = day,
+                    CreatedAt = at,
+                    CreatedTz = "UTC",
+                    ManualRank = "a",
                 };
-                var events = new List<ItemEvent> { Event(item, ItemEventType.Created, at, new() { ["planned_for"] = day.ToString("yyyy-MM-dd"), ["is_someday"] = false }) };
+                var events = new List<ItemEvent>
+                {
+                    Event(
+                        item,
+                        ItemEventType.Created,
+                        at,
+                        new()
+                        {
+                            ["planned_for"] = day.ToString("yyyy-MM-dd"),
+                            ["is_someday"] = false,
+                        }
+                    ),
+                };
 
                 if (rng.NextDouble() < 0.9) // most get done within a few days
                 {
                     var doneOn = day.AddDays(rng.Next(0, 4));
-                    var doneAt = new DateTimeOffset(doneOn.ToDateTime(new TimeOnly(15, 0)), TimeSpan.Zero);
-                    item.Status = ItemStatus.Done; item.CompletedOn = doneOn; item.CompletedAt = doneAt;
-                    events.Add(Event(item, ItemEventType.Completed, doneAt, new() { ["completed_on"] = doneOn.ToString("yyyy-MM-dd") }));
+                    var doneAt = new DateTimeOffset(
+                        doneOn.ToDateTime(new TimeOnly(15, 0)),
+                        TimeSpan.Zero
+                    );
+                    item.Status = ItemStatus.Done;
+                    item.CompletedOn = doneOn;
+                    item.CompletedAt = doneAt;
+                    events.Add(
+                        Event(
+                            item,
+                            ItemEventType.Completed,
+                            doneAt,
+                            new() { ["completed_on"] = doneOn.ToString("yyyy-MM-dd") }
+                        )
+                    );
                 }
 
                 await s.Items.UpsertAsync(item);
-                foreach (var e in events) await s.Events.AppendAsync(e);
+                foreach (var e in events)
+                    await s.Events.AppendAsync(e);
             }
             return 0;
 
-            ItemEvent Event(TodoItem i, ItemEventType t, DateTimeOffset at, System.Text.Json.Nodes.JsonObject data) => new()
-            {
-                Id = Guid.CreateVersion7(), ItemId = i.Id, WorkspaceId = i.WorkspaceId, Type = t, Data = data,
-                OccurredAt = at, Tz = "UTC", DeviceId = device,
-            };
+            ItemEvent Event(
+                TodoItem i,
+                ItemEventType t,
+                DateTimeOffset at,
+                System.Text.Json.Nodes.JsonObject data
+            ) =>
+                new()
+                {
+                    Id = Guid.CreateVersion7(),
+                    ItemId = i.Id,
+                    WorkspaceId = i.WorkspaceId,
+                    Type = t,
+                    Data = data,
+                    OccurredAt = at,
+                    Tz = "UTC",
+                    DeviceId = device,
+                };
         });
     }
 }

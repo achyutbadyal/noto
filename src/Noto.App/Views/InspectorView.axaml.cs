@@ -10,6 +10,7 @@ public partial class InspectorView : UserControl
 
     async void OnNotesLostFocus(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is InspectorViewModel vm) await vm.SaveNotesAsync();
+        if (DataContext is InspectorViewModel vm)
+            await vm.SaveNotesAsync();
     }
 }

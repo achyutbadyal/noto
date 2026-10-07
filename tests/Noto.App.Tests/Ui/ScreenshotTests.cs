@@ -26,9 +26,17 @@ public sealed class ScreenshotTests : IDisposable
     async Task SeedAsync()
     {
         _app.Clock.Advance(TimeSpan.FromDays(-6));
-        var deploy = await _app.AddAsync("Deploy v2.3 to staging", AppFixture.Today.AddDays(-6), 60);
+        var deploy = await _app.AddAsync(
+            "Deploy v2.3 to staging",
+            AppFixture.Today.AddDays(-6),
+            60
+        );
         _app.Clock.Advance(TimeSpan.FromDays(-1));
-        await _app.AddAsync("Review PR #482 for the auth refactor", AppFixture.Today.AddDays(-7), 30);
+        await _app.AddAsync(
+            "Review PR #482 for the auth refactor",
+            AppFixture.Today.AddDays(-7),
+            30
+        );
         _app.Clock.Advance(TimeSpan.FromDays(7));
         await _app.AddAsync("Write API tests", AppFixture.Today, 120);
         await _app.AddAsync("1:1 notes for Sam", AppFixture.Today, 15);
@@ -44,8 +52,14 @@ public sealed class ScreenshotTests : IDisposable
     (MainWindow Window, ShellViewModel Shell) Open(ThemeVariant? variant = null)
     {
         var shell = new ShellViewModel(_app.Services);
-        var window = new MainWindow { DataContext = shell, Width = 1240, Height = 800 };
-        if (variant is not null) Avalonia.Application.Current!.RequestedThemeVariant = variant;
+        var window = new MainWindow
+        {
+            DataContext = shell,
+            Width = 1240,
+            Height = 800,
+        };
+        if (variant is not null)
+            Avalonia.Application.Current!.RequestedThemeVariant = variant;
         window.Show();
         return (window, shell);
     }
@@ -138,10 +152,20 @@ public sealed class ScreenshotTests : IDisposable
     {
         await SeedAsync();
         _app.Clock.Advance(TimeSpan.FromDays(-3));
-        await _app.Services.Recurrence.CreateRuleAsync(_app.Workspace.Id, "FREQ=DAILY", new RuleTemplate("Morning run"),
-            DateOnly.FromDateTime(_app.Clock.UtcNow.UtcDateTime), MissedBehavior.Skip);
-        await _app.Services.Recurrence.CreateRuleAsync(_app.Workspace.Id, "FREQ=DAILY", new RuleTemplate("Read 20 pages"),
-            DateOnly.FromDateTime(_app.Clock.UtcNow.UtcDateTime), MissedBehavior.Skip);
+        await _app.Services.Recurrence.CreateRuleAsync(
+            _app.Workspace.Id,
+            "FREQ=DAILY",
+            new RuleTemplate("Morning run"),
+            DateOnly.FromDateTime(_app.Clock.UtcNow.UtcDateTime),
+            MissedBehavior.Skip
+        );
+        await _app.Services.Recurrence.CreateRuleAsync(
+            _app.Workspace.Id,
+            "FREQ=DAILY",
+            new RuleTemplate("Read 20 pages"),
+            DateOnly.FromDateTime(_app.Clock.UtcNow.UtcDateTime),
+            MissedBehavior.Skip
+        );
         _app.Clock.Advance(TimeSpan.FromDays(3));
         var due = await _app.AddAsync("Submit report", AppFixture.Today);
         await _app.Services.Bus.SendAsync(new SetDueDate(due, AppFixture.Today.AddDays(-2)));
@@ -150,16 +174,26 @@ public sealed class ScreenshotTests : IDisposable
         await shell.InitializeAsync();
         await shell.GoAsync(AppPage.Today);
 
-        foreach (var (preset, name) in new (Preset, string)[]
-                 { (BuiltInPresets.Kanban, "board"), (BuiltInPresets.Deadline, "timeline"), (BuiltInPresets.Habit, "habits") })
+        foreach (
+            var (preset, name) in new (Preset, string)[]
+            {
+                (BuiltInPresets.Kanban, "board"),
+                (BuiltInPresets.Deadline, "timeline"),
+                (BuiltInPresets.Habit, "habits"),
+            }
+        )
         {
             await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => preset.ApplyTo(ws));
             await shell.RefreshAsync();
-            if (name == "habits") await shell.HandleKeyAsync(KeyChord.Of("x"));
+            if (name == "habits")
+                await shell.HandleKeyAsync(KeyChord.Of("x"));
             await SnapAsync(window, name + "-dark");
         }
 
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => BuiltInPresets.Sprint.ApplyTo(ws));
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws => BuiltInPresets.Sprint.ApplyTo(ws)
+        );
         await shell.RefreshAsync();
         await shell.GoAsync(AppPage.TodayAll);
         await SnapAsync(window, "todayall-dark");
@@ -216,21 +250,34 @@ public sealed class ScreenshotTests : IDisposable
         var nav = buttons.First(b => b.Classes.Contains("nav") && !b.Classes.Contains("wsTab"));
 
         // Expanded: the workspace icon sits on the same inset as the nav icons.
-        IconCentre(workspace).ShouldBe(IconCentre(nav), 0.5,
-            $"expanded icon alignment [ws={IconCentre(workspace):F2} nav={IconCentre(nav):F2}]");
+        IconCentre(workspace)
+            .ShouldBe(
+                IconCentre(nav),
+                0.5,
+                $"expanded icon alignment [ws={IconCentre(workspace):F2} nav={IconCentre(nav):F2}]"
+            );
 
         shell.ToggleSidebarCommand.Execute(null);
         await SettleAsync();
 
         var workspaceIcon = IconCentre(workspace);
         var navIcon = IconCentre(nav);
-        var report = $"ws btn={workspace.Bounds.Width:F2} icon={workspaceIcon:F2} | nav btn={nav.Bounds.Width:F2} icon={navIcon:F2}";
+        var report =
+            $"ws btn={workspace.Bounds.Width:F2} icon={workspaceIcon:F2} | nav btn={nav.Bounds.Width:F2} icon={navIcon:F2}";
 
         // Collapsed: each icon is centred on its own button...
-        workspaceIcon.ShouldBe(workspace.Bounds.Width / 2, 0.5, $"workspace icon centre vs button centre [{report}]");
+        workspaceIcon.ShouldBe(
+            workspace.Bounds.Width / 2,
+            0.5,
+            $"workspace icon centre vs button centre [{report}]"
+        );
         navIcon.ShouldBe(nav.Bounds.Width / 2, 0.5, $"nav icon centre vs button centre [{report}]");
         // ...and the two rows line up with each other.
-        workspace.Bounds.Width.ShouldBe(nav.Bounds.Width, 0.5, $"workspace vs nav button width [{report}]");
+        workspace.Bounds.Width.ShouldBe(
+            nav.Bounds.Width,
+            0.5,
+            $"workspace vs nav button width [{report}]"
+        );
         workspaceIcon.ShouldBe(navIcon, 0.5, $"workspace vs nav icon centre [{report}]");
     }
 

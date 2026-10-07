@@ -4,8 +4,10 @@
     <InvariantGlobalization>false</InvariantGlobalization>
     <!-- `dotnet publish -r <rid> -p:PublishSingleFile=true` yields the single-binary self-host build. -->
     <SelfContained Condition="'$(PublishSingleFile)' == 'true'">true</SelfContained>
-    <EnableCompressionInSingleFile Condition="'$(PublishSingleFile)' == 'true'">true</EnableCompressionInSingleFile>
-    <IncludeNativeLibrariesForSelfExtract Condition="'$(PublishSingleFile)' == 'true'">true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile Condition="'$(PublishSingleFile)' == 'true'"
+      >true</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract Condition="'$(PublishSingleFile)' == 'true'"
+      >true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Noto.Core\Noto.Core.csproj" />

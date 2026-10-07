@@ -17,12 +17,20 @@ public sealed class UndoService(ICommandBus bus, IClock clock)
 
     public int Count
     {
-        get { Prune(); return _stack.Count; }
+        get
+        {
+            Prune();
+            return _stack.Count;
+        }
     }
 
     public UndoEntry? Last
     {
-        get { Prune(); return _stack.Count == 0 ? null : _stack[^1]; }
+        get
+        {
+            Prune();
+            return _stack.Count == 0 ? null : _stack[^1];
+        }
     }
 
     public void Push(string label, IEnumerable<Guid> tokens)
@@ -34,11 +42,13 @@ public sealed class UndoService(ICommandBus bus, IClock clock)
 
     public async Task<UndoEntry?> UndoLastAsync()
     {
-        if (Last is not { } entry) return null;
+        if (Last is not { } entry)
+            return null;
         _stack.RemoveAt(_stack.Count - 1);
 
         // A group is undone newest-first so each snapshot restores onto the state it came from.
-        foreach (var token in entry.Tokens.Reverse()) await bus.UndoAsync(token);
+        foreach (var token in entry.Tokens.Reverse())
+            await bus.UndoAsync(token);
         Undone?.Invoke(entry);
         return entry;
     }

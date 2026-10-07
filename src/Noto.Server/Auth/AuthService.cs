@@ -11,25 +11,34 @@ namespace Noto.Server.Auth;
 public sealed record DeviceInfo(
     [property: JsonPropertyName("id")] Guid Id,
     [property: JsonPropertyName("name")] string? Name,
-    [property: JsonPropertyName("platform")] string? Platform);
+    [property: JsonPropertyName("platform")] string? Platform
+);
 
 public sealed record AuthRequest(
     [property: JsonPropertyName("email")] string? Email,
     [property: JsonPropertyName("password")] string? Password,
-    [property: JsonPropertyName("device")] DeviceInfo? Device);
+    [property: JsonPropertyName("device")] DeviceInfo? Device
+);
 
 public sealed record TokenPair(
     [property: JsonPropertyName("access_token")] string AccessToken,
     [property: JsonPropertyName("refresh_token")] string RefreshToken,
-    [property: JsonPropertyName("expires_at")] DateTimeOffset ExpiresAt);
+    [property: JsonPropertyName("expires_at")] DateTimeOffset ExpiresAt
+);
 
 public sealed record RegisterResponse(
     [property: JsonPropertyName("user_id")] Guid UserId,
     [property: JsonPropertyName("access_token")] string AccessToken,
     [property: JsonPropertyName("refresh_token")] string RefreshToken,
-    [property: JsonPropertyName("expires_at")] DateTimeOffset ExpiresAt);
+    [property: JsonPropertyName("expires_at")] DateTimeOffset ExpiresAt
+);
 
-public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher, JwtService jwt, TimeProvider time)
+public sealed class AuthService(
+    ServerDbContext db,
+    Argon2PasswordHasher hasher,
+    JwtService jwt,
+    TimeProvider time
+)
 {
     static readonly TimeSpan RefreshLifetime = TimeSpan.FromDays(90);
     const int MinPasswordLength = 10;
@@ -38,11 +47,21 @@ public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher,
     {
         var (email, password, device) = Validate(req);
         if (password.Length < MinPasswordLength)
-            throw ApiException.BadRequest("WEAK_PASSWORD", "Password too short", $"Use at least {MinPasswordLength} characters");
+            throw ApiException.BadRequest(
+                "WEAK_PASSWORD",
+                "Password too short",
+                $"Use at least {MinPasswordLength} characters"
+            );
         if (await db.Users.AnyAsync(u => u.Email == email, ct))
             throw new ApiException(409, "EMAIL_TAKEN", "Email already registered");
 
-        var user = new User { Id = Guid.CreateVersion7(), Email = email, PasswordHash = hasher.Hash(password), CreatedAt = Now() };
+        var user = new User
+        {
+            Id = Guid.CreateVersion7(),
+            Email = email,
+            PasswordHash = hasher.Hash(password),
+            CreatedAt = Now(),
+        };
         db.Users.Add(user);
         await UpsertDeviceAsync(user.Id, device, ct);
         var pair = await IssueAsync(user.Id, device.Id, ct);
@@ -68,21 +87,27 @@ public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher,
     // Rotation: each refresh token is single use. Presenting a used one means it leaked, so the device is revoked.
     public async Task<TokenPair> RefreshAsync(string? refreshToken, CancellationToken ct)
     {
-        if (string.IsNullOrEmpty(refreshToken)) throw ApiException.Unauthorized("INVALID_REFRESH_TOKEN", "Invalid refresh token");
-        var token = await db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == Hash(refreshToken), ct)
-                    ?? throw ApiException.Unauthorized("INVALID_REFRESH_TOKEN", "Invalid refresh token");
+        if (string.IsNullOrEmpty(refreshToken))
+            throw ApiException.Unauthorized("INVALID_REFRESH_TOKEN", "Invalid refresh token");
+        var token =
+            await db.RefreshTokens.FirstOrDefaultAsync(t => t.TokenHash == Hash(refreshToken), ct)
+            ?? throw ApiException.Unauthorized("INVALID_REFRESH_TOKEN", "Invalid refresh token");
 
         var now = Now();
         if (token.UsedAt is not null)
         {
             await RevokeDeviceAsync(token.UserId, token.DeviceId, ct);
-            throw ApiException.Unauthorized("REFRESH_TOKEN_REUSED", "Refresh token reuse detected; device revoked");
+            throw ApiException.Unauthorized(
+                "REFRESH_TOKEN_REUSED",
+                "Refresh token reuse detected; device revoked"
+            );
         }
         if (token.RevokedAt is not null || token.ExpiresAt <= now)
             throw ApiException.Unauthorized("INVALID_REFRESH_TOKEN", "Invalid refresh token");
 
         var device = await db.Devices.FirstOrDefaultAsync(d => d.Id == token.DeviceId, ct);
-        if (device is null || device.RevokedAt is not null) throw ApiException.Forbidden("DEVICE_REVOKED", "Device revoked");
+        if (device is null || device.RevokedAt is not null)
+            throw ApiException.Forbidden("DEVICE_REVOKED", "Device revoked");
 
         token.UsedAt = now;
         return await IssueAsync(token.UserId, token.DeviceId, ct);
@@ -91,17 +116,22 @@ public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher,
     public async Task LogoutAsync(Guid userId, Guid deviceId, CancellationToken ct)
     {
         var now = Now();
-        await db.RefreshTokens.Where(t => t.UserId == userId && t.DeviceId == deviceId && t.RevokedAt == null)
+        await db
+            .RefreshTokens.Where(t =>
+                t.UserId == userId && t.DeviceId == deviceId && t.RevokedAt == null
+            )
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
     }
 
     public async Task RevokeDeviceAsync(Guid userId, Guid deviceId, CancellationToken ct)
     {
         var now = Now();
-        var device = await db.Devices.FirstOrDefaultAsync(d => d.Id == deviceId && d.UserId == userId, ct)
-                     ?? throw ApiException.NotFound("DEVICE_NOT_FOUND", "Device not found");
+        var device =
+            await db.Devices.FirstOrDefaultAsync(d => d.Id == deviceId && d.UserId == userId, ct)
+            ?? throw ApiException.NotFound("DEVICE_NOT_FOUND", "Device not found");
         device.RevokedAt ??= now;
-        await db.RefreshTokens.Where(t => t.DeviceId == deviceId && t.RevokedAt == null)
+        await db
+            .RefreshTokens.Where(t => t.DeviceId == deviceId && t.RevokedAt == null)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.RevokedAt, now), ct);
         await db.SaveChangesAsync(ct);
     }
@@ -111,15 +141,22 @@ public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher,
         var existing = await db.Devices.FirstOrDefaultAsync(d => d.Id == device.Id, ct);
         if (existing is null)
         {
-            db.Devices.Add(new Device
-            {
-                Id = device.Id, UserId = userId, Name = device.Name ?? "Unnamed device",
-                Platform = device.Platform ?? "unknown", CreatedAt = Now(),
-            });
+            db.Devices.Add(
+                new Device
+                {
+                    Id = device.Id,
+                    UserId = userId,
+                    Name = device.Name ?? "Unnamed device",
+                    Platform = device.Platform ?? "unknown",
+                    CreatedAt = Now(),
+                }
+            );
             return;
         }
-        if (existing.UserId != userId) throw new ApiException(409, "DEVICE_CONFLICT", "Device id belongs to another account");
-        if (existing.RevokedAt is not null) throw ApiException.Forbidden("DEVICE_REVOKED", "Device revoked");
+        if (existing.UserId != userId)
+            throw new ApiException(409, "DEVICE_CONFLICT", "Device id belongs to another account");
+        if (existing.RevokedAt is not null)
+            throw ApiException.Forbidden("DEVICE_REVOKED", "Device revoked");
         existing.Name = device.Name ?? existing.Name;
         existing.Platform = device.Platform ?? existing.Platform;
     }
@@ -128,11 +165,16 @@ public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher,
     {
         var (access, expires) = jwt.CreateAccessToken(userId, deviceId);
         var refresh = Base64Url(RandomNumberGenerator.GetBytes(32));
-        db.RefreshTokens.Add(new RefreshToken
-        {
-            Id = Guid.CreateVersion7(), TokenHash = Hash(refresh), UserId = userId, DeviceId = deviceId,
-            ExpiresAt = Now() + RefreshLifetime,
-        });
+        db.RefreshTokens.Add(
+            new RefreshToken
+            {
+                Id = Guid.CreateVersion7(),
+                TokenHash = Hash(refresh),
+                UserId = userId,
+                DeviceId = deviceId,
+                ExpiresAt = Now() + RefreshLifetime,
+            }
+        );
         await db.SaveChangesAsync(ct);
         return new TokenPair(access, refresh, expires);
     }
@@ -140,13 +182,20 @@ public sealed class AuthService(ServerDbContext db, Argon2PasswordHasher hasher,
     static (string Email, string Password, DeviceInfo Device) Validate(AuthRequest req)
     {
         var email = req.Email?.Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(email) || !MailAddress.TryCreate(email, out _)) throw ApiException.BadRequest("INVALID_EMAIL", "Invalid email");
-        if (string.IsNullOrEmpty(req.Password)) throw ApiException.BadRequest("INVALID_PASSWORD", "Password required");
-        if (req.Device is null || req.Device.Id == Guid.Empty) throw ApiException.BadRequest("INVALID_DEVICE", "Device id required");
+        if (string.IsNullOrEmpty(email) || !MailAddress.TryCreate(email, out _))
+            throw ApiException.BadRequest("INVALID_EMAIL", "Invalid email");
+        if (string.IsNullOrEmpty(req.Password))
+            throw ApiException.BadRequest("INVALID_PASSWORD", "Password required");
+        if (req.Device is null || req.Device.Id == Guid.Empty)
+            throw ApiException.BadRequest("INVALID_DEVICE", "Device id required");
         return (email, req.Password, req.Device);
     }
 
     DateTime Now() => time.GetUtcNow().UtcDateTime;
-    static string Hash(string token) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
-    static string Base64Url(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+
+    static string Hash(string token) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+
+    static string Base64Url(byte[] b) =>
+        Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }

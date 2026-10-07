@@ -14,7 +14,8 @@ public class MigratorTests
         Migrator.Apply(conn);
 
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE name IN ('workspace','todo_item','item_event')";
+        cmd.CommandText =
+            "SELECT COUNT(*) FROM sqlite_master WHERE name IN ('workspace','todo_item','item_event')";
         ((long)cmd.ExecuteScalar()!).ShouldBe(3);
     }
 }

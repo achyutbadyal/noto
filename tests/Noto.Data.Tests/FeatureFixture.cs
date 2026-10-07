@@ -22,10 +22,19 @@ public sealed class FeatureFixture : IDisposable
         Bus = new CommandBus(Uow, Clock, Guid.CreateVersion7());
         Derive = new DerivationService(Uow, Clock);
         Workspaces = new WorkspaceService(Uow, Clock);
-        Ws = Workspaces.CreateAsync("Work", "work", "#fff", BuiltInPresets.Sprint).GetAwaiter().GetResult();
+        Ws = Workspaces
+            .CreateAsync("Work", "work", "#fff", BuiltInPresets.Sprint)
+            .GetAwaiter()
+            .GetResult();
         Ws.TzFollowsDevice = false;
         Ws.TimeZone = "UTC";
-        Uow.RunAsync(async s => { await s.Workspaces.UpsertAsync(Ws); return 0; }).GetAwaiter().GetResult();
+        Uow.RunAsync(async s =>
+            {
+                await s.Workspaces.UpsertAsync(Ws);
+                return 0;
+            })
+            .GetAwaiter()
+            .GetResult();
     }
 
     public async Task<Guid> CreateItemAsync(string title, DateOnly? planned = null)
@@ -35,7 +44,8 @@ public sealed class FeatureFixture : IDisposable
         return id;
     }
 
-    public Task<TodoItem> LoadAsync(Guid id) => Uow.RunAsync(async s => (await s.Items.GetAsync(id))!);
+    public Task<TodoItem> LoadAsync(Guid id) =>
+        Uow.RunAsync(async s => (await s.Items.GetAsync(id))!);
 
     public void Dispose() => Uow.Dispose();
 }

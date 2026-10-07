@@ -6,7 +6,11 @@ namespace Noto.Core.Tests;
 public class DayStatsTests
 {
     static DayStats Stats(DateOnly day, params Story[] stories) =>
-        DayStatsCalculator.Compute(day, stories.Select(s => s.History()).ToList(), fallbackEstimateMinutes: 30);
+        DayStatsCalculator.Compute(
+            day,
+            stories.Select(s => s.History()).ToList(),
+            fallbackEstimateMinutes: 30
+        );
 
     [Fact]
     public void Splits_the_day_into_carried_planned_and_added()

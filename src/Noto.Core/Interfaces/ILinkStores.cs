@@ -7,8 +7,10 @@ public interface ILinkRepository
 {
     Task<IReadOnlyList<TodoLink>> ListForItemAsync(Guid itemId);
     Task<IReadOnlyList<TodoLink>> ListForItemsAsync(IReadOnlyCollection<Guid> itemIds);
+
     // Items currently linking to a normalized URL (live-link reactions).
     Task<IReadOnlyList<Guid>> ListItemIdsForUrlAsync(string url);
+
     // Replaces links detected in text; explicit links are left alone.
     Task ReplaceTextLinksAsync(Guid itemId, IReadOnlyList<string> urls, DateTimeOffset now);
     Task AddExplicitAsync(Guid itemId, string url, DateTimeOffset now);
@@ -20,6 +22,7 @@ public interface IPreviewCache
 {
     Task<LinkPreview?> GetAsync(string url);
     Task<IReadOnlyDictionary<string, LinkPreview>> GetManyAsync(IReadOnlyCollection<string> urls);
+
     // Upsert that preserves the viewed-state columns.
     Task PutAsync(LinkPreview preview);
     Task MarkViewedAsync(string url, DateTimeOffset now);

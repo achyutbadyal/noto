@@ -10,29 +10,46 @@ public sealed class ConfluenceProvider : ProviderBase
 
     // Atlassian API token (email + token). OAuth 3LO needs cloud-id routing and is not implemented.
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods => [AuthMethod.ApiKey];
-    public override IReadOnlyList<UrlPattern> UrlPatterns { get; } = [new("*.atlassian.net", "/wiki/spaces/{space}/pages/{id}*")];
+    public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
+    [new("*.atlassian.net", "/wiki/spaces/{space}/pages/{id}*")];
 
     public override AuthConfig GetAuthConfig() =>
         new(null, null, [], "https://id.atlassian.com/manage-profile/security/api-tokens");
 
     public override Uri ApiRoot(string? instanceUrl) => new($"{instanceUrl!.TrimEnd('/')}/");
+
     public override TimeSpan CacheTtl(Uri url) => TimeSpan.FromMinutes(30);
 
-    public override IEnumerable<KeyValuePair<string, string>> AuthHeaders(Credential c, AuthMethod method) => [Basic(c)];
+    public override IEnumerable<KeyValuePair<string, string>> AuthHeaders(
+        Credential c,
+        AuthMethod method
+    ) => [Basic(c)];
 
-    public override bool LooksLikeOwn(Uri url) => url.AbsolutePath.StartsWith("/wiki/spaces/") && url.AbsolutePath.Contains("/pages/");
+    public override bool LooksLikeOwn(Uri url) =>
+        url.AbsolutePath.StartsWith("/wiki/spaces/") && url.AbsolutePath.Contains("/pages/");
 
-    public override async Task<ConnectionIdentity> ValidateAsync(IProviderHttp http, CancellationToken ct)
+    public override async Task<ConnectionIdentity> ValidateAsync(
+        IProviderHttp http,
+        CancellationToken ct
+    )
     {
         using var doc = await http.GetJsonAsync(ProviderRequest.Get("rest/api/3/myself"), ct);
         return new ConnectionIdentity(Str(doc.RootElement, "displayName") ?? "Confluence");
     }
 
-    public override async Task<LinkPreview> FetchAsync(Uri url, IProviderHttp http, CancellationToken ct)
+    public override async Task<LinkPreview> FetchAsync(
+        Uri url,
+        IProviderHttp http,
+        CancellationToken ct
+    )
     {
-        if (!UrlPatterns[0].TryMatch(url, out var c)) return Unavailable(url, "Unsupported Confluence URL");
+        if (!UrlPatterns[0].TryMatch(url, out var c))
+            return Unavailable(url, "Unsupported Confluence URL");
 
-        using var doc = await http.GetJsonAsync(ProviderRequest.Get($"wiki/api/v2/pages/{Uri.EscapeDataString(c["id"])}"), ct);
+        using var doc = await http.GetJsonAsync(
+            ProviderRequest.Get($"wiki/api/v2/pages/{Uri.EscapeDataString(c["id"])}"),
+            ct
+        );
         var page = doc.RootElement;
         var version = Str(page, "version", "number");
         var edited = Str(page, "version", "createdAt");

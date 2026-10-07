@@ -16,7 +16,8 @@ public static class Fixture
     public static string Load(string name)
     {
         var asm = Assembly.GetExecutingAssembly();
-        var resource = asm.GetManifestResourceNames().Single(n => n.EndsWith("." + name, StringComparison.Ordinal));
+        var resource = asm.GetManifestResourceNames()
+            .Single(n => n.EndsWith("." + name, StringComparison.Ordinal));
         using var reader = new StreamReader(asm.GetManifestResourceStream(resource)!);
         return reader.ReadToEnd();
     }
@@ -25,14 +26,27 @@ public static class Fixture
 // Scripted transport: routes by predicate, records every request.
 public sealed class FakeHttp : IProviderHttp
 {
-    readonly List<(Func<ProviderRequest, bool> Match, Func<ProviderRequest, ProviderResponse> Reply)> _routes = [];
+    readonly List<(
+        Func<ProviderRequest, bool> Match,
+        Func<ProviderRequest, ProviderResponse> Reply
+    )> _routes = [];
 
     public List<ProviderRequest> Requests { get; } = [];
     public OpenGraphData? OpenGraph { get; set; }
 
-    public FakeHttp On(Func<ProviderRequest, bool> match, string body, int status = 200, IReadOnlyDictionary<string, string>? headers = null)
+    public FakeHttp On(
+        Func<ProviderRequest, bool> match,
+        string body,
+        int status = 200,
+        IReadOnlyDictionary<string, string>? headers = null
+    )
     {
-        _routes.Add((match, _ => new ProviderResponse(status, body, headers ?? new Dictionary<string, string>())));
+        _routes.Add(
+            (
+                match,
+                _ => new ProviderResponse(status, body, headers ?? new Dictionary<string, string>())
+            )
+        );
         return this;
     }
 
@@ -43,11 +57,13 @@ public sealed class FakeHttp : IProviderHttp
     {
         Requests.Add(request);
         foreach (var (match, reply) in _routes)
-            if (match(request)) return Task.FromResult(reply(request));
+            if (match(request))
+                return Task.FromResult(reply(request));
         return Task.FromResult(new ProviderResponse(404, "{}", new Dictionary<string, string>()));
     }
 
-    public Task<OpenGraphData?> OpenGraphAsync(Uri url, CancellationToken ct) => Task.FromResult(OpenGraph);
+    public Task<OpenGraphData?> OpenGraphAsync(Uri url, CancellationToken ct) =>
+        Task.FromResult(OpenGraph);
 }
 
 public sealed class FakeFactory : IProviderHttpFactory
@@ -55,7 +71,12 @@ public sealed class FakeFactory : IProviderHttpFactory
     public Dictionary<string, IProviderHttp> ByProvider { get; } = [];
     public List<string> CreatedFor { get; } = [];
 
-    public IProviderHttp Create(IAppProvider provider, string? instanceUrl, AuthMethod method, ICredentialSource credentials)
+    public IProviderHttp Create(
+        IAppProvider provider,
+        string? instanceUrl,
+        AuthMethod method,
+        ICredentialSource credentials
+    )
     {
         CreatedFor.Add(provider.ProviderId);
         return ByProvider[provider.ProviderId];
@@ -65,10 +86,19 @@ public sealed class FakeFactory : IProviderHttpFactory
 public sealed class CollectingLogger<T> : ILogger<T>
 {
     public List<string> Lines { get; } = [];
-    public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+
+    public IDisposable? BeginScope<TState>(TState state)
+        where TState : notnull => null;
+
     public bool IsEnabled(LogLevel logLevel) => true;
-    public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
-        Lines.Add(formatter(state, exception) + (exception is null ? "" : " | " + exception));
+
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter
+    ) => Lines.Add(formatter(state, exception) + (exception is null ? "" : " | " + exception));
 }
 
 // Advances the fake clock instead of sleeping.
@@ -99,29 +129,72 @@ public sealed class Harness : IDisposable
     public Workspace Workspace { get; } = Make.Workspace();
     public CommandBus Bus { get; }
 
-    public Harness(IEnumerable<IAppProvider> providers, PreviewOptions? options = null,
-        HttpMessageHandler? oauthHandler = null, IReadOnlyDictionary<string, OAuthClient>? oauthClients = null, string? dbPath = null)
+    public Harness(
+        IEnumerable<IAppProvider> providers,
+        PreviewOptions? options = null,
+        HttpMessageHandler? oauthHandler = null,
+        IReadOnlyDictionary<string, OAuthClient>? oauthClients = null,
+        string? dbPath = null
+    )
     {
-        Uow = dbPath is null ? SqliteUnitOfWork.InMemory() : new SqliteUnitOfWork($"Data Source={dbPath}");
+        Uow = dbPath is null
+            ? SqliteUnitOfWork.InMemory()
+            : new SqliteUnitOfWork($"Data Source={dbPath}");
         Credentials = new CredentialStore(Keyring);
         Registry = new ProviderRegistry(providers);
-        Tokens = new TokenManager(Uow, Credentials, Registry, Clock, oauthHandler is null ? new HttpClient() : new HttpClient(oauthHandler),
-            oauthClients ?? new Dictionary<string, OAuthClient>());
+        Tokens = new TokenManager(
+            Uow,
+            Credentials,
+            Registry,
+            Clock,
+            oauthHandler is null ? new HttpClient() : new HttpClient(oauthHandler),
+            oauthClients ?? new Dictionary<string, OAuthClient>()
+        );
         Delay = new FakeDelay(Clock);
-        Previews = new PreviewService(Uow, Registry, Factory, Tokens, Clock, Delay, Log, options, jitter: () => 1.0);
+        Previews = new PreviewService(
+            Uow,
+            Registry,
+            Factory,
+            Tokens,
+            Clock,
+            Delay,
+            Log,
+            options,
+            jitter: () => 1.0
+        );
         Bus = new CommandBus(Uow, Clock, Guid.CreateVersion7());
-        Uow.RunAsync(async s => { await s.Workspaces.UpsertAsync(Workspace); return 0; }).GetAwaiter().GetResult();
+        Uow.RunAsync(async s =>
+            {
+                await s.Workspaces.UpsertAsync(Workspace);
+                return 0;
+            })
+            .GetAwaiter()
+            .GetResult();
     }
 
-    public async Task<AppConnection> ConnectAsync(string providerId, string? instanceUrl = null, string token = "tok", AuthMethod method = AuthMethod.PersonalToken)
+    public async Task<AppConnection> ConnectAsync(
+        string providerId,
+        string? instanceUrl = null,
+        string token = "tok",
+        AuthMethod method = AuthMethod.PersonalToken
+    )
     {
         var connection = new AppConnection
         {
-            Id = Guid.CreateVersion7(), ProviderId = providerId, AuthMethod = method, DisplayLabel = "me",
-            InstanceUrl = instanceUrl, ConnectedAt = Clock.UtcNow, Status = ConnectionStatus.Active,
+            Id = Guid.CreateVersion7(),
+            ProviderId = providerId,
+            AuthMethod = method,
+            DisplayLabel = "me",
+            InstanceUrl = instanceUrl,
+            ConnectedAt = Clock.UtcNow,
+            Status = ConnectionStatus.Active,
         };
         await Credentials.SaveAsync(connection.Id, new Credential(token));
-        await Uow.RunAsync(async s => { await s.Connections.UpsertAsync(connection); return 0; });
+        await Uow.RunAsync(async s =>
+        {
+            await s.Connections.UpsertAsync(connection);
+            return 0;
+        });
         return connection;
     }
 
@@ -129,7 +202,11 @@ public sealed class Harness : IDisposable
     {
         var id = Guid.CreateVersion7();
         await Bus.SendAsync(new CreateItem(id, Workspace.Id, title, new DateOnly(2026, 10, 7)));
-        await Uow.RunAsync(async s => { await s.Links.AddExplicitAsync(id, LinkUrl.Normalize(url)!, Clock.UtcNow); return 0; });
+        await Uow.RunAsync(async s =>
+        {
+            await s.Links.AddExplicitAsync(id, LinkUrl.Normalize(url)!, Clock.UtcNow);
+            return 0;
+        });
         return id;
     }
 
@@ -150,38 +227,84 @@ public sealed class ScriptedProvider(string id = "fake", bool instanceBased = fa
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } = [new($"{id}.test", "/*")];
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods => [AuthMethod.PersonalToken];
     public AuthConfig Config { get; set; } = new(null, null, [], "");
-    public override AuthConfig GetAuthConfig() => Config;
-    public override Uri ApiRoot(string? instanceUrl) => new("https://api.test/");
-    public override TimeSpan CacheTtl(Uri url) => Ttl;
-    public override Task<ConnectionIdentity> ValidateAsync(IProviderHttp http, CancellationToken ct) => Task.FromResult(new ConnectionIdentity("me"));
-    public override Task<LinkPreview> FetchAsync(Uri url, IProviderHttp http, CancellationToken ct) => throw new NotSupportedException();
 
-    public override Task<IReadOnlyList<LinkPreview>> FetchBatchAsync(IReadOnlyList<Uri> urls, IProviderHttp http, CancellationToken ct)
+    public override AuthConfig GetAuthConfig() => Config;
+
+    public override Uri ApiRoot(string? instanceUrl) => new("https://api.test/");
+
+    public override TimeSpan CacheTtl(Uri url) => Ttl;
+
+    public override Task<ConnectionIdentity> ValidateAsync(
+        IProviderHttp http,
+        CancellationToken ct
+    ) => Task.FromResult(new ConnectionIdentity("me"));
+
+    public override Task<LinkPreview> FetchAsync(
+        Uri url,
+        IProviderHttp http,
+        CancellationToken ct
+    ) => throw new NotSupportedException();
+
+    public override Task<IReadOnlyList<LinkPreview>> FetchBatchAsync(
+        IReadOnlyList<Uri> urls,
+        IProviderHttp http,
+        CancellationToken ct
+    )
     {
         Calls.Add(urls);
-        if (Throw is not null) throw Throw;
-        return Task.FromResult(Script?.Invoke(urls) ?? urls.Select(u => Preview(u, LinkState.Open, "h1")).ToList());
+        if (Throw is not null)
+            throw Throw;
+        return Task.FromResult(
+            Script?.Invoke(urls) ?? urls.Select(u => Preview(u, LinkState.Open, "h1")).ToList()
+        );
     }
 
-    public LinkPreview Preview(Uri url, LinkState state, string hash, string title = "T", string kind = "issue") => new()
-    {
-        Url = LinkUrl.Normalize(url.ToString())!, ProviderId = id, Title = title, State = state, StateHash = hash,
-        Status = PreviewStatus.Loaded, ChipFacts = [new("fact")],
-        Metadata = kind is null ? [] : new() { ["kind"] = System.Text.Json.JsonDocument.Parse($"\"{kind}\"").RootElement.Clone() },
-    };
+    public LinkPreview Preview(
+        Uri url,
+        LinkState state,
+        string hash,
+        string title = "T",
+        string kind = "issue"
+    ) =>
+        new()
+        {
+            Url = LinkUrl.Normalize(url.ToString())!,
+            ProviderId = id,
+            Title = title,
+            State = state,
+            StateHash = hash,
+            Status = PreviewStatus.Loaded,
+            ChipFacts = [new("fact")],
+            Metadata = kind is null
+                ? []
+                : new()
+                {
+                    ["kind"] = System
+                        .Text.Json.JsonDocument.Parse($"\"{kind}\"")
+                        .RootElement.Clone(),
+                },
+        };
 }
 
-public sealed class FakeHandler(Func<HttpRequestMessage, string, HttpResponseMessage> reply) : HttpMessageHandler
+public sealed class FakeHandler(Func<HttpRequestMessage, string, HttpResponseMessage> reply)
+    : HttpMessageHandler
 {
     public List<(HttpRequestMessage Request, string Body)> Calls { get; } = [];
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    protected override async Task<HttpResponseMessage> SendAsync(
+        HttpRequestMessage request,
+        CancellationToken ct
+    )
     {
         var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(ct);
-        lock (Calls) Calls.Add((request, body));
+        lock (Calls)
+            Calls.Add((request, body));
         return reply(request, body);
     }
 
     public static HttpResponseMessage Json(string json, int status = 200) =>
-        new((System.Net.HttpStatusCode)status) { Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json") };
+        new((System.Net.HttpStatusCode)status)
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json"),
+        };
 }

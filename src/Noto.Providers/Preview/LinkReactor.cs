@@ -13,16 +13,26 @@ public sealed class ReactorOptions
     public HashSet<Guid> AutoCompleteWorkspaces { get; init; } = [];
 }
 
-public sealed record ReactionOutcome(IReadOnlyList<LinkSuggestion> Suggestions, IReadOnlyList<LinkSuggestion> Applied);
+public sealed record ReactionOutcome(
+    IReadOnlyList<LinkSuggestion> Suggestions,
+    IReadOnlyList<LinkSuggestion> Applied
+);
 
 // Applies live-link rules to the items that link to a changed URL, recording LinkStateChanged events.
-public sealed class LinkReactor(IUnitOfWork uow, ICommandBus bus, IClock clock, Guid deviceId, ReactorOptions? options = null)
+public sealed class LinkReactor(
+    IUnitOfWork uow,
+    ICommandBus bus,
+    IClock clock,
+    Guid deviceId,
+    ReactorOptions? options = null
+)
 {
     readonly ReactorOptions _options = options ?? new();
 
     public async Task<ReactionOutcome> ReactAsync(IReadOnlyList<LinkChange> changes)
     {
-        List<LinkSuggestion> pending = [], applied = [];
+        List<LinkSuggestion> pending = [],
+            applied = [];
 
         foreach (var change in changes)
         {
@@ -30,7 +40,8 @@ public sealed class LinkReactor(IUnitOfWork uow, ICommandBus bus, IClock clock, 
             {
                 var list = new List<TodoItem>();
                 foreach (var id in await s.Links.ListItemIdsForUrlAsync(change.Url))
-                    if (await s.Items.GetAsync(id) is { DeletedAt: null } item) list.Add(item);
+                    if (await s.Items.GetAsync(id) is { DeletedAt: null } item)
+                        list.Add(item);
                 return list;
             });
 
@@ -39,8 +50,10 @@ public sealed class LinkReactor(IUnitOfWork uow, ICommandBus bus, IClock clock, 
                 await RecordEventAsync(item, change);
                 foreach (var suggestion in LiveLinkRules.Evaluate(item, change))
                 {
-                    if (await TryApplyAsync(item, suggestion)) applied.Add(suggestion);
-                    else pending.Add(suggestion);
+                    if (await TryApplyAsync(item, suggestion))
+                        applied.Add(suggestion);
+                    else
+                        pending.Add(suggestion);
                 }
             }
         }
@@ -55,7 +68,8 @@ public sealed class LinkReactor(IUnitOfWork uow, ICommandBus bus, IClock clock, 
                 await bus.SendAsync(new EndWaiting(item.Id, "link"));
                 await bus.SendAsync(new PlanItem(item.Id, null, PlanKind.KeepToday));
                 return true;
-            case SuggestionKind.MarkDone when _options.AutoCompleteWorkspaces.Contains(item.WorkspaceId):
+            case SuggestionKind.MarkDone
+                when _options.AutoCompleteWorkspaces.Contains(item.WorkspaceId):
                 await bus.SendAsync(new CompleteItem(item.Id));
                 return true;
             default:
@@ -64,27 +78,33 @@ public sealed class LinkReactor(IUnitOfWork uow, ICommandBus bus, IClock clock, 
     }
 
     // Deterministic id: every device observing the same change writes the same event, which collapses on sync.
-    Task RecordEventAsync(TodoItem item, LinkChange change) => uow.RunAsync(async s =>
-    {
-        var id = Uuid5.Create(item.Id, $"{change.Url}|{change.ToHash}");
-        if ((await s.Events.ListForItemAsync(item.Id)).Any(e => e.Id == id)) return 0;
-
-        var ws = await s.Workspaces.GetAsync(item.WorkspaceId);
-        await s.Events.AppendAsync(new ItemEvent
+    Task RecordEventAsync(TodoItem item, LinkChange change) =>
+        uow.RunAsync(async s =>
         {
-            Id = id,
-            ItemId = item.Id,
-            WorkspaceId = item.WorkspaceId,
-            Type = ItemEventType.LinkStateChanged,
-            Data = new JsonObject
-            {
-                ["url"] = change.Url, ["provider"] = change.Preview.ProviderId,
-                ["from_state"] = change.From?.ToString(), ["to_state"] = change.To?.ToString(),
-            },
-            OccurredAt = clock.UtcNow,
-            Tz = ws is null ? "UTC" : LogicalDate.EffectiveZone(ws, clock).Id,
-            DeviceId = deviceId,
+            var id = Uuid5.Create(item.Id, $"{change.Url}|{change.ToHash}");
+            if ((await s.Events.ListForItemAsync(item.Id)).Any(e => e.Id == id))
+                return 0;
+
+            var ws = await s.Workspaces.GetAsync(item.WorkspaceId);
+            await s.Events.AppendAsync(
+                new ItemEvent
+                {
+                    Id = id,
+                    ItemId = item.Id,
+                    WorkspaceId = item.WorkspaceId,
+                    Type = ItemEventType.LinkStateChanged,
+                    Data = new JsonObject
+                    {
+                        ["url"] = change.Url,
+                        ["provider"] = change.Preview.ProviderId,
+                        ["from_state"] = change.From?.ToString(),
+                        ["to_state"] = change.To?.ToString(),
+                    },
+                    OccurredAt = clock.UtcNow,
+                    Tz = ws is null ? "UTC" : LogicalDate.EffectiveZone(ws, clock).Id,
+                    DeviceId = deviceId,
+                }
+            );
+            return 0;
         });
-        return 0;
-    });
 }

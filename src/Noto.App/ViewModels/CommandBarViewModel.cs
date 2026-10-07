@@ -8,7 +8,19 @@ using Noto.Core.Presets;
 
 namespace Noto.App.ViewModels;
 
-public enum AppPage { Today, Backlog, Review, Shutdown, Insights, Settings, DayLog, Onboarding, TodayAll, WeeklyReview }
+public enum AppPage
+{
+    Today,
+    Backlog,
+    Review,
+    Shutdown,
+    Insights,
+    Settings,
+    DayLog,
+    Onboarding,
+    TodayAll,
+    WeeklyReview,
+}
 
 public sealed record WorkspaceRef(Guid Id, string Name);
 
@@ -29,11 +41,28 @@ public interface ICommandBarHost
     void ShowHelp();
 }
 
-public enum ResultKind { Command, Item, Add }
-
-public sealed record CommandResult(ResultKind Kind, string Title, string? Detail, string? Shortcut, Func<Task> Execute)
+public enum ResultKind
 {
-    public string Glyph => Kind switch { ResultKind.Command => "chevron-right", ResultKind.Item => "planned", _ => "plus" };
+    Command,
+    Item,
+    Add,
+}
+
+public sealed record CommandResult(
+    ResultKind Kind,
+    string Title,
+    string? Detail,
+    string? Shortcut,
+    Func<Task> Execute
+)
+{
+    public string Glyph =>
+        Kind switch
+        {
+            ResultKind.Command => "chevron-right",
+            ResultKind.Item => "planned",
+            _ => "plus",
+        };
 }
 
 // ⌘K: ask or jump. Commands, items (full-text search) and "add this" in one ranked list (docs/07 §7.1).
@@ -50,10 +79,17 @@ public sealed partial class CommandBarViewModel : ObservableObject
 
     public ObservableCollection<CommandResult> Results { get; } = [];
 
-    [ObservableProperty] bool _isOpen;
-    [ObservableProperty] string _text = "";
-    [ObservableProperty] int _selectedIndex;
-    [ObservableProperty] IReadOnlyList<string> _chips = [];
+    [ObservableProperty]
+    bool _isOpen;
+
+    [ObservableProperty]
+    string _text = "";
+
+    [ObservableProperty]
+    int _selectedIndex;
+
+    [ObservableProperty]
+    IReadOnlyList<string> _chips = [];
 
     int _version;
 
@@ -82,27 +118,52 @@ public sealed partial class CommandBarViewModel : ObservableObject
         Chips = parsed.Tokens.Select(t => t.Text).ToList();
 
         var results = new List<CommandResult>();
-        results.AddRange(Commands().Select(c => (c, score: FuzzyMatch.Score(query, c.Title))).Where(x => x.score > 0)
-            .OrderByDescending(x => x.score).Take(query.Length == 0 ? 40 : 8).Select(x => x.c));
+        results.AddRange(
+            Commands()
+                .Select(c => (c, score: FuzzyMatch.Score(query, c.Title)))
+                .Where(x => x.score > 0)
+                .OrderByDescending(x => x.score)
+                .Take(query.Length == 0 ? 40 : 8)
+                .Select(x => x.c)
+        );
 
         if (query.Length >= 2)
         {
             var hits = await _services.Search.SearchAsync(query, workspaceId: null, limit: 6);
-            if (version != _version) return; // a newer keystroke superseded this lookup
-            results.AddRange(hits.Select(h => new CommandResult(ResultKind.Item, h.Title, h.Snippet, null, () => _host.OpenItemAsync(h.WorkspaceId, h.ItemId))));
+            if (version != _version)
+                return; // a newer keystroke superseded this lookup
+            results.AddRange(
+                hits.Select(h => new CommandResult(
+                    ResultKind.Item,
+                    h.Title,
+                    h.Snippet,
+                    null,
+                    () => _host.OpenItemAsync(h.WorkspaceId, h.ItemId)
+                ))
+            );
         }
 
         if (parsed.Title.Length > 0 && _host.CurrentWorkspaceId is { } wsId)
-            results.Add(new CommandResult(ResultKind.Add, $"Add “{parsed.Title}”", Describe(parsed), "↵", () => AddAsync(query, wsId)));
+            results.Add(
+                new CommandResult(
+                    ResultKind.Add,
+                    $"Add “{parsed.Title}”",
+                    Describe(parsed),
+                    "↵",
+                    () => AddAsync(query, wsId)
+                )
+            );
 
         Results.Clear();
-        foreach (var r in results) Results.Add(r);
+        foreach (var r in results)
+            Results.Add(r);
         SelectedIndex = 0;
     }
 
     public void Move(int delta)
     {
-        if (Results.Count > 0) SelectedIndex = Math.Clamp(SelectedIndex + delta, 0, Results.Count - 1);
+        if (Results.Count > 0)
+            SelectedIndex = Math.Clamp(SelectedIndex + delta, 0, Results.Count - 1);
     }
 
     [RelayCommand]
@@ -114,7 +175,8 @@ public sealed partial class CommandBarViewModel : ObservableObject
 
     public async Task ExecuteSelectedAsync()
     {
-        if (SelectedIndex < 0 || SelectedIndex >= Results.Count) return;
+        if (SelectedIndex < 0 || SelectedIndex >= Results.Count)
+            return;
         var result = Results[SelectedIndex];
         Close();
         await result.Execute();
@@ -124,18 +186,33 @@ public sealed partial class CommandBarViewModel : ObservableObject
     {
         switch (chord.Key)
         {
-            case "Escape": Close(); return true;
-            case "Enter": await ExecuteSelectedAsync(); return true;
-            case "ArrowDown": Move(1); return true;
-            case "ArrowUp": Move(-1); return true;
-            default: return false;
+            case "Escape":
+                Close();
+                return true;
+            case "Enter":
+                await ExecuteSelectedAsync();
+                return true;
+            case "ArrowDown":
+                Move(1);
+                return true;
+            case "ArrowUp":
+                Move(-1);
+                return true;
+            default:
+                return false;
         }
     }
 
     IEnumerable<CommandResult> Commands()
     {
         CommandResult Go(string title, AppPage page, AppAction? action = null) =>
-            new(ResultKind.Command, title, null, action is { } a ? KeyMap.ShortcutFor(a) : null, () => _host.GoAsync(page));
+            new(
+                ResultKind.Command,
+                title,
+                null,
+                action is { } a ? KeyMap.ShortcutFor(a) : null,
+                () => _host.GoAsync(page)
+            );
 
         yield return Go("Go to Today", AppPage.Today, AppAction.JumpToday);
         yield return Go("Go to Backlog", AppPage.Backlog);
@@ -150,44 +227,117 @@ public sealed partial class CommandBarViewModel : ObservableObject
         foreach (var ws in _host.WorkspaceRefs)
         {
             var id = ws.Id;
-            yield return new(ResultKind.Command, $"Go to {ws.Name}", null, n <= 9 ? $"⌘{n}" : null, () => _host.SelectWorkspaceAsync(id));
+            yield return new(
+                ResultKind.Command,
+                $"Go to {ws.Name}",
+                null,
+                n <= 9 ? $"⌘{n}" : null,
+                () => _host.SelectWorkspaceAsync(id)
+            );
             n++;
         }
 
-        yield return new(ResultKind.Command, "Undo last action", null, KeyMap.ShortcutFor(AppAction.Undo), _host.UndoAsync);
-        yield return new(ResultKind.Command, "Toggle inspector", null, KeyMap.ShortcutFor(AppAction.ToggleInspector), () => { _host.ToggleInspector(); return Task.CompletedTask; });
-        yield return new(ResultKind.Command, "Toggle sidebar", null, KeyMap.ShortcutFor(AppAction.ToggleSidebar), () => { _host.ToggleSidebar(); return Task.CompletedTask; });
-        yield return new(ResultKind.Command, "Show keyboard shortcuts", null, "?", () => { _host.ShowHelp(); return Task.CompletedTask; });
+        yield return new(
+            ResultKind.Command,
+            "Undo last action",
+            null,
+            KeyMap.ShortcutFor(AppAction.Undo),
+            _host.UndoAsync
+        );
+        yield return new(
+            ResultKind.Command,
+            "Toggle inspector",
+            null,
+            KeyMap.ShortcutFor(AppAction.ToggleInspector),
+            () =>
+            {
+                _host.ToggleInspector();
+                return Task.CompletedTask;
+            }
+        );
+        yield return new(
+            ResultKind.Command,
+            "Toggle sidebar",
+            null,
+            KeyMap.ShortcutFor(AppAction.ToggleSidebar),
+            () =>
+            {
+                _host.ToggleSidebar();
+                return Task.CompletedTask;
+            }
+        );
+        yield return new(
+            ResultKind.Command,
+            "Show keyboard shortcuts",
+            null,
+            "?",
+            () =>
+            {
+                _host.ShowHelp();
+                return Task.CompletedTask;
+            }
+        );
 
         foreach (var preset in BuiltInPresets.All)
         {
             var p = preset;
-            yield return new(ResultKind.Command, $"Switch preset: {p.Name}", $"{p.Layout} · {p.Order} · {p.Pressure}", null, () => _host.ApplyPresetAsync(p));
+            yield return new(
+                ResultKind.Command,
+                $"Switch preset: {p.Name}",
+                $"{p.Layout} · {p.Order} · {p.Pressure}",
+                null,
+                () => _host.ApplyPresetAsync(p)
+            );
         }
         foreach (var level in Enum.GetValues<Pressure>())
         {
             var l = level;
-            yield return new(ResultKind.Command, $"Set pressure: {l}", null, null, () => _host.SetPressureAsync(l));
+            yield return new(
+                ResultKind.Command,
+                $"Set pressure: {l}",
+                null,
+                null,
+                () => _host.SetPressureAsync(l)
+            );
         }
     }
 
     async Task AddAsync(string raw, Guid workspaceId)
     {
-        var add = new AddItemViewModel(_services, workspaceId, plannedForToday: true,
-            name => _host.WorkspaceRefs.FirstOrDefault(w => w.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } w ? w.Id : null,
-            () => _host.Today) { Text = raw };
+        var add = new AddItemViewModel(
+            _services,
+            workspaceId,
+            plannedForToday: true,
+            name =>
+                _host.WorkspaceRefs.FirstOrDefault(w =>
+                    w.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
+                )
+                    is { } w
+                    ? w.Id
+                    : null,
+            () => _host.Today
+        )
+        {
+            Text = raw,
+        };
         await add.SubmitAsync();
     }
 
     static string? Describe(ParsedCapture p)
     {
         var parts = new List<string>();
-        if (p.PlannedFor is { } d) parts.Add(d.ToString("ddd MMM d", System.Globalization.CultureInfo.InvariantCulture));
-        if (p.EstimateMinutes is { } e) parts.Add($"~{Duration.Short(e)}");
-        if (p.Priority > 0) parts.Add($"!{p.Priority}");
-        if (p.WaitingOn is { } w) parts.Add($"waiting on {w}");
-        if (p.WorkspaceName is { } ws) parts.Add($"in {ws}");
-        if (p.Tags.Count > 0) parts.Add(string.Join(' ', p.Tags.Select(t => "#" + t)));
+        if (p.PlannedFor is { } d)
+            parts.Add(d.ToString("ddd MMM d", System.Globalization.CultureInfo.InvariantCulture));
+        if (p.EstimateMinutes is { } e)
+            parts.Add($"~{Duration.Short(e)}");
+        if (p.Priority > 0)
+            parts.Add($"!{p.Priority}");
+        if (p.WaitingOn is { } w)
+            parts.Add($"waiting on {w}");
+        if (p.WorkspaceName is { } ws)
+            parts.Add($"in {ws}");
+        if (p.Tags.Count > 0)
+            parts.Add(string.Join(' ', p.Tags.Select(t => "#" + t)));
         return parts.Count == 0 ? null : string.Join(" · ", parts);
     }
 }

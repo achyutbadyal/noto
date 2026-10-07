@@ -1,7 +1,8 @@
-<Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:anim="using:Avalonia.Animation.Easings">
-
+<Styles
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:anim="using:Avalonia.Animation.Easings"
+>
   <Styles.Resources>
     <!-- Motion tokens: exponential curves, never bounce/elastic (docs: motion-design). -->
     <anim:CubicEaseOut x:Key="EaseOut" />
@@ -16,29 +17,64 @@
     <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
     <Setter Property="FontFeatures" Value="+tnum" />
   </Style>
-  <Style Selector="TextBlock.secondary"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}" /></Style>
-  <Style Selector="TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource Text3Brush}" /></Style>
+  <Style Selector="TextBlock.secondary">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
+  <Style Selector="TextBlock.hint">
+    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
+  </Style>
   <Style Selector="TextBlock.section">
     <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="LetterSpacing" Value="0.5" />
   </Style>
-  <Style Selector="TextBlock.title"><Setter Property="FontSize" Value="20" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="LetterSpacing" Value="-0.2" /></Style>
-  <Style Selector="TextBlock.headline"><Setter Property="FontSize" Value="15" /><Setter Property="FontWeight" Value="SemiBold" /><Setter Property="LetterSpacing" Value="-0.1" /></Style>
-  <Style Selector="TextBlock.error"><Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" /></Style>
-  <Style Selector="TextBlock.mono"><Setter Property="FontFamily" Value="SF Mono, Menlo, Consolas, monospace" /></Style>
+  <Style Selector="TextBlock.title">
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.2" />
+  </Style>
+  <Style Selector="TextBlock.headline">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="LetterSpacing" Value="-0.1" />
+  </Style>
+  <Style Selector="TextBlock.error">
+    <Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" />
+  </Style>
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFamily" Value="SF Mono, Menlo, Consolas, monospace" />
+  </Style>
 
   <!-- Pressure: static signals, never colour alone (the glyph and text carry the meaning too) -->
-  <Style Selector="TextBlock.carry.warm"><Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" /></Style>
-  <Style Selector="TextBlock.carry.hot"><Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" /></Style>
-  <Style Selector="TextBlock.carry.stale"><Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" /></Style>
-  <Style Selector="Border.bar"><Setter Property="Width" Value="3" /><Setter Property="Background" Value="Transparent" /></Style>
-  <Style Selector="Border.bar.hot"><Setter Property="Background" Value="{DynamicResource PressureHotBrush}" /></Style>
-  <Style Selector="Border.bar.stale"><Setter Property="Background" Value="{DynamicResource PressureStaleBrush}" /></Style>
-  <Style Selector="PathIcon.carry.warm"><Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" /></Style>
-  <Style Selector="PathIcon.carry.hot"><Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" /></Style>
-  <Style Selector="PathIcon.carry.stale"><Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" /></Style>
+  <Style Selector="TextBlock.carry.warm">
+    <Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" />
+  </Style>
+  <Style Selector="TextBlock.carry.hot">
+    <Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" />
+  </Style>
+  <Style Selector="TextBlock.carry.stale">
+    <Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" />
+  </Style>
+  <Style Selector="Border.bar">
+    <Setter Property="Width" Value="3" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.bar.hot">
+    <Setter Property="Background" Value="{DynamicResource PressureHotBrush}" />
+  </Style>
+  <Style Selector="Border.bar.stale">
+    <Setter Property="Background" Value="{DynamicResource PressureStaleBrush}" />
+  </Style>
+  <Style Selector="PathIcon.carry.warm">
+    <Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" />
+  </Style>
+  <Style Selector="PathIcon.carry.hot">
+    <Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" />
+  </Style>
+  <Style Selector="PathIcon.carry.stale">
+    <Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" />
+  </Style>
 
   <!-- ============================================================= -->
   <!--  Icons                                                         -->
@@ -48,12 +84,25 @@
     <Setter Property="Height" Value="16" />
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
   </Style>
-  <Style Selector="PathIcon.large"><Setter Property="Width" Value="18" /><Setter Property="Height" Value="18" /></Style>
-  <Style Selector="PathIcon.strong"><Setter Property="Foreground" Value="{DynamicResource Text1Brush}" /></Style>
-  <Style Selector="PathIcon.done"><Setter Property="Foreground" Value="{DynamicResource DoneBrush}" /></Style>
-  <Style Selector="PathIcon.now"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="PathIcon.waiting"><Setter Property="Foreground" Value="{DynamicResource Text3Brush}" /></Style>
-  <Style Selector="PathIcon.dropped"><Setter Property="Foreground" Value="{DynamicResource Text3Brush}" /></Style>
+  <Style Selector="PathIcon.large">
+    <Setter Property="Width" Value="18" />
+    <Setter Property="Height" Value="18" />
+  </Style>
+  <Style Selector="PathIcon.strong">
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+  </Style>
+  <Style Selector="PathIcon.done">
+    <Setter Property="Foreground" Value="{DynamicResource DoneBrush}" />
+  </Style>
+  <Style Selector="PathIcon.now">
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="PathIcon.waiting">
+    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
+  </Style>
+  <Style Selector="PathIcon.dropped">
+    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
+  </Style>
 
   <!-- Status icon doubles as the complete toggle -->
   <Style Selector="Button.status">
@@ -66,8 +115,12 @@
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="Button.status /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
-  <Style Selector="Button.status:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource RaisedBrush}" /></Style>
+  <Style Selector="Button.status /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.status:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+  </Style>
 
   <!-- ============================================================= -->
   <!--  Surfaces                                                      -->
@@ -125,8 +178,12 @@
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="Button.habitCell /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
-  <Style Selector="Button.habitCell:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+  <Style Selector="Button.habitCell /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.habitCell:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
   <Style Selector="Border.habit">
     <Setter Property="Width" Value="20" />
     <Setter Property="Height" Value="20" />
@@ -158,15 +215,23 @@
     <Setter Property="CornerRadius" Value="{DynamicResource Radius}" />
     <Setter Property="Background" Value="Transparent" />
   </Style>
-  <Style Selector="Border.row.focused"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+  <Style Selector="Border.row.focused">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
   <Style Selector="Border.row.selected">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     <Setter Property="BorderThickness" Value="1" />
   </Style>
-  <Style Selector="Border.row:pointerover"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
-  <Style Selector="Border.row:pointerover TextBlock.hint"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}" /></Style>
-  <Style Selector="Border.row:pointerover PathIcon"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}" /></Style>
+  <Style Selector="Border.row:pointerover">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="Border.row:pointerover TextBlock.hint">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
+  <Style Selector="Border.row:pointerover PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
 
   <!-- ============================================================= -->
   <!--  Buttons                                                       -->
@@ -199,7 +264,9 @@
     <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
     <Setter Property="Opacity" Value="0.9" />
   </Style>
-  <Style Selector="Button.accent PathIcon"><Setter Property="Foreground" Value="{DynamicResource CanvasBrush}" /></Style>
+  <Style Selector="Button.accent PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource CanvasBrush}" />
+  </Style>
 
   <!-- Keyboard-decision card (review + prompts) -->
   <Style Selector="Button.key /template/ ContentPresenter">
@@ -221,7 +288,10 @@
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
   </Style>
-  <Style Selector="Button.icon.small"><Setter Property="Width" Value="24" /><Setter Property="Height" Value="24" /></Style>
+  <Style Selector="Button.icon.small">
+    <Setter Property="Width" Value="24" />
+    <Setter Property="Height" Value="24" />
+  </Style>
 
   <!-- Sidebar / navigation item -->
   <Style Selector="Button.nav">
@@ -232,12 +302,18 @@
     <Setter Property="CornerRadius" Value="7" />
     <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
   </Style>
-  <Style Selector="Button.nav PathIcon"><Setter Property="Foreground" Value="{DynamicResource Text2Brush}" /></Style>
+  <Style Selector="Button.nav PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
   <Style Selector="Button.nav.selected /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>
-  <Style Selector="Button.nav.selected PathIcon"><Setter Property="Foreground" Value="{DynamicResource AccentBrush}" /></Style>
-  <Style Selector="Button.nav.selected TextBlock"><Setter Property="Foreground" Value="{DynamicResource Text1Brush}" /></Style>
+  <Style Selector="Button.nav.selected PathIcon">
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.nav.selected TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+  </Style>
 
   <!-- Collapsed rail: no padding, so the single remaining icon centres exactly in the 40px button. -->
   <Style Selector="Button.nav.collapsed">
@@ -253,13 +329,23 @@
     <Setter Property="Margin" Value="0,5,0,5" />
     <Setter Property="IsVisible" Value="False" />
   </Style>
-  <Style Selector="Border.wsDot"><Setter Property="IsVisible" Value="False" /></Style>
-  <Style Selector="Border.wsBadge"><Setter Property="IsVisible" Value="False" /></Style>
+  <Style Selector="Border.wsDot">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+  <Style Selector="Border.wsBadge">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
   <!-- Only one rule ever turns visibility on, guarded by the sidebar state, so nothing depends on
        selector-specificity ordering. -->
-  <Style Selector="Button.wsTab.selected:not(.collapsed) Border.wsBar"><Setter Property="IsVisible" Value="True" /></Style>
-  <Style Selector="Button.wsTab:not(.collapsed) Border.wsBadge.show"><Setter Property="IsVisible" Value="True" /></Style>
-  <Style Selector="Button.wsTab.collapsed Border.wsDot.show"><Setter Property="IsVisible" Value="True" /></Style>
+  <Style Selector="Button.wsTab.selected:not(.collapsed) Border.wsBar">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Button.wsTab:not(.collapsed) Border.wsBadge.show">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+  <Style Selector="Button.wsTab.collapsed Border.wsDot.show">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
 
   <!-- Collapsed workspace tab: keep the button full width so the dot can sit in its corner, and centre the icon. -->
   <Style Selector="Button.wsTab.collapsed">
@@ -285,7 +371,9 @@
     <Setter Property="CornerRadius" Value="7" />
     <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
   </Style>
-  <Style Selector="Button.seg /template/ ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+  <Style Selector="Button.seg /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
   <Style Selector="Button.seg.selected /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
   </Style>
@@ -294,7 +382,11 @@
     <Setter Property="FontWeight" Value="Medium" />
   </Style>
 
-  <Style Selector="Button.link"><Setter Property="Foreground" Value="{DynamicResource LinkBrush}" /><Setter Property="Padding" Value="2,1" /><Setter Property="MinHeight" Value="0" /></Style>
+  <Style Selector="Button.link">
+    <Setter Property="Foreground" Value="{DynamicResource LinkBrush}" />
+    <Setter Property="Padding" Value="2,1" />
+    <Setter Property="MinHeight" Value="0" />
+  </Style>
 
   <!-- macOS-style search field -->
   <Style Selector="Button.search">
@@ -306,8 +398,12 @@
     <Setter Property="MinWidth" Value="190" />
     <Setter Property="HorizontalContentAlignment" Value="Left" />
   </Style>
-  <Style Selector="Button.search /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource RaisedBrush}" /></Style>
-  <Style Selector="Button.search:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource HoverBrush}" /></Style>
+  <Style Selector="Button.search /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+  </Style>
+  <Style Selector="Button.search:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
   <Style Selector="Button:disabled /template/ ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="TextElement.Foreground" Value="{DynamicResource Text3Brush}" />
@@ -352,8 +448,14 @@
     <Setter Property="CornerRadius" Value="{DynamicResource Radius}" />
     <Setter Property="MinHeight" Value="30" />
   </Style>
-  <Style Selector="CheckBox"><Setter Property="MinHeight" Value="24" /><Setter Property="Foreground" Value="{DynamicResource Text1Brush}" /></Style>
-  <Style Selector="ToggleSwitch"><Setter Property="Foreground" Value="{DynamicResource Text1Brush}" /><Setter Property="MinHeight" Value="24" /></Style>
+  <Style Selector="CheckBox">
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+  </Style>
+  <Style Selector="ToggleSwitch">
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+    <Setter Property="MinHeight" Value="24" />
+  </Style>
 
   <Style Selector="Slider">
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
@@ -366,12 +468,17 @@
     <Setter Property="MaxHeight" Value="6" />
     <Setter Property="CornerRadius" Value="3" />
   </Style>
-  <Style Selector="ProgressBar.over"><Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" /></Style>
+  <Style Selector="ProgressBar.over">
+    <Setter Property="Foreground" Value="{DynamicResource PressureHotBrush}" />
+  </Style>
 
   <!-- ============================================================= -->
   <!--  Lists                                                         -->
   <!-- ============================================================= -->
-  <Style Selector="ListBox"><Setter Property="Background" Value="Transparent" /><Setter Property="Padding" Value="4" /></Style>
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Padding" Value="4" />
+  </Style>
   <Style Selector="ListBoxItem">
     <Setter Property="Padding" Value="8,6" />
     <Setter Property="CornerRadius" Value="{DynamicResource Radius}" />
@@ -394,39 +501,71 @@
   <Style Selector="Window.motion Button">
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.13" Easing="{StaticResource EaseOut}" />
-        <DoubleTransition Property="Opacity" Duration="0:0:0.13" Easing="{StaticResource EaseOut}" />
+        <BrushTransition
+          Property="Background"
+          Duration="0:0:0.13"
+          Easing="{StaticResource EaseOut}"
+        />
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.13"
+          Easing="{StaticResource EaseOut}"
+        />
       </Transitions>
     </Setter>
   </Style>
   <Style Selector="Window.motion Border.row">
     <Setter Property="Transitions">
-      <Transitions><BrushTransition Property="Background" Duration="0:0:0.14" Easing="{StaticResource EaseOut}" /></Transitions>
+      <Transitions>
+        <BrushTransition
+          Property="Background"
+          Duration="0:0:0.14"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
     </Setter>
   </Style>
   <Style Selector="Window.motion ListBoxItem">
     <Setter Property="Transitions">
-      <Transitions><BrushTransition Property="Background" Duration="0:0:0.14" Easing="{StaticResource EaseOut}" /></Transitions>
+      <Transitions>
+        <BrushTransition
+          Property="Background"
+          Duration="0:0:0.14"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
     </Setter>
   </Style>
 
   <!-- Progress: value eases rather than jumping (260ms) -->
   <Style Selector="Window.motion ProgressBar">
     <Setter Property="Transitions">
-      <Transitions><DoubleTransition Property="Value" Duration="0:0:0.26" Easing="{StaticResource EaseOut}" /></Transitions>
+      <Transitions>
+        <DoubleTransition Property="Value" Duration="0:0:0.26" Easing="{StaticResource EaseOut}" />
+      </Transitions>
     </Setter>
   </Style>
 
   <!-- Sidebar collapse and inspector slide (260ms, ease-in-out for a there-and-back toggle) -->
   <Style Selector="Window.motion Border#Sidebar">
     <Setter Property="Transitions">
-      <Transitions><DoubleTransition Property="Width" Duration="0:0:0.26" Easing="{StaticResource EaseInOut}" /></Transitions>
+      <Transitions>
+        <DoubleTransition
+          Property="Width"
+          Duration="0:0:0.26"
+          Easing="{StaticResource EaseInOut}"
+        />
+      </Transitions>
     </Setter>
   </Style>
   <Style Selector="Window.motion Border#Inspector">
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Width" Duration="0:0:0.26" Easing="{StaticResource EaseInOut}" />
+        <DoubleTransition
+          Property="Width"
+          Duration="0:0:0.26"
+          Easing="{StaticResource EaseInOut}"
+        />
         <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="{StaticResource EaseOut}" />
       </Transitions>
     </Setter>
@@ -435,14 +574,28 @@
   <!-- Overlays: fade the scrim, then fade + scale the panel (enter 200ms, exit faster) -->
   <Style Selector="Window.motion Border.scrim">
     <Setter Property="Transitions">
-      <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="{StaticResource EaseOut}" /></Transitions>
+      <Transitions>
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.15"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
     </Setter>
   </Style>
   <Style Selector="Window.motion Border.pop">
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="{StaticResource EaseOut}" />
-        <ThicknessTransition Property="Margin" Duration="0:0:0.2" Easing="{StaticResource EaseOutExpo}" />
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.16"
+          Easing="{StaticResource EaseOut}"
+        />
+        <ThicknessTransition
+          Property="Margin"
+          Duration="0:0:0.2"
+          Easing="{StaticResource EaseOutExpo}"
+        />
       </Transitions>
     </Setter>
   </Style>
@@ -451,8 +604,16 @@
   <Style Selector="Window.motion Border.toast">
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="{StaticResource EaseOut}" />
-        <ThicknessTransition Property="Margin" Duration="0:0:0.22" Easing="{StaticResource EaseOutExpo}" />
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.18"
+          Easing="{StaticResource EaseOut}"
+        />
+        <ThicknessTransition
+          Property="Margin"
+          Duration="0:0:0.22"
+          Easing="{StaticResource EaseOutExpo}"
+        />
       </Transitions>
     </Setter>
   </Style>
@@ -469,16 +630,24 @@
     </Setter>
     <Style.Animations>
       <Animation Duration="0:0:0.2" Easing="{StaticResource EaseInOut}">
-        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
-        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="-90" /></KeyFrame>
+        <KeyFrame Cue="0%">
+          <Setter Property="RotateTransform.Angle" Value="0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="RotateTransform.Angle" Value="-90" />
+        </KeyFrame>
       </Animation>
     </Style.Animations>
   </Style>
   <Style Selector="PathIcon.chevron:not(.collapsed)">
     <Style.Animations>
       <Animation Duration="0:0:0.2" Easing="{StaticResource EaseInOut}">
-        <KeyFrame Cue="0%"><Setter Property="RotateTransform.Angle" Value="-90" /></KeyFrame>
-        <KeyFrame Cue="100%"><Setter Property="RotateTransform.Angle" Value="0" /></KeyFrame>
+        <KeyFrame Cue="0%">
+          <Setter Property="RotateTransform.Angle" Value="-90" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="RotateTransform.Angle" Value="0" />
+        </KeyFrame>
       </Animation>
     </Style.Animations>
   </Style>
@@ -492,7 +661,13 @@
   </Style>
   <Style Selector="Window.motion ItemsControl.sectionBody">
     <Setter Property="Transitions">
-      <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.16" Easing="{StaticResource EaseOut}" /></Transitions>
+      <Transitions>
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.16"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
     </Setter>
   </Style>
 
@@ -500,8 +675,16 @@
   <Style Selector="Window.motion Border.appear">
     <Setter Property="Transitions">
       <Transitions>
-        <DoubleTransition Property="Opacity" Duration="0:0:0.24" Easing="{StaticResource EaseOut}" />
-        <ThicknessTransition Property="Margin" Duration="0:0:0.28" Easing="{StaticResource EaseOutExpo}" />
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.24"
+          Easing="{StaticResource EaseOut}"
+        />
+        <ThicknessTransition
+          Property="Margin"
+          Duration="0:0:0.28"
+          Easing="{StaticResource EaseOutExpo}"
+        />
       </Transitions>
     </Setter>
   </Style>
@@ -509,7 +692,13 @@
   <!-- Page swap: the new page fades in (code-behind sets 0 then 1); no cross-fade ghosting -->
   <Style Selector="Window.motion ContentControl#PageHost">
     <Setter Property="Transitions">
-      <Transitions><DoubleTransition Property="Opacity" Duration="0:0:0.18" Easing="{StaticResource EaseOut}" /></Transitions>
+      <Transitions>
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.18"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
     </Setter>
   </Style>
 </Styles>

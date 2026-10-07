@@ -5,7 +5,12 @@ using Noto.Core.Presets;
 
 namespace Noto.App.ViewModels;
 
-public enum OnboardingChoice { Work, Personal, Both }
+public enum OnboardingChoice
+{
+    Work,
+    Personal,
+    Both,
+}
 
 // First launch asks one question: "What do you want Noto to keep honest?" (docs/07 §16).
 public sealed partial class OnboardingViewModel(AppServices services) : ObservableObject

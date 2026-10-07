@@ -12,21 +12,31 @@ public sealed record ImportedItem(
     DateOnly? CompletedOn = null,
     bool IsSomeday = false,
     IReadOnlyList<string>? Tags = null,
-    IReadOnlyList<ImportedItem>? Subtasks = null);
+    IReadOnlyList<ImportedItem>? Subtasks = null
+);
 
-public enum ImportFormat { TodoistCsv, TodoistJson, ThingsJson, RemindersIcs, TickTickCsv, MarkdownChecklist }
+public enum ImportFormat
+{
+    TodoistCsv,
+    TodoistJson,
+    ThingsJson,
+    RemindersIcs,
+    TickTickCsv,
+    MarkdownChecklist,
+}
 
 public static class Importers
 {
-    public static IReadOnlyList<ImportedItem> Parse(ImportFormat format, string content) => format switch
-    {
-        ImportFormat.TodoistCsv => TodoistImporter.ParseCsv(content),
-        ImportFormat.TodoistJson => TodoistImporter.ParseJson(content),
-        ImportFormat.ThingsJson => ThingsImporter.Parse(content),
-        ImportFormat.RemindersIcs => RemindersImporter.Parse(content),
-        ImportFormat.TickTickCsv => TickTickImporter.Parse(content),
-        _ => MarkdownImporter.Parse(content),
-    };
+    public static IReadOnlyList<ImportedItem> Parse(ImportFormat format, string content) =>
+        format switch
+        {
+            ImportFormat.TodoistCsv => TodoistImporter.ParseCsv(content),
+            ImportFormat.TodoistJson => TodoistImporter.ParseJson(content),
+            ImportFormat.ThingsJson => ThingsImporter.Parse(content),
+            ImportFormat.RemindersIcs => RemindersImporter.Parse(content),
+            ImportFormat.TickTickCsv => TickTickImporter.Parse(content),
+            _ => MarkdownImporter.Parse(content),
+        };
 }
 
 public sealed class ImportFormatException(string message) : Exception(message);

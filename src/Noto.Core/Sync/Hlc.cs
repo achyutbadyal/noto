@@ -10,12 +10,14 @@ public readonly record struct Hlc(long Ms, int Counter, Guid Device) : IComparab
     public int CompareTo(Hlc other)
     {
         var c = Ms.CompareTo(other.Ms);
-        if (c != 0) return c;
+        if (c != 0)
+            return c;
         c = Counter.CompareTo(other.Counter);
         return c != 0 ? c : Device.CompareTo(other.Device);
     }
 
     public static bool operator >(Hlc a, Hlc b) => a.CompareTo(b) > 0;
+
     public static bool operator <(Hlc a, Hlc b) => a.CompareTo(b) < 0;
 
     public override string ToString() => $"{Ms}:{Counter}:{Device}";
@@ -24,10 +26,21 @@ public readonly record struct Hlc(long Ms, int Counter, Guid Device) : IComparab
     {
         hlc = default;
         var parts = text?.Split(':');
-        if (parts is not { Length: 3 }) return false;
-        if (!long.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var ms)) return false;
-        if (!int.TryParse(parts[1], NumberStyles.None, CultureInfo.InvariantCulture, out var counter)) return false;
-        if (!Guid.TryParse(parts[2], out var device)) return false;
+        if (parts is not { Length: 3 })
+            return false;
+        if (!long.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var ms))
+            return false;
+        if (
+            !int.TryParse(
+                parts[1],
+                NumberStyles.None,
+                CultureInfo.InvariantCulture,
+                out var counter
+            )
+        )
+            return false;
+        if (!Guid.TryParse(parts[2], out var device))
+            return false;
         hlc = new Hlc(ms, counter, device);
         return true;
     }
@@ -38,8 +51,10 @@ public readonly record struct Hlc(long Ms, int Counter, Guid Device) : IComparab
     // Compares two serialized clocks; a missing clock sorts below everything.
     public static int Compare(string? a, string? b)
     {
-        if (a is null) return b is null ? 0 : -1;
-        if (b is null) return 1;
+        if (a is null)
+            return b is null ? 0 : -1;
+        if (b is null)
+            return 1;
         return Parse(a).CompareTo(Parse(b));
     }
 }
@@ -58,8 +73,13 @@ public sealed class HybridClock(Func<long> wallClockMs, Guid device)
         lock (_lock)
         {
             var wall = wallClockMs();
-            if (wall > _ms) { _ms = wall; _counter = 0; }
-            else _counter++;
+            if (wall > _ms)
+            {
+                _ms = wall;
+                _counter = 0;
+            }
+            else
+                _counter++;
             return new Hlc(_ms, _counter, device);
         }
     }
@@ -70,9 +90,12 @@ public sealed class HybridClock(Func<long> wallClockMs, Guid device)
         {
             var wall = wallClockMs();
             var max = Math.Max(Math.Max(wall, _ms), remote.Ms);
-            if (max == _ms && max == remote.Ms) _counter = Math.Max(_counter, remote.Counter);
-            else if (max == remote.Ms) _counter = remote.Counter;
-            else if (max != _ms) _counter = -1; // wall clock moved ahead; Next() will reset
+            if (max == _ms && max == remote.Ms)
+                _counter = Math.Max(_counter, remote.Counter);
+            else if (max == remote.Ms)
+                _counter = remote.Counter;
+            else if (max != _ms)
+                _counter = -1; // wall clock moved ahead; Next() will reset
             _ms = max;
         }
     }
@@ -80,15 +103,24 @@ public sealed class HybridClock(Func<long> wallClockMs, Guid device)
     // Restores the last persisted clock so a restart can't reissue timestamps.
     public void Restore(string? serialized)
     {
-        if (!Hlc.TryParse(serialized, out var last)) return;
+        if (!Hlc.TryParse(serialized, out var last))
+            return;
         lock (_lock)
         {
-            if (last.Ms > _ms || (last.Ms == _ms && last.Counter > _counter)) { _ms = last.Ms; _counter = last.Counter; }
+            if (last.Ms > _ms || (last.Ms == _ms && last.Counter > _counter))
+            {
+                _ms = last.Ms;
+                _counter = last.Counter;
+            }
         }
     }
 
     public string Last
     {
-        get { lock (_lock) return new Hlc(_ms, Math.Max(_counter, 0), device).ToString(); }
+        get
+        {
+            lock (_lock)
+                return new Hlc(_ms, Math.Max(_counter, 0), device).ToString();
+        }
     }
 }

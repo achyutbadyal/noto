@@ -12,7 +12,8 @@ public static class RowNormalizer
     {
         var status = r["status"]?.GetValue<string>() ?? nameof(ItemStatus.Open);
 
-        if (status == nameof(ItemStatus.Waiting) && r["waiting_on"] is null) status = nameof(ItemStatus.Open);
+        if (status == nameof(ItemStatus.Waiting) && r["waiting_on"] is null)
+            status = nameof(ItemStatus.Open);
 
         if (status == nameof(ItemStatus.Done))
         {
@@ -25,11 +26,15 @@ public static class RowNormalizer
             r["completed_on"] = null;
         }
 
-        if (status == nameof(ItemStatus.Dropped)) r["dropped_at"] ??= r["created_at"]?.DeepClone();
-        else r["dropped_at"] = null;
+        if (status == nameof(ItemStatus.Dropped))
+            r["dropped_at"] ??= r["created_at"]?.DeepClone();
+        else
+            r["dropped_at"] = null;
 
-        if (status != nameof(ItemStatus.Open) || r["planned_for"] is not null) r["is_someday"] = false;
-        if (r["is_container"]?.GetValue<bool>() == true) r["planned_for"] = null;
+        if (status != nameof(ItemStatus.Open) || r["planned_for"] is not null)
+            r["is_someday"] = false;
+        if (r["is_container"]?.GetValue<bool>() == true)
+            r["planned_for"] = null;
 
         r["status"] = status;
     }

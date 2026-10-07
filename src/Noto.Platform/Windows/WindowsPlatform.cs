@@ -7,7 +7,12 @@ public static class WindowsPlatform
 {
     const string Pending = "Not available in this build of Noto for Windows yet.";
 
-    public static PlatformServices Create() => new(
-        new UnsupportedHotkey(Pending), new InMemoryKeyring(), new UnsupportedCaptureContext(Pending),
-        new UnsupportedNotifications(Pending), new StaticReduceMotion());
+    public static PlatformServices Create() =>
+        new(
+            new UnsupportedHotkey(Pending),
+            new InMemoryKeyring(),
+            new UnsupportedCaptureContext(Pending),
+            new UnsupportedNotifications(Pending),
+            new StaticReduceMotion()
+        );
 }

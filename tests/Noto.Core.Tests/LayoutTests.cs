@@ -9,7 +9,10 @@ namespace Noto.Core.Tests;
 public class BoardLayoutTests
 {
     static readonly DateOnly Today = Oct(7);
-    static readonly BoardSettings Settings = new([new("design", "Design", WipLimit: 1), new("build", "Build")]);
+    static readonly BoardSettings Settings = new([
+        new("design", "Design", WipLimit: 1),
+        new("build", "Build"),
+    ]);
 
     static TodoItem Item(Action<TodoItem>? tweak = null)
     {
@@ -18,12 +21,15 @@ public class BoardLayoutTests
         return i;
     }
 
-    static IReadOnlyList<Guid> Ids(IReadOnlyList<BoardColumn> cols, string id) => cols.Single(c => c.Id == id).Items.Select(i => i.Id).ToList();
+    static IReadOnlyList<Guid> Ids(IReadOnlyList<BoardColumn> cols, string id) =>
+        cols.Single(c => c.Id == id).Items.Select(i => i.Id).ToList();
 
     [Fact]
     public void Columns_are_fixed_with_user_columns_between_backlog_and_today()
     {
-        BoardLayout.Build([], Today, Settings).Select(c => c.Id)
+        BoardLayout
+            .Build([], Today, Settings)
+            .Select(c => c.Id)
             .ShouldBe(["someday", "backlog", "design", "build", "today", "waiting", "done"]);
     }
 
@@ -35,11 +41,28 @@ public class BoardLayoutTests
         var future = Item(i => i.PlannedFor = Today.AddDays(2));
         var today = Item(i => i.PlannedFor = Today);
         var carried = Item(i => i.PlannedFor = Today.AddDays(-3));
-        var waiting = Item(i => { i.Status = ItemStatus.Waiting; i.WaitingOn = "x"; });
-        var done = Item(i => { i.Status = ItemStatus.Done; i.CompletedOn = Today; i.CompletedAt = DateTimeOffset.UtcNow; });
-        var dropped = Item(i => { i.Status = ItemStatus.Dropped; i.DroppedAt = DateTimeOffset.UtcNow; });
+        var waiting = Item(i =>
+        {
+            i.Status = ItemStatus.Waiting;
+            i.WaitingOn = "x";
+        });
+        var done = Item(i =>
+        {
+            i.Status = ItemStatus.Done;
+            i.CompletedOn = Today;
+            i.CompletedAt = DateTimeOffset.UtcNow;
+        });
+        var dropped = Item(i =>
+        {
+            i.Status = ItemStatus.Dropped;
+            i.DroppedAt = DateTimeOffset.UtcNow;
+        });
 
-        var cols = BoardLayout.Build([someday, backlog, future, today, carried, waiting, done, dropped], Today, Settings);
+        var cols = BoardLayout.Build(
+            [someday, backlog, future, today, carried, waiting, done, dropped],
+            Today,
+            Settings
+        );
 
         Ids(cols, "someday").ShouldBe([someday.Id]);
         Ids(cols, "backlog").ToHashSet().ShouldBe([backlog.Id, future.Id]);
@@ -63,7 +86,11 @@ public class BoardLayoutTests
     [Fact]
     public void Wip_limit_flags_overfull_columns()
     {
-        var cols = BoardLayout.Build([Item(i => i.BoardColumn = "design"), Item(i => i.BoardColumn = "design")], Today, Settings);
+        var cols = BoardLayout.Build(
+            [Item(i => i.BoardColumn = "design"), Item(i => i.BoardColumn = "design")],
+            Today,
+            Settings
+        );
         cols.Single(c => c.Id == "design").IsOverWip.ShouldBeTrue();
         cols.Single(c => c.Id == "build").IsOverWip.ShouldBeFalse();
     }
@@ -71,7 +98,13 @@ public class BoardLayoutTests
     [Fact]
     public void Done_column_shows_only_the_last_seven_days()
     {
-        TodoItem DoneOn(DateOnly d) => Item(i => { i.Status = ItemStatus.Done; i.CompletedOn = d; i.CompletedAt = DateTimeOffset.UtcNow; });
+        TodoItem DoneOn(DateOnly d) =>
+            Item(i =>
+            {
+                i.Status = ItemStatus.Done;
+                i.CompletedOn = d;
+                i.CompletedAt = DateTimeOffset.UtcNow;
+            });
         var recent = DoneOn(Today.AddDays(-6));
         var old = DoneOn(Today.AddDays(-7));
 
@@ -93,7 +126,8 @@ public class BoardLayoutTests
 
         var back = BoardSettings.FromJson(json);
 
-        back.UserColumns.Select(c => (c.Id, c.WipLimit)).ShouldBe([("design", 1), ("build", (int?)null)]);
+        back.UserColumns.Select(c => (c.Id, c.WipLimit))
+            .ShouldBe([("design", 1), ("build", (int?)null)]);
         json.ShouldContain("timeline");
         BoardSettings.FromJson(null).ShouldBe(BoardSettings.Default);
     }
@@ -106,7 +140,13 @@ public class BoardLayoutTests
         var scheduled = new Story(Oct(1), Oct(1));
 
         var stuck = BoardLayout.StuckInColumn(
-            new[] { stale, recentlyMoved, scheduled }.Select(s => (s.Item, (IReadOnlyList<ItemEvent>)s.Events)), Oct(8), TimeOnly.MinValue, 7);
+            new[] { stale, recentlyMoved, scheduled }.Select(s =>
+                (s.Item, (IReadOnlyList<ItemEvent>)s.Events)
+            ),
+            Oct(8),
+            TimeOnly.MinValue,
+            7
+        );
 
         stuck.ShouldBe([stale.Item.Id]);
     }
@@ -136,16 +176,30 @@ public class BoardLayoutTests
         var ask = BoardMoves.Plan(item, "waiting", Today);
         (ask.NeedsWaitingOn, ask.Commands.Count).ShouldBe((true, 0));
 
-        Moves(item, "waiting", "alice").ShouldHaveSingleItem().ShouldBeOfType<StartWaiting>().On.ShouldBe("alice");
+        Moves(item, "waiting", "alice")
+            .ShouldHaveSingleItem()
+            .ShouldBeOfType<StartWaiting>()
+            .On.ShouldBe("alice");
     }
 
     [Fact]
     public void Leaving_done_reopens_first_and_leaving_waiting_ends_the_wait()
     {
-        var done = Item(i => { i.Status = ItemStatus.Done; i.CompletedOn = Today; i.CompletedAt = DateTimeOffset.UtcNow; });
-        Moves(done, "today").Select(c => c.GetType()).ShouldBe([typeof(ReopenItem), typeof(PlanItem)]);
+        var done = Item(i =>
+        {
+            i.Status = ItemStatus.Done;
+            i.CompletedOn = Today;
+            i.CompletedAt = DateTimeOffset.UtcNow;
+        });
+        Moves(done, "today")
+            .Select(c => c.GetType())
+            .ShouldBe([typeof(ReopenItem), typeof(PlanItem)]);
 
-        var waiting = Item(i => { i.Status = ItemStatus.Waiting; i.WaitingOn = "x"; });
+        var waiting = Item(i =>
+        {
+            i.Status = ItemStatus.Waiting;
+            i.WaitingOn = "x";
+        });
         Moves(waiting, "backlog").Select(c => c.GetType()).ShouldBe([typeof(EndWaiting)]);
     }
 
@@ -162,15 +216,23 @@ public class BoardLayoutTests
     [Fact]
     public void Moving_to_backlog_clears_the_column_and_someday_is_a_toggle()
     {
-        Moves(Item(i => i.BoardColumn = "design"), "backlog").ShouldHaveSingleItem().ShouldBeOfType<SetBoardColumn>().Column.ShouldBeNull();
-        Moves(Item(), "someday").ShouldHaveSingleItem().ShouldBeOfType<SetSomeday>().Value.ShouldBeTrue();
+        Moves(Item(i => i.BoardColumn = "design"), "backlog")
+            .ShouldHaveSingleItem()
+            .ShouldBeOfType<SetBoardColumn>()
+            .Column.ShouldBeNull();
+        Moves(Item(), "someday")
+            .ShouldHaveSingleItem()
+            .ShouldBeOfType<SetSomeday>()
+            .Value.ShouldBeTrue();
         Moves(Item(i => i.IsSomeday = true), "someday").ShouldBeEmpty();
     }
 
     [Fact]
     public void Moving_someday_to_waiting_clears_someday_first()
     {
-        Moves(Item(i => i.IsSomeday = true), "waiting", "bob").Select(c => c.GetType()).ShouldBe([typeof(SetSomeday), typeof(StartWaiting)]);
+        Moves(Item(i => i.IsSomeday = true), "waiting", "bob")
+            .Select(c => c.GetType())
+            .ShouldBe([typeof(SetSomeday), typeof(StartWaiting)]);
     }
 }
 
@@ -178,10 +240,15 @@ public class TimelineLayoutTests
 {
     static readonly DateOnly Today = Oct(7);
 
-    static TodoItem Item(DateOnly? due = null, DateOnly? planned = null, Action<TodoItem>? tweak = null)
+    static TodoItem Item(
+        DateOnly? due = null,
+        DateOnly? planned = null,
+        Action<TodoItem>? tweak = null
+    )
     {
         var i = Make.Item();
-        i.DueDate = due; i.PlannedFor = planned;
+        i.DueDate = due;
+        i.PlannedFor = planned;
         tweak?.Invoke(i);
         return i;
     }
@@ -231,7 +298,15 @@ public class TimelineLayoutTests
     [Fact]
     public void Done_dropped_containers_and_deleted_items_are_excluded()
     {
-        var done = Item(due: Oct(9), tweak: i => { i.Status = ItemStatus.Done; i.CompletedOn = Oct(7); i.CompletedAt = DateTimeOffset.UtcNow; });
+        var done = Item(
+            due: Oct(9),
+            tweak: i =>
+            {
+                i.Status = ItemStatus.Done;
+                i.CompletedOn = Oct(7);
+                i.CompletedAt = DateTimeOffset.UtcNow;
+            }
+        );
         var container = Item(tweak: i => i.IsContainer = true);
         var gone = Item(due: Oct(9), tweak: i => i.DeletedAt = DateTimeOffset.UtcNow);
         var view = TimelineLayout.Build([done, container, gone], Today);
@@ -241,7 +316,14 @@ public class TimelineLayoutTests
     [Fact]
     public void Waiting_items_are_still_shown()
     {
-        var waiting = Item(due: Oct(1), tweak: i => { i.Status = ItemStatus.Waiting; i.WaitingOn = "x"; });
+        var waiting = Item(
+            due: Oct(1),
+            tweak: i =>
+            {
+                i.Status = ItemStatus.Waiting;
+                i.WaitingOn = "x";
+            }
+        );
         TimelineLayout.Build([waiting], Today).Overdue.ShouldHaveSingleItem();
     }
 }
@@ -252,7 +334,13 @@ public class WeeklyReviewTests
     readonly Workspace _ws = Make.Workspace();
 
     WeeklyReviewData Build(params Story[] stories) =>
-        WeeklyReviewBuilder.Build(_ws, stories.Select(s => s.Record()).ToList(), Today, Oct5, ["Ship v2"]);
+        WeeklyReviewBuilder.Build(
+            _ws,
+            stories.Select(s => s.Record()).ToList(),
+            Today,
+            Oct5,
+            ["Ship v2"]
+        );
 
     [Fact]
     public void Wins_are_this_weeks_completions_oldest_first_with_the_finally_item_highlighted()
@@ -283,14 +371,20 @@ public class WeeklyReviewTests
     [Fact]
     public void Touching_a_someday_item_resets_its_untouched_clock()
     {
-        var touched = new Story(new DateOnly(2026, 6, 1), null, someday: true).Raw(Oct(1), ItemEventType.NotesChanged);
+        var touched = new Story(new DateOnly(2026, 6, 1), null, someday: true).Raw(
+            Oct(1),
+            ItemEventType.NotesChanged
+        );
         Build(touched).SomedaySweep.Single().PreselectDrop.ShouldBeFalse();
     }
 
     [Fact]
     public void Stuck_patterns_suggest_the_fix_for_the_top_reason()
     {
-        var story = new Story(Oct(1), Oct(1)).Stuck(Oct(6), "too_big").Stuck(Oct(7), "too_big").Stuck(Oct(8), "blocked");
+        var story = new Story(Oct(1), Oct(1))
+            .Stuck(Oct(6), "too_big")
+            .Stuck(Oct(7), "too_big")
+            .Stuck(Oct(8), "blocked");
 
         var stuck = Build(story).Stuck;
 

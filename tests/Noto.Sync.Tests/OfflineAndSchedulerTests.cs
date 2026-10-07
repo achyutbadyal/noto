@@ -18,7 +18,12 @@ public sealed class OfflineTests : IDisposable
         _b = new Replica(_server, user, TimeSpan.Zero);
     }
 
-    public void Dispose() { _a.Dispose(); _b.Dispose(); _server.Dispose(); }
+    public void Dispose()
+    {
+        _a.Dispose();
+        _b.Dispose();
+        _server.Dispose();
+    }
 
     [Fact]
     public async Task The_app_works_fully_offline_with_sync_enabled_and_catches_up_later()
@@ -74,11 +79,16 @@ public sealed class SchedulerTests : IDisposable
         _a.Workspaces.EnableAsync(ws.Id).GetAwaiter().GetResult();
     }
 
-    public void Dispose() { _a.Dispose(); _server.Dispose(); }
+    public void Dispose()
+    {
+        _a.Dispose();
+        _server.Dispose();
+    }
 
     static async Task Eventually(Func<bool> condition)
     {
-        for (var i = 0; i < 200 && !condition(); i++) await Task.Delay(10);
+        for (var i = 0; i < 200 && !condition(); i++)
+            await Task.Delay(10);
         condition().ShouldBeTrue();
     }
 
@@ -90,7 +100,7 @@ public sealed class SchedulerTests : IDisposable
 
         scheduler.NotifyChanged();
         _time.Advance(TimeSpan.FromSeconds(1));
-        scheduler.NotifyChanged();            // a second change restarts the window
+        scheduler.NotifyChanged(); // a second change restarts the window
         _time.Advance(TimeSpan.FromSeconds(1.5));
         (await _a.PendingAsync()).ShouldNotBeEmpty();
 

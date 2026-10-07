@@ -7,10 +7,21 @@ namespace Noto.Sync.Tests;
 public class LwwTests
 {
     static readonly Guid A = Guid.CreateVersion7();
+
     static string Stamp(long ms, int counter = 0) => new Hlc(ms, counter, A).ToString();
 
     static Op Set(string field, JsonNode? value, string hlc) =>
-        new(Guid.NewGuid(), EntityTypes.TodoItem, Guid.NewGuid(), Guid.NewGuid(), OpKinds.Set, field, value, hlc, A);
+        new(
+            Guid.NewGuid(),
+            EntityTypes.TodoItem,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            OpKinds.Set,
+            field,
+            value,
+            hlc,
+            A
+        );
 
     [Fact]
     public void Newer_set_wins_and_records_its_clock()
@@ -66,8 +77,22 @@ public class LwwTests
     {
         var row = new JsonObject();
         var clocks = new Dictionary<string, string> { ["priority"] = Stamp(9) };
-        var insert = new Op(Guid.NewGuid(), EntityTypes.TodoItem, Guid.NewGuid(), Guid.NewGuid(), OpKinds.Insert, null,
-            new JsonObject { ["id"] = "x", ["title"] = "t", ["priority"] = 1 }, Stamp(2), A);
+        var insert = new Op(
+            Guid.NewGuid(),
+            EntityTypes.TodoItem,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            OpKinds.Insert,
+            null,
+            new JsonObject
+            {
+                ["id"] = "x",
+                ["title"] = "t",
+                ["priority"] = 1,
+            },
+            Stamp(2),
+            A
+        );
 
         var outcomes = LwwRow.Apply(insert, row, clocks);
 
@@ -82,13 +107,17 @@ public class LwwTests
     {
         var low = Guid.Parse("00000000-0000-0000-0000-000000000001");
         var high = Guid.Parse("00000000-0000-0000-0000-000000000002");
-        var row1 = new JsonObject(); var clocks1 = new Dictionary<string, string>();
-        var row2 = new JsonObject(); var clocks2 = new Dictionary<string, string>();
+        var row1 = new JsonObject();
+        var clocks1 = new Dictionary<string, string>();
+        var row2 = new JsonObject();
+        var clocks2 = new Dictionary<string, string>();
         var a = Set("title", "from-low", new Hlc(5, 0, low).ToString());
         var b = Set("title", "from-high", new Hlc(5, 0, high).ToString());
 
-        LwwRow.Apply(a, row1, clocks1); LwwRow.Apply(b, row1, clocks1);
-        LwwRow.Apply(b, row2, clocks2); LwwRow.Apply(a, row2, clocks2);
+        LwwRow.Apply(a, row1, clocks1);
+        LwwRow.Apply(b, row1, clocks1);
+        LwwRow.Apply(b, row2, clocks2);
+        LwwRow.Apply(a, row2, clocks2);
 
         row1["title"]!.GetValue<string>().ShouldBe("from-high");
         row2["title"]!.GetValue<string>().ShouldBe("from-high");
@@ -97,11 +126,15 @@ public class LwwTests
 
 public class RowNormalizerTests
 {
-    static JsonObject Row(string status) => new()
-    {
-        ["id"] = Guid.NewGuid().ToString(), ["status"] = status, ["created_at"] = "2026-10-01T00:00:00.0000000+00:00",
-        ["is_someday"] = false, ["is_container"] = false,
-    };
+    static JsonObject Row(string status) =>
+        new()
+        {
+            ["id"] = Guid.NewGuid().ToString(),
+            ["status"] = status,
+            ["created_at"] = "2026-10-01T00:00:00.0000000+00:00",
+            ["is_someday"] = false,
+            ["is_container"] = false,
+        };
 
     [Fact]
     public void Concurrent_done_and_dropped_merge_into_a_valid_item()

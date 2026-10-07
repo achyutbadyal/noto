@@ -12,10 +12,15 @@ public partial class ItemRowView : UserControl
 
     void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (Row is not { Owner: { } owner } row) return;
-        var meta = e.KeyModifiers.HasFlag(KeyModifiers.Meta) || e.KeyModifiers.HasFlag(KeyModifiers.Control);
-        if (meta) row.IsSelected = !row.IsSelected;
-        else owner.ClearSelection();
+        if (Row is not { Owner: { } owner } row)
+            return;
+        var meta =
+            e.KeyModifiers.HasFlag(KeyModifiers.Meta)
+            || e.KeyModifiers.HasFlag(KeyModifiers.Control);
+        if (meta)
+            row.IsSelected = !row.IsSelected;
+        else
+            owner.ClearSelection();
         owner.SetFocus(row);
     }
 

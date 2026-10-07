@@ -13,7 +13,10 @@ public static class Csv
         DetectDelimiter = false,
     };
 
-    static readonly CsvConfiguration WriterConfig = new(CultureInfo.InvariantCulture) { NewLine = "\n" };
+    static readonly CsvConfiguration WriterConfig = new(CultureInfo.InvariantCulture)
+    {
+        NewLine = "\n",
+    };
 
     public static List<string[]> Parse(string text)
     {
@@ -21,7 +24,8 @@ public static class Csv
         try
         {
             using var parser = new CsvParser(new StringReader(text.TrimStart('\uFEFF')), Config);
-            while (parser.Read()) rows.Add(parser.Record!.ToArray());
+            while (parser.Read())
+                rows.Add(parser.Record!.ToArray());
         }
         catch (BadDataException e)
         {
@@ -31,15 +35,21 @@ public static class Csv
     }
 
     // Rows as dictionaries keyed by header; short rows get empty strings.
-    public static List<Dictionary<string, string>> ParseWithHeader(IReadOnlyList<string[]> rows, int headerIndex)
+    public static List<Dictionary<string, string>> ParseWithHeader(
+        IReadOnlyList<string[]> rows,
+        int headerIndex
+    )
     {
         var header = rows[headerIndex];
-        return rows.Skip(headerIndex + 1).Select(r =>
-        {
-            var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            for (var i = 0; i < header.Length; i++) d[header[i]] = i < r.Length ? r[i] : "";
-            return d;
-        }).ToList();
+        return rows.Skip(headerIndex + 1)
+            .Select(r =>
+            {
+                var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < header.Length; i++)
+                    d[header[i]] = i < r.Length ? r[i] : "";
+                return d;
+            })
+            .ToList();
     }
 
     // Cells starting with = + - @ are prefixed so spreadsheets don't evaluate them as formulas.
@@ -48,7 +58,8 @@ public static class Csv
         using var sw = new StringWriter();
         using (var writer = new CsvWriter(sw, WriterConfig))
         {
-            foreach (var cell in cells) writer.WriteField(Guard(cell, guardFormulas));
+            foreach (var cell in cells)
+                writer.WriteField(Guard(cell, guardFormulas));
             writer.NextRecord();
         }
         return sw.ToString().TrimEnd('\n');

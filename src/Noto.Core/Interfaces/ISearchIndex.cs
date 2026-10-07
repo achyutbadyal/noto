@@ -5,5 +5,9 @@ public sealed record SearchHit(Guid ItemId, Guid WorkspaceId, string Title, stri
 public interface ISearchIndex
 {
     // Prefix full-text search over title and notes; `workspaceId` null searches everywhere.
-    Task<IReadOnlyList<SearchHit>> SearchAsync(string query, Guid? workspaceId = null, int limit = 20);
+    Task<IReadOnlyList<SearchHit>> SearchAsync(
+        string query,
+        Guid? workspaceId = null,
+        int limit = 20
+    );
 }

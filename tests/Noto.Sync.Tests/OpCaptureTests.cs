@@ -18,13 +18,21 @@ public sealed class OpCaptureTests : IDisposable
         _a = new Replica(_server, _user, TimeSpan.Zero);
     }
 
-    public void Dispose() { _a.Dispose(); _server.Dispose(); }
+    public void Dispose()
+    {
+        _a.Dispose();
+        _server.Dispose();
+    }
 
     async Task<Workspace> SyncedWorkspaceAsync()
     {
         var ws = await _a.AddWorkspaceAsync();
         await _a.Workspaces.EnableAsync(ws.Id);
-        await _a.Db.RunAsync(async s => { await s.Sync.ClearPendingAsync(ws.Id); return 0; }); // start from a clean queue
+        await _a.Db.RunAsync(async s =>
+        {
+            await s.Sync.ClearPendingAsync(ws.Id);
+            return 0;
+        }); // start from a clean queue
         return ws;
     }
 
@@ -36,7 +44,11 @@ public sealed class OpCaptureTests : IDisposable
 
         var ops = await _a.PendingAsync();
 
-        ops.Select(o => (o.EntityType, o.Kind)).ShouldBe([(EntityTypes.TodoItem, OpKinds.Insert), (EntityTypes.ItemEvent, OpKinds.Insert)]);
+        ops.Select(o => (o.EntityType, o.Kind))
+            .ShouldBe([
+                (EntityTypes.TodoItem, OpKinds.Insert),
+                (EntityTypes.ItemEvent, OpKinds.Insert),
+            ]);
         ops[0].EntityId.ShouldBe(id);
         ((JsonObject)ops[0].Value!)["title"]!.GetValue<string>().ShouldBe("Deploy");
     }
@@ -46,11 +58,18 @@ public sealed class OpCaptureTests : IDisposable
     {
         var ws = await SyncedWorkspaceAsync();
         var id = await _a.AddItemAsync(ws.Id);
-        await _a.Db.RunAsync(async s => { await s.Sync.ClearPendingAsync(ws.Id); return 0; });
+        await _a.Db.RunAsync(async s =>
+        {
+            await s.Sync.ClearPendingAsync(ws.Id);
+            return 0;
+        });
 
         await _a.Bus.SendAsync(new CompleteItem(id));
 
-        var sets = (await _a.PendingAsync()).Where(o => o.Kind == OpKinds.Set).Select(o => o.Field).ToList();
+        var sets = (await _a.PendingAsync())
+            .Where(o => o.Kind == OpKinds.Set)
+            .Select(o => o.Field)
+            .ToList();
         sets.ShouldBe(["status", "completed_on", "completed_at"], ignoreOrder: true);
     }
 
@@ -101,7 +120,9 @@ public sealed class OpCaptureTests : IDisposable
         ws.SyncEnabled = true;
         await _a.Bus.SaveWorkspaceAsync(ws);
 
-        var ops = (await _a.PendingAsync()).Where(o => o.EntityType == EntityTypes.Workspace).ToList();
+        var ops = (await _a.PendingAsync())
+            .Where(o => o.EntityType == EntityTypes.Workspace)
+            .ToList();
 
         ops.Select(o => o.Field).ShouldBe(["name", "pressure"], ignoreOrder: true);
         SyncRows.WorkspaceFields.ShouldNotContain("sync_enabled");
@@ -120,12 +141,28 @@ public sealed class OpCaptureTests : IDisposable
         foreach (var op in ops)
         {
             EntityTypes.All.ShouldContain(op.EntityType);
-            if (op.Kind == OpKinds.Set) SyncRows.FieldsOf(op.EntityType)!.ShouldContain(op.Field!);
-            else ((JsonObject)op.Value!).Select(kv => kv.Key).Where(k => k != "id").ShouldAllBe(k => SyncRows.FieldsOf(op.EntityType)!.Contains(k));
+            if (op.Kind == OpKinds.Set)
+                SyncRows.FieldsOf(op.EntityType)!.ShouldContain(op.Field!);
+            else
+                ((JsonObject)op.Value!)
+                    .Select(kv => kv.Key)
+                    .Where(k => k != "id")
+                    .ShouldAllBe(k => SyncRows.FieldsOf(op.EntityType)!.Contains(k));
         }
 
         var json = string.Concat(ops.Select(o => o.Value?.ToJsonString())).ToLowerInvariant();
-        foreach (var forbidden in new[] { "access_token", "refresh_token", "authorization", "client_secret", "password", "state_hash", "preview_status" })
+        foreach (
+            var forbidden in new[]
+            {
+                "access_token",
+                "refresh_token",
+                "authorization",
+                "client_secret",
+                "password",
+                "state_hash",
+                "preview_status",
+            }
+        )
             json.ShouldNotContain(forbidden);
     }
 
@@ -135,15 +172,49 @@ public sealed class OpCaptureTests : IDisposable
         var ws = await _a.AddWorkspaceAsync();
         var bad = new[]
         {
-            new Op(Guid.NewGuid(), "link_preview_cache", Guid.NewGuid(), ws.Id, OpKinds.Insert, null, new JsonObject(), new Hlc(1, 0, _a.DeviceId).ToString(), _a.DeviceId),
-            new Op(Guid.NewGuid(), "app_connection", Guid.NewGuid(), ws.Id, OpKinds.Insert, null, new JsonObject(), new Hlc(1, 0, _a.DeviceId).ToString(), _a.DeviceId),
-            new Op(Guid.NewGuid(), EntityTypes.Workspace, ws.Id, ws.Id, OpKinds.Set, "sync_enabled", true, new Hlc(1, 0, _a.DeviceId).ToString(), _a.DeviceId),
+            new Op(
+                Guid.NewGuid(),
+                "link_preview_cache",
+                Guid.NewGuid(),
+                ws.Id,
+                OpKinds.Insert,
+                null,
+                new JsonObject(),
+                new Hlc(1, 0, _a.DeviceId).ToString(),
+                _a.DeviceId
+            ),
+            new Op(
+                Guid.NewGuid(),
+                "app_connection",
+                Guid.NewGuid(),
+                ws.Id,
+                OpKinds.Insert,
+                null,
+                new JsonObject(),
+                new Hlc(1, 0, _a.DeviceId).ToString(),
+                _a.DeviceId
+            ),
+            new Op(
+                Guid.NewGuid(),
+                EntityTypes.Workspace,
+                ws.Id,
+                ws.Id,
+                OpKinds.Set,
+                "sync_enabled",
+                true,
+                new Hlc(1, 0, _a.DeviceId).ToString(),
+                _a.DeviceId
+            ),
         };
 
-        var response = await _a.Transport.SyncAsync(new Noto.Sync.SyncRequest(_a.DeviceId, 0, [], 500, bad));
+        var response = await _a.Transport.SyncAsync(
+            new Noto.Sync.SyncRequest(_a.DeviceId, 0, [], 500, bad)
+        );
 
         response.AcceptedOpIds.ShouldBeEmpty();
-        response.Rejected.Select(r => r.Code).ShouldBe(["UNKNOWN_ENTITY_TYPE", "UNKNOWN_ENTITY_TYPE", "UNKNOWN_FIELD"]);
+        response
+            .Rejected.Select(r => r.Code)
+            .ShouldBe(["UNKNOWN_ENTITY_TYPE", "UNKNOWN_ENTITY_TYPE", "UNKNOWN_FIELD"]);
     }
 
     [Fact]

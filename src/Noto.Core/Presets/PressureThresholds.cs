@@ -3,10 +3,22 @@ using Noto.Core.Models;
 
 namespace Noto.Core.Presets;
 
-public enum PressureState { Fresh, Warm, Hot, Stale }
+public enum PressureState
+{
+    Fresh,
+    Warm,
+    Hot,
+    Stale,
+}
 
 // Single source of escalation thresholds (docs/03 › Pressure). All apply to carry, not age.
-public sealed record PressureThresholds(int Warm, int Hot, int Stale, int StuckCarry, int StuckDefers)
+public sealed record PressureThresholds(
+    int Warm,
+    int Hot,
+    int Stale,
+    int StuckCarry,
+    int StuckDefers
+)
 {
     public static PressureThresholds For(Pressure level, string? overridesJson = null)
     {
@@ -16,15 +28,19 @@ public sealed record PressureThresholds(int Warm, int Hot, int Stale, int StuckC
             Pressure.Honest => new PressureThresholds(1, 3, 6, 3, 3),
             _ => new PressureThresholds(1, 2, 4, 2, 2),
         };
-        return overridesJson is null ? baseline : baseline.WithOverrides(JsonNode.Parse(overridesJson)!.AsObject());
+        return overridesJson is null
+            ? baseline
+            : baseline.WithOverrides(JsonNode.Parse(overridesJson)!.AsObject());
     }
 
-    PressureThresholds WithOverrides(JsonObject o) => new(
-        o["warm"]?.GetValue<int>() ?? Warm,
-        o["hot"]?.GetValue<int>() ?? Hot,
-        o["stale"]?.GetValue<int>() ?? Stale,
-        o["stuck_carry"]?.GetValue<int>() ?? StuckCarry,
-        o["stuck_defers"]?.GetValue<int>() ?? StuckDefers);
+    PressureThresholds WithOverrides(JsonObject o) =>
+        new(
+            o["warm"]?.GetValue<int>() ?? Warm,
+            o["hot"]?.GetValue<int>() ?? Hot,
+            o["stale"]?.GetValue<int>() ?? Stale,
+            o["stuck_carry"]?.GetValue<int>() ?? StuckCarry,
+            o["stuck_defers"]?.GetValue<int>() ?? StuckDefers
+        );
 
     public PressureState StateOf(int carry) =>
         carry >= Stale ? PressureState.Stale

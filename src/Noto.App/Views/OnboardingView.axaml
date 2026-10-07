@@ -1,31 +1,79 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Noto.App.ViewModels"
-             xmlns:v="using:Noto.App.Views"
-             x:Class="Noto.App.Views.OnboardingView"
-             x:DataType="vm:OnboardingViewModel">
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.OnboardingView"
+  x:DataType="vm:OnboardingViewModel"
+>
   <ScrollViewer>
-    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20" MaxWidth="520" Margin="24">
-      <PathIcon Data="{v:Icon today}" Width="40" Height="40" HorizontalAlignment="Center" Foreground="{DynamicResource AccentBrush}" />
-      <TextBlock Text="{Binding Question}" Classes="title" TextWrapping="Wrap" TextAlignment="Center" />
-      <TextBlock Text="Noto asks about every task you didn't finish, so nothing rots silently." Classes="secondary"
-                 TextAlignment="Center" TextWrapping="Wrap" />
+    <StackPanel
+      VerticalAlignment="Center"
+      HorizontalAlignment="Center"
+      Spacing="20"
+      MaxWidth="520"
+      Margin="24"
+    >
+      <PathIcon
+        Data="{v:Icon today}"
+        Width="40"
+        Height="40"
+        HorizontalAlignment="Center"
+        Foreground="{DynamicResource AccentBrush}"
+      />
+      <TextBlock
+        Text="{Binding Question}"
+        Classes="title"
+        TextWrapping="Wrap"
+        TextAlignment="Center"
+      />
+      <TextBlock
+        Text="Noto asks about every task you didn't finish, so nothing rots silently."
+        Classes="secondary"
+        TextAlignment="Center"
+        TextWrapping="Wrap"
+      />
       <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-        <Button Classes="key" Padding="22,14" Command="{Binding PickCommand}" CommandParameter="Work">
+        <Button
+          Classes="key"
+          Padding="22,14"
+          Command="{Binding PickCommand}"
+          CommandParameter="Work"
+        >
           <StackPanel Spacing="8" HorizontalAlignment="Center">
             <PathIcon Data="{v:Icon work}" Width="22" Height="22" HorizontalAlignment="Center" />
             <TextBlock Text="Work" HorizontalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Classes="key" Padding="22,14" Command="{Binding PickCommand}" CommandParameter="Personal">
+        <Button
+          Classes="key"
+          Padding="22,14"
+          Command="{Binding PickCommand}"
+          CommandParameter="Personal"
+        >
           <StackPanel Spacing="8" HorizontalAlignment="Center">
-            <PathIcon Data="{v:Icon personal}" Width="22" Height="22" HorizontalAlignment="Center" />
+            <PathIcon
+              Data="{v:Icon personal}"
+              Width="22"
+              Height="22"
+              HorizontalAlignment="Center"
+            />
             <TextBlock Text="Personal" HorizontalAlignment="Center" />
           </StackPanel>
         </Button>
-        <Button Classes="key" Padding="22,14" Command="{Binding PickCommand}" CommandParameter="Both">
+        <Button
+          Classes="key"
+          Padding="22,14"
+          Command="{Binding PickCommand}"
+          CommandParameter="Both"
+        >
           <StackPanel Spacing="8" HorizontalAlignment="Center">
-            <PathIcon Data="{v:Icon todayall}" Width="22" Height="22" HorizontalAlignment="Center" />
+            <PathIcon
+              Data="{v:Icon todayall}"
+              Width="22"
+              Height="22"
+              HorizontalAlignment="Center"
+            />
             <TextBlock Text="Both" HorizontalAlignment="Center" />
           </StackPanel>
         </Button>

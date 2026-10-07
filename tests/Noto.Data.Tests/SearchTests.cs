@@ -13,8 +13,19 @@ public sealed class SearchTests : IDisposable
 
     public SearchTests()
     {
-        _bus = new CommandBus(_uow, new FakeClock(DateTimeOffset.Parse("2026-10-07T10:00:00Z")), Guid.CreateVersion7());
-        _uow.RunAsync(async s => { await s.Workspaces.UpsertAsync(_ws); await s.Workspaces.UpsertAsync(_other); return 0; }).GetAwaiter().GetResult();
+        _bus = new CommandBus(
+            _uow,
+            new FakeClock(DateTimeOffset.Parse("2026-10-07T10:00:00Z")),
+            Guid.CreateVersion7()
+        );
+        _uow.RunAsync(async s =>
+            {
+                await s.Workspaces.UpsertAsync(_ws);
+                await s.Workspaces.UpsertAsync(_other);
+                return 0;
+            })
+            .GetAwaiter()
+            .GetResult();
     }
 
     public void Dispose() => _uow.Dispose();
@@ -59,6 +70,8 @@ public sealed class SearchTests : IDisposable
         await Add("shared word", _other);
 
         (await _uow.SearchAsync("shared")).Count.ShouldBe(2);
-        (await _uow.SearchAsync("shared", _other.Id)).ShouldHaveSingleItem().WorkspaceId.ShouldBe(_other.Id);
+        (await _uow.SearchAsync("shared", _other.Id))
+            .ShouldHaveSingleItem()
+            .WorkspaceId.ShouldBe(_other.Id);
     }
 }

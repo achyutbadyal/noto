@@ -13,11 +13,17 @@ public sealed class WorkspaceActions(IUnitOfWork uow, ICommandBus bus, IClock cl
     // Workspace.Color holds an accent name; the theme resolves it per light/dark (ThemeTokens.Accents).
     public static readonly string[] AccentPalette = [.. Noto.App.Themes.ThemeTokens.Accents.Keys];
 
-    public Task<IReadOnlyList<Workspace>> ListAsync() => uow.RunAsync(s => s.Workspaces.ListAsync());
+    public Task<IReadOnlyList<Workspace>> ListAsync() =>
+        uow.RunAsync(s => s.Workspaces.ListAsync());
 
     public Task<Workspace?> GetAsync(Guid id) => uow.RunAsync(s => s.Workspaces.GetAsync(id));
 
-    public async Task<Workspace> CreateAsync(string name, string icon, Preset preset, int colorIndex)
+    public async Task<Workspace> CreateAsync(
+        string name,
+        string icon,
+        Preset preset,
+        int colorIndex
+    )
     {
         var existing = await ListAsync();
         var ws = new Workspace
@@ -35,10 +41,14 @@ public sealed class WorkspaceActions(IUnitOfWork uow, ICommandBus bus, IClock cl
         return ws;
     }
 
-    public async Task<Workspace> CreateFromTemplateAsync(Noto.Core.Workspaces.WorkspaceTemplate template, int colorIndex)
+    public async Task<Workspace> CreateFromTemplateAsync(
+        Noto.Core.Workspaces.WorkspaceTemplate template,
+        int colorIndex
+    )
     {
         var ws = await CreateAsync(template.Name, template.Icon, template.Preset, colorIndex);
-        if (template.Focus is null) return ws;
+        if (template.Focus is null)
+            return ws;
         await UpdateAsync(ws.Id, w => w.FocusHoursJson = template.Focus.ToJson());
         return (await GetAsync(ws.Id))!;
     }
@@ -51,5 +61,6 @@ public sealed class WorkspaceActions(IUnitOfWork uow, ICommandBus bus, IClock cl
         await bus.SaveWorkspaceAsync(ws);
     }
 
-    public Task SetNowAsync(Guid workspaceId, Guid? itemId) => UpdateAsync(workspaceId, ws => ws.NowItemId = itemId);
+    public Task SetNowAsync(Guid workspaceId, Guid? itemId) =>
+        UpdateAsync(workspaceId, ws => ws.NowItemId = itemId);
 }

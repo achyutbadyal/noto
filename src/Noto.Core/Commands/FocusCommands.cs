@@ -6,11 +6,21 @@ namespace Noto.Core.Commands;
 public sealed record StartFocus(Guid ItemId) : ItemCommand(ItemId)
 {
     public override Change Apply(TodoItem item, CommandContext ctx) =>
-        new(ItemEventType.FocusStarted, null, ItemEventType.FocusStopped, new() { ["minutes"] = 0 });
+        new(
+            ItemEventType.FocusStarted,
+            null,
+            ItemEventType.FocusStopped,
+            new() { ["minutes"] = 0 }
+        );
 }
 
 public sealed record StopFocus(Guid ItemId, int Minutes) : ItemCommand(ItemId)
 {
     public override Change Apply(TodoItem item, CommandContext ctx) =>
-        new(ItemEventType.FocusStopped, new() { ["minutes"] = Minutes }, ItemEventType.FocusStarted, null);
+        new(
+            ItemEventType.FocusStopped,
+            new() { ["minutes"] = Minutes },
+            ItemEventType.FocusStarted,
+            null
+        );
 }

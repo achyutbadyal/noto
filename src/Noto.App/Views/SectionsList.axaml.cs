@@ -15,25 +15,34 @@ public partial class SectionsList : UserControl
         InitializeComponent();
         DataContextChanged += (_, _) =>
         {
-            if (_subscribed is not null) _subscribed.FocusChanged -= ScrollToFocus;
+            if (_subscribed is not null)
+                _subscribed.FocusChanged -= ScrollToFocus;
             _subscribed = DataContext as ItemListViewModel;
-            if (_subscribed is not null) _subscribed.FocusChanged += ScrollToFocus;
+            if (_subscribed is not null)
+                _subscribed.FocusChanged += ScrollToFocus;
         };
     }
 
     void OnSectionHeaderClick(object? sender, RoutedEventArgs e)
     {
-        if ((sender as Control)?.DataContext is SectionViewModel { IsCollapsible: true } section) section.IsCollapsed = !section.IsCollapsed;
+        if ((sender as Control)?.DataContext is SectionViewModel { IsCollapsible: true } section)
+            section.IsCollapsed = !section.IsCollapsed;
     }
 
     // Keep the keyboard-focused row on screen.
     void ScrollToFocus(ItemRowViewModel? row)
     {
-        if (row is null) return;
-        Dispatcher.UIThread.Post(() =>
-        {
-            var view = this.GetVisualDescendants().OfType<ItemRowView>().FirstOrDefault(r => r.DataContext == row);
-            view?.BringIntoView();
-        }, DispatcherPriority.Background);
+        if (row is null)
+            return;
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                var view = this.GetVisualDescendants()
+                    .OfType<ItemRowView>()
+                    .FirstOrDefault(r => r.DataContext == row);
+                view?.BringIntoView();
+            },
+            DispatcherPriority.Background
+        );
     }
 }

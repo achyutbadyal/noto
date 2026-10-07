@@ -15,7 +15,9 @@ public sealed class InMemoryUiState : IUiState
 
     public void Set(string key, string? value)
     {
-        if (value is null) _values.Remove(key);
-        else _values[key] = value;
+        if (value is null)
+            _values.Remove(key);
+        else
+            _values[key] = value;
     }
 }

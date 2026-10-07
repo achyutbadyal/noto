@@ -11,7 +11,8 @@ public sealed class JwtService(ServerConfig config, TimeProvider time)
     public const string DeviceClaim = "did";
     public static readonly TimeSpan AccessLifetime = TimeSpan.FromMinutes(15);
 
-    public static SymmetricSecurityKey Key(ServerConfig c) => new(Encoding.UTF8.GetBytes(c.JwtSigningKey));
+    public static SymmetricSecurityKey Key(ServerConfig c) =>
+        new(Encoding.UTF8.GetBytes(c.JwtSigningKey));
 
     public (string Token, DateTimeOffset ExpiresAt) CreateAccessToken(Guid userId, Guid deviceId)
     {
@@ -24,8 +25,7 @@ public sealed class JwtService(ServerConfig config, TimeProvider time)
             IssuedAt = now.UtcDateTime,
             NotBefore = now.UtcDateTime,
             Expires = expires.UtcDateTime,
-            Subject = new System.Security.Claims.ClaimsIdentity(
-            [
+            Subject = new System.Security.Claims.ClaimsIdentity([
                 new System.Security.Claims.Claim("sub", userId.ToString()),
                 new System.Security.Claims.Claim(DeviceClaim, deviceId.ToString()),
             ]),

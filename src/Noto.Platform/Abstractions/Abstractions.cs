@@ -4,16 +4,27 @@ namespace Noto.Platform.Abstractions;
 public sealed record Capability(bool IsSupported, string? Reason = null)
 {
     public static readonly Capability Supported = new(true);
+
     public static Capability Unsupported(string reason) => new(false, reason);
 }
 
 [Flags]
-public enum HotkeyModifiers { None = 0, Shift = 1, Control = 2, Alt = 4, Command = 8 }
+public enum HotkeyModifiers
+{
+    None = 0,
+    Shift = 1,
+    Control = 2,
+    Alt = 4,
+    Command = 8,
+}
 
 public sealed record HotkeyGesture(string Key, HotkeyModifiers Modifiers)
 {
     // ⌃⌥Space on macOS, Ctrl+Alt+Space elsewhere (docs/07 §7.2).
-    public static readonly HotkeyGesture DefaultCapture = new("Space", HotkeyModifiers.Control | HotkeyModifiers.Alt);
+    public static readonly HotkeyGesture DefaultCapture = new(
+        "Space",
+        HotkeyModifiers.Control | HotkeyModifiers.Alt
+    );
 }
 
 public interface IGlobalHotkey : IDisposable
@@ -23,7 +34,14 @@ public interface IGlobalHotkey : IDisposable
     void Unregister();
 }
 
-public enum MenuBarAction { QuickAdd, OpenToday, StartReview, Shutdown, Quit }
+public enum MenuBarAction
+{
+    QuickAdd,
+    OpenToday,
+    StartReview,
+    Shutdown,
+    Quit,
+}
 
 public sealed record MenuBarState(string? NowTitle, TimeSpan? Remaining, int NeedsDecision);
 
@@ -47,6 +65,7 @@ public sealed record CaptureContext(string AppName, string? Url, string? PageTit
 public interface ICaptureContext
 {
     Capability Capability { get; }
+
     // The frontmost app and, for browsers, its current page. Null when nothing useful is available.
     Task<CaptureContext?> GetAsync();
 }
@@ -77,5 +96,9 @@ public interface IFocusWindow
 
 // Everything the app needs from the OS, resolved once at startup.
 public sealed record PlatformServices(
-    IGlobalHotkey Hotkey, IKeyring Keyring, ICaptureContext CaptureContext,
-    INotifications Notifications, IReduceMotion ReduceMotion);
+    IGlobalHotkey Hotkey,
+    IKeyring Keyring,
+    ICaptureContext CaptureContext,
+    INotifications Notifications,
+    IReduceMotion ReduceMotion
+);

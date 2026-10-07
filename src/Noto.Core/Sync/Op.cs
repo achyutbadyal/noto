@@ -17,10 +17,20 @@ public static class EntityTypes
 
     // Parents before children, so snapshots and first-time pushes read naturally (FKs are deferred anyway).
     public static readonly IReadOnlyList<string> All =
-        [Workspace, Tag, RecurrenceRule, TodoItem, TodoTag, TodoLink, DayNote, ItemEvent];
+    [
+        Workspace,
+        Tag,
+        RecurrenceRule,
+        TodoItem,
+        TodoTag,
+        TodoLink,
+        DayNote,
+        ItemEvent,
+    ];
 
     // Entities stored by SyncRowStore (plain SQL rows) rather than a typed mapper.
-    public static bool IsRowStoreType(string type) => type is RecurrenceRule or Tag or TodoTag or DayNote or TodoLink;
+    public static bool IsRowStoreType(string type) =>
+        type is RecurrenceRule or Tag or TodoTag or DayNote or TodoLink;
 
     // Immutable rows sync as idempotent inserts; everything else is per-field LWW.
     public static bool IsImmutable(string type) => type == ItemEvent;
@@ -46,7 +56,8 @@ public sealed record Op(
     [property: JsonPropertyName("field")] string? Field,
     [property: JsonPropertyName("value")] JsonNode? Value,
     [property: JsonPropertyName("hlc")] string Hlc,
-    [property: JsonPropertyName("device_id")] Guid DeviceId)
+    [property: JsonPropertyName("device_id")] Guid DeviceId
+)
 {
     [JsonPropertyName("seq")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -59,4 +70,11 @@ public sealed record Op(
 public sealed partial class SyncJson : JsonSerializerContext;
 
 public sealed record SyncConflict(
-    Guid Id, string EntityType, Guid EntityId, string Field, string? LosingValue, string LosingHlc, DateTimeOffset RecordedAt);
+    Guid Id,
+    string EntityType,
+    Guid EntityId,
+    string Field,
+    string? LosingValue,
+    string LosingHlc,
+    DateTimeOffset RecordedAt
+);

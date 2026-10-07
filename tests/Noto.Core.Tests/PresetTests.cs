@@ -19,8 +19,11 @@ public class PresetTests
     [InlineData(Pressure.Relentless, 1, PressureState.Warm)]
     [InlineData(Pressure.Relentless, 3, PressureState.Hot)]
     [InlineData(Pressure.Relentless, 4, PressureState.Stale)]
-    public void Pressure_table_matches_the_spec(Pressure level, int carry, PressureState expected) =>
-        PressureThresholds.For(level).StateOf(carry).ShouldBe(expected);
+    public void Pressure_table_matches_the_spec(
+        Pressure level,
+        int carry,
+        PressureState expected
+    ) => PressureThresholds.For(level).StateOf(carry).ShouldBe(expected);
 
     [Theory]
     [InlineData(Pressure.Gentle, 13, 4, false)]
@@ -45,7 +48,9 @@ public class PresetTests
     {
         var ws = Make.Workspace();
         BuiltInPresets.Kanban.ApplyTo(ws);
-        (ws.Layout, ws.SortOrderMode, ws.Pressure).ShouldBe((Layout.Board, SortOrderMode.Manual, Pressure.Gentle));
+        (ws.Layout, ws.SortOrderMode, ws.Pressure).ShouldBe(
+            (Layout.Board, SortOrderMode.Manual, Pressure.Gentle)
+        );
         BuiltInPresets.Label(ws).ShouldBe("kanban");
 
         ws.Pressure = Pressure.Relentless;
@@ -55,7 +60,9 @@ public class PresetTests
     [Fact]
     public void Six_built_in_presets()
     {
-        BuiltInPresets.All.Select(p => p.Id).ShouldBe(["sprint", "zen", "deadline", "habit", "kanban", "accountability"]);
+        BuiltInPresets
+            .All.Select(p => p.Id)
+            .ShouldBe(["sprint", "zen", "deadline", "habit", "kanban", "accountability"]);
     }
 }
 
@@ -64,10 +71,20 @@ public class OrderingTests
     static readonly DateOnly Today = new(2026, 10, 7);
     static readonly Func<TodoItem, ItemMetrics> NoMetrics = _ => new(0, 0, 0);
 
-    static TodoItem Item(string title, int priority = 0, DateOnly? due = null, TimeOfDay? tod = null, string rank = "a")
+    static TodoItem Item(
+        string title,
+        int priority = 0,
+        DateOnly? due = null,
+        TimeOfDay? tod = null,
+        string rank = "a"
+    )
     {
         var i = Make.Item();
-        i.Title = title; i.Priority = priority; i.DueDate = due; i.TimeOfDay = tod; i.ManualRank = rank;
+        i.Title = title;
+        i.Priority = priority;
+        i.DueDate = due;
+        i.TimeOfDay = tod;
+        i.ManualRank = rank;
         return i;
     }
 
@@ -76,7 +93,12 @@ public class OrderingTests
     [Fact]
     public void Manual_uses_rank()
     {
-        var sorted = ItemOrdering.Sort([Item("b", rank: "b"), Item("a", rank: "a")], SortOrderMode.Manual, NoMetrics, Today);
+        var sorted = ItemOrdering.Sort(
+            [Item("b", rank: "b"), Item("a", rank: "a")],
+            SortOrderMode.Manual,
+            NoMetrics,
+            Today
+        );
         Titles(sorted).ShouldBe(["a", "b"]);
     }
 
@@ -97,27 +119,41 @@ public class OrderingTests
     {
         var items = new[]
         {
-            Item("none"), Item("later", due: Today.AddDays(3)), Item("overdue", due: Today.AddDays(-2)),
+            Item("none"),
+            Item("later", due: Today.AddDays(3)),
+            Item("overdue", due: Today.AddDays(-2)),
             Item("soon", due: Today.AddDays(1)),
         };
-        Titles(ItemOrdering.Sort(items, SortOrderMode.DueDate, NoMetrics, Today)).ShouldBe(["overdue", "soon", "later", "none"]);
+        Titles(ItemOrdering.Sort(items, SortOrderMode.DueDate, NoMetrics, Today))
+            .ShouldBe(["overdue", "soon", "later", "none"]);
     }
 
     [Fact]
     public void Carry_desc_breaks_ties_by_age()
     {
-        var a = Item("a"); var b = Item("b"); var c = Item("c");
+        var a = Item("a");
+        var b = Item("b");
+        var c = Item("c");
         var metrics = new Dictionary<Guid, ItemMetrics>
         {
-            [a.Id] = new(10, 2, 0), [b.Id] = new(3, 5, 0), [c.Id] = new(20, 2, 0),
+            [a.Id] = new(10, 2, 0),
+            [b.Id] = new(3, 5, 0),
+            [c.Id] = new(20, 2, 0),
         };
-        Titles(ItemOrdering.Sort([a, b, c], SortOrderMode.CarryDesc, i => metrics[i.Id], Today)).ShouldBe(["b", "c", "a"]);
+        Titles(ItemOrdering.Sort([a, b, c], SortOrderMode.CarryDesc, i => metrics[i.Id], Today))
+            .ShouldBe(["b", "c", "a"]);
     }
 
     [Fact]
     public void Time_of_day_orders_morning_to_evening_then_unset()
     {
-        var items = new[] { Item("unset"), Item("eve", tod: TimeOfDay.Evening), Item("morn", tod: TimeOfDay.Morning) };
-        Titles(ItemOrdering.Sort(items, SortOrderMode.TimeOfDay, NoMetrics, Today)).ShouldBe(["morn", "eve", "unset"]);
+        var items = new[]
+        {
+            Item("unset"),
+            Item("eve", tod: TimeOfDay.Evening),
+            Item("morn", tod: TimeOfDay.Morning),
+        };
+        Titles(ItemOrdering.Sort(items, SortOrderMode.TimeOfDay, NoMetrics, Today))
+            .ShouldBe(["morn", "eve", "unset"]);
     }
 }

@@ -18,7 +18,8 @@ public sealed class LayoutTests : IDisposable
 
     static KeyChord Key(string spec) => KeyChord.Of(spec);
 
-    Task Layout(Preset preset) => _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => preset.ApplyTo(ws));
+    Task Layout(Preset preset) =>
+        _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => preset.ApplyTo(ws));
 
     [Fact]
     public async Task Home_screen_follows_the_workspace_layout()
@@ -26,9 +27,15 @@ public sealed class LayoutTests : IDisposable
         await _shell.InitializeAsync();
         _shell.Content.ShouldBeOfType<TodayViewModel>();
 
-        foreach (var (preset, type) in new (Preset, Type)[]
-                 { (BuiltInPresets.Kanban, typeof(BoardViewModel)), (BuiltInPresets.Deadline, typeof(TimelineViewModel)),
-                   (BuiltInPresets.Habit, typeof(HabitGridViewModel)), (BuiltInPresets.Sprint, typeof(TodayViewModel)) })
+        foreach (
+            var (preset, type) in new (Preset, Type)[]
+            {
+                (BuiltInPresets.Kanban, typeof(BoardViewModel)),
+                (BuiltInPresets.Deadline, typeof(TimelineViewModel)),
+                (BuiltInPresets.Habit, typeof(HabitGridViewModel)),
+                (BuiltInPresets.Sprint, typeof(TodayViewModel)),
+            }
+        )
         {
             await Layout(preset);
             await _shell.RefreshAsync();
@@ -40,13 +47,21 @@ public sealed class LayoutTests : IDisposable
     public async Task Switching_layouts_never_writes_to_items()
     {
         await _app.AddAsync("A", AppFixture.Today);
-        var before = await _app.Db.RunAsync(async s => (await s.Events.ListForWorkspaceAsync(_app.Workspace.Id)).Count);
+        var before = await _app.Db.RunAsync(async s =>
+            (await s.Events.ListForWorkspaceAsync(_app.Workspace.Id)).Count
+        );
         await _shell.InitializeAsync();
 
-        await Layout(BuiltInPresets.Kanban); await _shell.RefreshAsync();
-        await Layout(BuiltInPresets.Habit); await _shell.RefreshAsync();
+        await Layout(BuiltInPresets.Kanban);
+        await _shell.RefreshAsync();
+        await Layout(BuiltInPresets.Habit);
+        await _shell.RefreshAsync();
 
-        (await _app.Db.RunAsync(async s => (await s.Events.ListForWorkspaceAsync(_app.Workspace.Id)).Count)).ShouldBe(before);
+        (
+            await _app.Db.RunAsync(async s =>
+                (await s.Events.ListForWorkspaceAsync(_app.Workspace.Id)).Count
+            )
+        ).ShouldBe(before);
     }
 
     [Fact]
@@ -60,7 +75,9 @@ public sealed class LayoutTests : IDisposable
         var board = new BoardViewModel(_app.Services, _app.Workspace.Id);
         await board.ReloadAsync();
 
-        board.Columns.Select(c => c.Title).ShouldBe(["Someday", "Backlog", "Today", "Waiting", "Done (7 days)"]);
+        board
+            .Columns.Select(c => c.Title)
+            .ShouldBe(["Someday", "Backlog", "Today", "Waiting", "Done (7 days)"]);
         board.Columns[1].Rows.Single().Title.ShouldBe("Unscheduled");
         board.Columns[2].Rows.Single().Title.ShouldBe("Planned today");
         board.Columns[3].Rows.Single().Title.ShouldBe("Waiting");
@@ -75,12 +92,12 @@ public sealed class LayoutTests : IDisposable
         await board.ReloadAsync();
         board.SetFocus(board.Columns[1].Rows[0]);
 
-        await board.HandleKeyAsync(Key("shift+ArrowRight"));    // Backlog -> Today
+        await board.HandleKeyAsync(Key("shift+ArrowRight")); // Backlog -> Today
         (await _app.GetAsync(id)).PlannedFor.ShouldBe(AppFixture.Today);
 
         await board.ReloadAsync();
         board.SetFocus(board.Columns[2].Rows[0]);
-        await board.HandleKeyAsync(Key("shift+ArrowRight"));    // Today -> Waiting asks for a person first
+        await board.HandleKeyAsync(Key("shift+ArrowRight")); // Today -> Waiting asks for a person first
         board.Decisions.Prompt!.Kind.ShouldBe(PromptKind.WaitingOn);
         board.Decisions.Prompt.Text = "Priya";
         await board.HandleKeyAsync(Key("Enter"));
@@ -116,7 +133,9 @@ public sealed class LayoutTests : IDisposable
         board.NewColumnWip = "1";
         await board.AddColumnCommand.ExecuteAsync(null);
         await board.ReloadAsync();
-        board.Columns.Select(c => c.Title).ShouldBe(["Someday", "Backlog", "In progress", "Today", "Waiting", "Done (7 days)"]);
+        board
+            .Columns.Select(c => c.Title)
+            .ShouldBe(["Someday", "Backlog", "In progress", "Today", "Waiting", "Done (7 days)"]);
         board.Columns[2].Rows.Count.ShouldBe(0);
         board.Columns[2].Header.ShouldBe("IN PROGRESS (0/1)");
 
@@ -129,10 +148,10 @@ public sealed class LayoutTests : IDisposable
         board.Columns[2].Rows.Single().Id.ShouldBe(a);
 
         board.SetFocus(board.Columns[1].Rows.First(r => r.Id == b));
-        await board.HandleKeyAsync(Key("shift+ArrowRight"));     // full: asks first
+        await board.HandleKeyAsync(Key("shift+ArrowRight")); // full: asks first
         (await _app.GetAsync(b)).BoardColumn.ShouldBeNull();
         board.Decisions.Message!.ShouldContain("full");
-        await board.HandleKeyAsync(Key("shift+ArrowRight"));     // repeating overrides
+        await board.HandleKeyAsync(Key("shift+ArrowRight")); // repeating overrides
         (await _app.GetAsync(b)).BoardColumn.ShouldNotBeNull();
     }
 
@@ -151,8 +170,19 @@ public sealed class LayoutTests : IDisposable
 
         timeline.Sections[0].Title.ShouldBe("Overdue");
         timeline.Sections[0].Rows.Single().Title.ShouldBe("Late");
-        timeline.Sections.Single(s => s.Title == AppFixture.Today.AddDays(3).ToString("ddd MMM d", System.Globalization.CultureInfo.InvariantCulture)).Rows.Single().Title.ShouldBe("Soon");
-        timeline.Sections.Single(s => s.Title == "No date").Rows.Single().Title.ShouldBe("Someday maybe");
+        timeline
+            .Sections.Single(s =>
+                s.Title
+                == AppFixture
+                    .Today.AddDays(3)
+                    .ToString("ddd MMM d", System.Globalization.CultureInfo.InvariantCulture)
+            )
+            .Rows.Single()
+            .Title.ShouldBe("Soon");
+        timeline
+            .Sections.Single(s => s.Title == "No date")
+            .Rows.Single()
+            .Title.ShouldBe("Someday maybe");
     }
 
     [Fact]
@@ -161,7 +191,13 @@ public sealed class LayoutTests : IDisposable
         await Layout(BuiltInPresets.Habit);
         _app.Clock.Advance(TimeSpan.FromDays(-3));
         var start = DateOnly.FromDateTime(_app.Clock.UtcNow.UtcDateTime);
-        await _app.Services.Recurrence.CreateRuleAsync(_app.Workspace.Id, "FREQ=DAILY", new RuleTemplate("Morning run"), start, MissedBehavior.Skip);
+        await _app.Services.Recurrence.CreateRuleAsync(
+            _app.Workspace.Id,
+            "FREQ=DAILY",
+            new RuleTemplate("Morning run"),
+            start,
+            MissedBehavior.Skip
+        );
         _app.Clock.Advance(TimeSpan.FromDays(3));
         await _app.AddAsync("One-off errand");
 
@@ -183,7 +219,9 @@ public sealed class LayoutTests : IDisposable
 
         await grid.HandleKeyAsync(Key("x"));
         await grid.ReloadAsync();
-        grid.Habits[0].Cells.Single(c => c.IsToday).State.ShouldBe(Noto.Core.Habits.HabitDayState.Done);
+        grid.Habits[0]
+            .Cells.Single(c => c.IsToday)
+            .State.ShouldBe(Noto.Core.Habits.HabitDayState.Done);
         grid.Habits[0].StreakText.ShouldContain("streak 1");
 
         await _app.Services.Undo.UndoLastAsync();
@@ -194,12 +232,32 @@ public sealed class LayoutTests : IDisposable
     [Fact]
     public async Task Today_all_spans_workspaces_with_colour_bars_and_drops_quiet_ones()
     {
-        var home = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
+        var home = await _app.Services.Workspaces.CreateAsync(
+            "Home",
+            "home",
+            BuiltInPresets.Zen,
+            1
+        );
         await _app.AddAsync("Work thing", AppFixture.Today, estimate: 60);
-        await _app.Services.Bus.SendAsync(new CreateItem(Guid.CreateVersion7(), home.Id, "Home thing", AppFixture.Today));
-        var after = await _app.Services.Workspaces.CreateAsync("After hours", "moon", BuiltInPresets.Zen, 2);
-        await _app.Services.Workspaces.UpdateAsync(after.Id, ws => ws.FocusHoursJson = Noto.Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0)).ToJson());
-        await _app.Services.Bus.SendAsync(new CreateItem(Guid.CreateVersion7(), after.Id, "Night thing", AppFixture.Today));
+        await _app.Services.Bus.SendAsync(
+            new CreateItem(Guid.CreateVersion7(), home.Id, "Home thing", AppFixture.Today)
+        );
+        var after = await _app.Services.Workspaces.CreateAsync(
+            "After hours",
+            "moon",
+            BuiltInPresets.Zen,
+            2
+        );
+        await _app.Services.Workspaces.UpdateAsync(
+            after.Id,
+            ws =>
+                ws.FocusHoursJson = Noto
+                    .Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0))
+                    .ToJson()
+        );
+        await _app.Services.Bus.SendAsync(
+            new CreateItem(Guid.CreateVersion7(), after.Id, "Night thing", AppFixture.Today)
+        );
 
         var all = new TodayAllViewModel(_app.Services);
         await all.ReloadAsync();
@@ -216,9 +274,16 @@ public sealed class LayoutTests : IDisposable
     [Fact]
     public async Task Cmd_0_opens_today_all_and_actions_work_across_workspaces()
     {
-        var home = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
+        var home = await _app.Services.Workspaces.CreateAsync(
+            "Home",
+            "home",
+            BuiltInPresets.Zen,
+            1
+        );
         var id = Guid.CreateVersion7();
-        await _app.Services.Bus.SendAsync(new CreateItem(id, home.Id, "Home thing", AppFixture.Today));
+        await _app.Services.Bus.SendAsync(
+            new CreateItem(id, home.Id, "Home thing", AppFixture.Today)
+        );
         await _shell.InitializeAsync();
 
         await _shell.HandleKeyAsync(Key("cmd+0"));
@@ -255,10 +320,14 @@ public sealed class LayoutTests : IDisposable
         await _app.Services.Bus.SendAsync(new CompleteItem(win));
         _app.Clock.Advance(TimeSpan.FromDays(-70));
         var stale = Guid.CreateVersion7();
-        await _app.Services.Bus.SendAsync(new CreateItem(stale, _app.Workspace.Id, "Learn Rust", IsSomeday: true));
+        await _app.Services.Bus.SendAsync(
+            new CreateItem(stale, _app.Workspace.Id, "Learn Rust", IsSomeday: true)
+        );
         _app.Clock.Advance(TimeSpan.FromDays(70));
         var fresh = Guid.CreateVersion7();
-        await _app.Services.Bus.SendAsync(new CreateItem(fresh, _app.Workspace.Id, "Read book", IsSomeday: true));
+        await _app.Services.Bus.SendAsync(
+            new CreateItem(fresh, _app.Workspace.Id, "Read book", IsSomeday: true)
+        );
 
         await _shell.InitializeAsync();
         await _shell.GoAsync(AppPage.WeeklyReview);
@@ -266,19 +335,21 @@ public sealed class LayoutTests : IDisposable
 
         review.Heading.ShouldBe("Week of Oct 5");
         review.Wins.Single().Title.ShouldBe("Ship it");
-        review.Sweep.First(s => s.Title == "Learn Rust").Choice.ShouldBe(SweepChoice.Drop);   // 60+ days untouched
+        review.Sweep.First(s => s.Title == "Learn Rust").Choice.ShouldBe(SweepChoice.Drop); // 60+ days untouched
         review.Sweep.First(s => s.Title == "Read book").Choice.ShouldBe(SweepChoice.Keep);
 
-        for (var n = 0; n < 4; n++) review.Next();
+        for (var n = 0; n < 4; n++)
+            review.Next();
         review.IsLast.ShouldBeTrue();
-        review.Outcome1 = "Ship v2"; review.Outcome2 = "Hire"; 
+        review.Outcome1 = "Ship v2";
+        review.Outcome2 = "Hire";
         review.Sweep.First(s => s.Title == "Read book").PickCommand.Execute("Promote");
         await review.FinishAsync();
         await Task.Delay(100);
 
         (await _app.GetAsync(stale)).Status.ShouldBe(ItemStatus.Dropped);
         (await _app.GetAsync(fresh)).PlannedFor.ShouldBe(AppFixture.Today);
-        await _app.Services.Undo.UndoLastAsync();     // the whole sweep is one undo step
+        await _app.Services.Undo.UndoLastAsync(); // the whole sweep is one undo step
         (await _app.GetAsync(stale)).Status.ShouldBe(ItemStatus.Open);
 
         // Outcomes are for next week; the header shows them once that week is current.

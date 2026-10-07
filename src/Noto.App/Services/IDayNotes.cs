@@ -10,8 +10,11 @@ public interface IDayNotes
 // Day notes stored (and synced) like any other user data.
 public sealed class StoredDayNotes(Noto.Core.Workspaces.DayNoteService service) : IDayNotes
 {
-    public Task<string?> GetAsync(Guid workspaceId, DateOnly day) => service.GetNoteAsync(workspaceId, day);
-    public Task SetAsync(Guid workspaceId, DateOnly day, string text) => service.SetNoteAsync(workspaceId, day, text);
+    public Task<string?> GetAsync(Guid workspaceId, DateOnly day) =>
+        service.GetNoteAsync(workspaceId, day);
+
+    public Task SetAsync(Guid workspaceId, DateOnly day, string text) =>
+        service.SetNoteAsync(workspaceId, day, text);
 }
 
 public sealed class InMemoryDayNotes : IDayNotes

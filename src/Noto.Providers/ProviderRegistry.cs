@@ -12,7 +12,9 @@ public sealed class ProviderRegistry(IEnumerable<IAppProvider> providers)
     readonly List<IAppProvider> _providers = providers.ToList();
 
     public IReadOnlyList<IAppProvider> Providers => _providers;
-    public IAppProvider? Get(string providerId) => _providers.FirstOrDefault(p => p.ProviderId == providerId);
+
+    public IAppProvider? Get(string providerId) =>
+        _providers.FirstOrDefault(p => p.ProviderId == providerId);
 
     public void Register(IAppProvider provider)
     {
@@ -31,11 +33,19 @@ public sealed class ProviderRegistry(IEnumerable<IAppProvider> providers)
         // No usable connection: still recognized, so the UI can say what to connect.
         foreach (var provider in specific.Where(p => !p.IsInstanceBased))
             if (provider.CanHandle(url, null))
-                return new ProviderMatch(provider, null, $"Connect {provider.DisplayName} for live status");
+                return new ProviderMatch(
+                    provider,
+                    null,
+                    $"Connect {provider.DisplayName} for live status"
+                );
 
         foreach (var provider in specific)
             if (provider.LooksLikeOwn(url))
-                return new ProviderMatch(provider, null, $"Connect {provider.DisplayName} ({url.IdnHost})");
+                return new ProviderMatch(
+                    provider,
+                    null,
+                    $"Connect {provider.DisplayName} ({url.IdnHost})"
+                );
 
         return Get(FallbackProviderId) is { } og ? new ProviderMatch(og, null, null) : null;
     }

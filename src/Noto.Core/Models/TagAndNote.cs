@@ -9,7 +9,11 @@ public sealed class Tag
 }
 
 // Note = shutdown "remember for tomorrow"; WeeklyOutcomes = the pinned top-3 of the Weekly Review.
-public enum DayNoteKind { Note, WeeklyOutcomes }
+public enum DayNoteKind
+{
+    Note,
+    WeeklyOutcomes,
+}
 
 public sealed class DayNote
 {

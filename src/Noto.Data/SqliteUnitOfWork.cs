@@ -27,7 +27,8 @@ public sealed partial class SqliteUnitOfWork : IUnitOfWork, IDisposable
         Migrator.Apply(_conn);
     }
 
-    public static SqliteUnitOfWork InMemory(HybridClock? hlc = null) => new("Data Source=:memory:", hlc);
+    public static SqliteUnitOfWork InMemory(HybridClock? hlc = null) =>
+        new("Data Source=:memory:", hlc);
 
     public async Task<T> RunAsync<T>(Func<IStore, Task<T>> work)
     {
@@ -39,7 +40,10 @@ public sealed partial class SqliteUnitOfWork : IUnitOfWork, IDisposable
             await tx.CommitAsync();
             return result;
         }
-        finally { _gate.Release(); }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     public void Dispose()
@@ -54,7 +58,8 @@ public sealed partial class SqliteUnitOfWork : IUnitOfWork, IDisposable
         {
             var sync = new SyncStore(conn, tx);
             var rec = recorder is null ? null : new ChangeRecorder(recorder, conn, tx, sync);
-            if (rec is not null) sync.Attach(rec);
+            if (rec is not null)
+                sync.Attach(rec);
 
             Items = new ItemRepository(conn, tx, rec);
             Workspaces = new WorkspaceRepository(conn, tx, rec);

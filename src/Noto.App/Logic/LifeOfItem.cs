@@ -13,11 +13,17 @@ public sealed record LifeLine(DateOnly Day, string Text)
 // "Life of this item": events and carried days in plain language (docs/07 §10.2).
 public static class LifeOfItem
 {
-    public static IReadOnlyList<LifeLine> Describe(TodoItem item, IReadOnlyList<ItemEvent> events, TimeOnly boundary, DateOnly today)
+    public static IReadOnlyList<LifeLine> Describe(
+        TodoItem item,
+        IReadOnlyList<ItemEvent> events,
+        TimeOnly boundary,
+        DateOnly today
+    )
     {
         var lines = new List<LifeLine>();
         foreach (var e in events.OrderBy(e => e.OccurredAt))
-            if (Text(e) is { } text) lines.Add(new(LogicalDate.Of(e.OccurredAt, e.Tz, boundary), text));
+            if (Text(e) is { } text)
+                lines.Add(new(LogicalDate.Of(e.OccurredAt, e.Tz, boundary), text));
 
         lines.AddRange(CarryRuns(ItemTimeline.Build(item, events, boundary), today));
         return lines.OrderBy(l => l.Day).ToList(); // stable: events stay ahead of carry lines on the same day
@@ -32,17 +38,26 @@ public static class LifeOfItem
         {
             var state = timeline.StateAtStartOf(day);
             var carried = state.IsPlannedOpen && state.PlannedFor < day;
-            if (carried) { run++; continue; }
-            if (run > 0) yield return new(day.AddDays(-1), $"carried ×{run}");
+            if (carried)
+            {
+                run++;
+                continue;
+            }
+            if (run > 0)
+                yield return new(day.AddDays(-1), $"carried ×{run}");
             run = 0;
         }
-        if (run > 0) yield return new(end, $"carried ×{run}");
+        if (run > 0)
+            yield return new(end, $"carried ×{run}");
     }
 
     static string? Text(ItemEvent e)
     {
         string? Field(string name) => e.Data?[name]?.GetValue<string>();
-        static string Date(string? iso) => iso is null ? "no date" : DateOnly.Parse(iso).ToString("MMM d", CultureInfo.InvariantCulture);
+        static string Date(string? iso) =>
+            iso is null
+                ? "no date"
+                : DateOnly.Parse(iso).ToString("MMM d", CultureInfo.InvariantCulture);
 
         return e.Type switch
         {
@@ -55,29 +70,39 @@ public static class LifeOfItem
                 "plan" => $"planned for {Date(Field("to"))}",
                 _ => null, // undo bookkeeping stays out of the story
             },
-            ItemEventType.SomedayChanged => e.Data?["to"]?.GetValue<bool>() == true ? "moved to Someday" : "back from Someday",
+            ItemEventType.SomedayChanged => e.Data?["to"]?.GetValue<bool>() == true
+                ? "moved to Someday"
+                : "back from Someday",
             ItemEventType.WaitingStarted => $"waiting on {Field("on")}",
-            ItemEventType.WaitingEnded => Field("via") switch { "link" => "unblocked via link", "undo" => null, _ => "no longer waiting" },
+            ItemEventType.WaitingEnded => Field("via") switch
+            {
+                "link" => "unblocked via link",
+                "undo" => null,
+                _ => "no longer waiting",
+            },
             ItemEventType.Completed => "completed",
             ItemEventType.Reopened => "reopened",
             ItemEventType.Dropped => $"dropped ({Humanize(Field("reason"))})",
             ItemEventType.Restored => e.Data?["from"] is null ? "restored" : null,
             ItemEventType.StuckReasonGiven => $"stuck: {Field("reason")?.Replace('_', ' ')}",
-            ItemEventType.BrokenDown => $"broken into {e.Data?["child_ids"]?.AsArray().Count} steps",
+            ItemEventType.BrokenDown =>
+                $"broken into {e.Data?["child_ids"]?.AsArray().Count} steps",
             ItemEventType.TitleChanged => "renamed",
             ItemEventType.EstimateChanged => "estimate changed",
             ItemEventType.PriorityChanged => "priority changed",
             ItemEventType.DueDateChanged => "due date changed",
-            ItemEventType.FocusStopped when (e.Data?["minutes"]?.GetValue<int>() ?? 0) > 0 => $"focused {e.Data!["minutes"]!.GetValue<int>()} min",
+            ItemEventType.FocusStopped when (e.Data?["minutes"]?.GetValue<int>() ?? 0) > 0 =>
+                $"focused {e.Data!["minutes"]!.GetValue<int>()} min",
             _ => null,
         };
     }
 
-    static string Humanize(string? reason) => reason switch
-    {
-        "NotNeeded" => "no longer needed",
-        "SomeoneElseDidIt" => "someone else did it",
-        "NotWorthIt" => "not worth it",
-        _ => "other",
-    };
+    static string Humanize(string? reason) =>
+        reason switch
+        {
+            "NotNeeded" => "no longer needed",
+            "SomeoneElseDidIt" => "someone else did it",
+            "NotWorthIt" => "not worth it",
+            _ => "other",
+        };
 }

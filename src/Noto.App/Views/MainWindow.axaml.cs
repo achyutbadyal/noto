@@ -23,7 +23,11 @@ public partial class MainWindow : Window
 
         DataContextChanged += (_, _) => Attach(DataContext as ShellViewModel);
         SizeChanged += OnSizeChanged;
-        _tick.Tick += async (_, _) => { if (_shell is not null) await _shell.TickAsync(); };
+        _tick.Tick += async (_, _) =>
+        {
+            if (_shell is not null)
+                await _shell.TickAsync();
+        };
         Opened += (_, _) =>
         {
             _tick.Start();
@@ -39,16 +43,19 @@ public partial class MainWindow : Window
 
     void ApplyViewport(double width)
     {
-        if (_shell is not null && width >= MinViewportWidth) _shell.ViewportWidth = width;
+        if (_shell is not null && width >= MinViewportWidth)
+            _shell.ViewportWidth = width;
     }
 
     const double MinViewportWidth = 320;
 
     void Attach(ShellViewModel? shell)
     {
-        if (_shell is not null) _shell.PropertyChanged -= OnShellPropertyChanged;
+        if (_shell is not null)
+            _shell.PropertyChanged -= OnShellPropertyChanged;
         _shell = shell;
-        if (shell is null) return;
+        if (shell is null)
+            return;
 
         shell.PropertyChanged += OnShellPropertyChanged;
         shell.Appearance.Changed += ApplyAppearance;
@@ -57,8 +64,13 @@ public partial class MainWindow : Window
 
     void OnShellPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (_shell is not { } shell) return;
-        if (e.PropertyName == nameof(ShellViewModel.Selected) && shell.Selected is { } tab && Application.Current is { } app)
+        if (_shell is not { } shell)
+            return;
+        if (
+            e.PropertyName == nameof(ShellViewModel.Selected)
+            && shell.Selected is { } tab
+            && Application.Current is { } app
+        )
             ThemeBuilder.SetAccent(app, tab.Color);
         else if (e.PropertyName == nameof(ShellViewModel.Content))
             FadeInPage();
@@ -67,7 +79,8 @@ public partial class MainWindow : Window
     // New page fades in on its own (the old page is swapped out instantly, so there's no muddy cross-fade).
     void FadeInPage()
     {
-        if (ReduceMotion || !IsVisible) return;
+        if (ReduceMotion || !IsVisible)
+            return;
         PageHost.Opacity = 0;
         Dispatcher.UIThread.Post(() => PageHost.Opacity = 1, DispatcherPriority.Render);
     }
@@ -75,7 +88,8 @@ public partial class MainWindow : Window
     // Theme, text size, row density and the reduce-motion gate (docs/07 §11.3, §15).
     void ApplyAppearance()
     {
-        if (_shell is not { } shell || Application.Current is not { } app) return;
+        if (_shell is not { } shell || Application.Current is not { } app)
+            return;
         app.RequestedThemeVariant = ThemeBuilder.Variant(shell.Appearance.Theme);
         FontSize = shell.Appearance.BodySize;
         app.Resources["RowHeight"] = shell.Appearance.RowHeight;
@@ -96,13 +110,18 @@ public partial class MainWindow : Window
 
     async void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (_shell is null || KeyChordMapper.From(e) is not { } chord) return;
+        if (_shell is null || KeyChordMapper.From(e) is not { } chord)
+            return;
         var textFocused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox;
-        if (await _shell.HandleKeyAsync(chord, textFocused)) e.Handled = true;
+        if (await _shell.HandleKeyAsync(chord, textFocused))
+            e.Handled = true;
     }
 
     void OnScrimPressed(object? sender, PointerPressedEventArgs e) => _shell?.CommandBar.Close();
-    void OnHelpScrimPressed(object? sender, PointerPressedEventArgs e) => _shell!.IsHelpOpen = false;
+
+    void OnHelpScrimPressed(object? sender, PointerPressedEventArgs e) =>
+        _shell!.IsHelpOpen = false;
+
     void OnPanelPressed(object? sender, PointerPressedEventArgs e) => e.Handled = true; // clicks inside a panel don't dismiss it
 
     async void OnResultTapped(object? sender, TappedEventArgs e)

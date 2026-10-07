@@ -1,13 +1,13 @@
 using Noto.Core.Commands;
 using Noto.Core.Derivations;
-using Noto.Core.Insights;
-using Noto.Core.Interfaces;
 using Noto.Core.Export;
 using Noto.Core.Import;
+using Noto.Core.Insights;
+using Noto.Core.Interfaces;
 using Noto.Core.Links;
 using Noto.Core.Recurrence;
-using Noto.Core.Workspaces;
 using Noto.Core.Time;
+using Noto.Core.Workspaces;
 using Noto.Platform.Abstractions;
 
 namespace Noto.App.Services;
@@ -16,8 +16,14 @@ namespace Noto.App.Services;
 public sealed class AppServices
 {
     public AppServices(
-        IUnitOfWork uow, ICommandBus bus, IClock clock, ISearchIndex search, PlatformServices platform,
-        IUiState? uiState = null, IDayNotes? dayNotes = null)
+        IUnitOfWork uow,
+        ICommandBus bus,
+        IClock clock,
+        ISearchIndex search,
+        PlatformServices platform,
+        IUiState? uiState = null,
+        IDayNotes? dayNotes = null
+    )
     {
         Uow = uow;
         Bus = bus;

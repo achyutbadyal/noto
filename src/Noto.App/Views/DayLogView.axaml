@@ -1,8 +1,10 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Noto.App.ViewModels"
-             x:Class="Noto.App.Views.DayLogView"
-             x:DataType="vm:DayLogViewModel">
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  x:Class="Noto.App.Views.DayLogView"
+  x:DataType="vm:DayLogViewModel"
+>
   <ScrollViewer>
     <StackPanel MaxWidth="720" Margin="24" Spacing="12" HorizontalAlignment="Stretch">
       <TextBlock Text="{Binding Title}" Classes="title" TextWrapping="Wrap" />

@@ -15,25 +15,32 @@ public interface IEntityCodec
 
 public static class EntityCodecs
 {
-    public static IReadOnlyDictionary<string, IEntityCodec> Default { get; } = new Dictionary<string, IEntityCodec>
-    {
-        [EntityTypes.Workspace] = new WorkspaceCodec(),
-        [EntityTypes.TodoItem] = new ItemCodec(),
-        [EntityTypes.ItemEvent] = new EventCodec(),
-        [EntityTypes.RecurrenceRule] = new RowStoreCodec(EntityTypes.RecurrenceRule),
-        [EntityTypes.Tag] = new RowStoreCodec(EntityTypes.Tag),
-        [EntityTypes.TodoTag] = new RowStoreCodec(EntityTypes.TodoTag),
-        [EntityTypes.DayNote] = new RowStoreCodec(EntityTypes.DayNote),
-        [EntityTypes.TodoLink] = new RowStoreCodec(EntityTypes.TodoLink),
-    };
+    public static IReadOnlyDictionary<string, IEntityCodec> Default { get; } =
+        new Dictionary<string, IEntityCodec>
+        {
+            [EntityTypes.Workspace] = new WorkspaceCodec(),
+            [EntityTypes.TodoItem] = new ItemCodec(),
+            [EntityTypes.ItemEvent] = new EventCodec(),
+            [EntityTypes.RecurrenceRule] = new RowStoreCodec(EntityTypes.RecurrenceRule),
+            [EntityTypes.Tag] = new RowStoreCodec(EntityTypes.Tag),
+            [EntityTypes.TodoTag] = new RowStoreCodec(EntityTypes.TodoTag),
+            [EntityTypes.DayNote] = new RowStoreCodec(EntityTypes.DayNote),
+            [EntityTypes.TodoLink] = new RowStoreCodec(EntityTypes.TodoLink),
+        };
 
     // Rules, tags, tag assignments, day notes and links are plain SQL rows behind ISyncRowStore.
     sealed class RowStoreCodec(string entityType) : IEntityCodec
     {
         public string EntityType => entityType;
-        public Task<JsonObject?> LoadAsync(IStore store, Guid id) => store.SyncRows.LoadAsync(entityType, id);
-        public Task SaveAsync(IStore store, JsonObject row) => store.SyncRows.SaveAsync(entityType, row);
-        public Task<IReadOnlyList<JsonObject>> ListAsync(IStore store, Guid workspaceId) => store.SyncRows.ListAsync(entityType, workspaceId);
+
+        public Task<JsonObject?> LoadAsync(IStore store, Guid id) =>
+            store.SyncRows.LoadAsync(entityType, id);
+
+        public Task SaveAsync(IStore store, JsonObject row) =>
+            store.SyncRows.SaveAsync(entityType, row);
+
+        public Task<IReadOnlyList<JsonObject>> ListAsync(IStore store, Guid workspaceId) =>
+            store.SyncRows.ListAsync(entityType, workspaceId);
     }
 
     sealed class WorkspaceCodec : IEntityCodec
@@ -46,8 +53,12 @@ public static class EntityCodecs
         // sync_enabled is device-local: keep it for known workspaces, enable it for ones first seen via sync.
         public async Task SaveAsync(IStore store, JsonObject row)
         {
-            var existing = await store.Workspaces.GetAsync(Guid.Parse(row["id"]!.GetValue<string>()));
-            await store.Workspaces.UpsertAsync(SyncRows.ToWorkspace(row, existing?.SyncEnabled ?? true));
+            var existing = await store.Workspaces.GetAsync(
+                Guid.Parse(row["id"]!.GetValue<string>())
+            );
+            await store.Workspaces.UpsertAsync(
+                SyncRows.ToWorkspace(row, existing?.SyncEnabled ?? true)
+            );
         }
 
         public async Task<IReadOnlyList<JsonObject>> ListAsync(IStore store, Guid workspaceId) =>
@@ -61,7 +72,8 @@ public static class EntityCodecs
         public async Task<JsonObject?> LoadAsync(IStore store, Guid id) =>
             await store.Items.GetAsync(id) is { } i ? SyncRows.ToRow(i) : null;
 
-        public Task SaveAsync(IStore store, JsonObject row) => store.Items.UpsertAsync(SyncRows.ToItem(row));
+        public Task SaveAsync(IStore store, JsonObject row) =>
+            store.Items.UpsertAsync(SyncRows.ToItem(row));
 
         public async Task<IReadOnlyList<JsonObject>> ListAsync(IStore store, Guid workspaceId) =>
             (await store.Items.ListAllAsync(workspaceId)).Select(SyncRows.ToRow).ToList();
@@ -71,8 +83,11 @@ public static class EntityCodecs
     {
         public string EntityType => EntityTypes.ItemEvent;
 
-        public Task<JsonObject?> LoadAsync(IStore store, Guid id) => Task.FromResult<JsonObject?>(null);
-        public Task SaveAsync(IStore store, JsonObject row) => store.Events.AppendAsync(SyncRows.ToEvent(row));
+        public Task<JsonObject?> LoadAsync(IStore store, Guid id) =>
+            Task.FromResult<JsonObject?>(null);
+
+        public Task SaveAsync(IStore store, JsonObject row) =>
+            store.Events.AppendAsync(SyncRows.ToEvent(row));
 
         public async Task<IReadOnlyList<JsonObject>> ListAsync(IStore store, Guid workspaceId) =>
             (await store.Events.ListForWorkspaceAsync(workspaceId)).Select(SyncRows.ToRow).ToList();

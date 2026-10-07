@@ -10,7 +10,13 @@ public static class PlatformFactory
     public static PlatformServices Create()
     {
         if (OperatingSystem.IsMacOS())
-            return new PlatformServices(new MacHotkey(), new MacKeyring(), new MacCaptureContext(), new MacNotifications(), new MacReduceMotion());
+            return new PlatformServices(
+                new MacHotkey(),
+                new MacKeyring(),
+                new MacCaptureContext(),
+                new MacNotifications(),
+                new MacReduceMotion()
+            );
         return OperatingSystem.IsWindows() ? WindowsPlatform.Create() : LinuxPlatform.Create();
     }
 }

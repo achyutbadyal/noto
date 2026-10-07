@@ -11,36 +11,61 @@ namespace Noto.Server.Gateway;
 
 public sealed record OAuthStartRequest(
     [property: JsonPropertyName("instance_url")] string? InstanceUrl,
-    [property: JsonPropertyName("code_challenge")] string? CodeChallenge);
+    [property: JsonPropertyName("code_challenge")] string? CodeChallenge
+);
 
 public sealed record OAuthStartResponse(
     [property: JsonPropertyName("authorize_url")] string AuthorizeUrl,
-    [property: JsonPropertyName("state")] string State);
+    [property: JsonPropertyName("state")] string State
+);
 
 public sealed record RedeemRequest(
     [property: JsonPropertyName("one_time_code")] string? OneTimeCode,
-    [property: JsonPropertyName("code_verifier")] string? CodeVerifier);
+    [property: JsonPropertyName("code_verifier")] string? CodeVerifier
+);
 
 public sealed record RefreshRequest(
     [property: JsonPropertyName("refresh_token")] string? RefreshToken,
-    [property: JsonPropertyName("instance_url")] string? InstanceUrl);
+    [property: JsonPropertyName("instance_url")] string? InstanceUrl
+);
 
 public sealed record ProviderTokens(
     [property: JsonPropertyName("access_token")] string AccessToken,
     [property: JsonPropertyName("refresh_token")] string? RefreshToken,
     [property: JsonPropertyName("expires_at")] DateTimeOffset? ExpiresAt,
     [property: JsonPropertyName("scopes")] string? Scopes,
-    [property: JsonPropertyName("display_label")] string DisplayLabel);
+    [property: JsonPropertyName("display_label")] string DisplayLabel
+);
 
 // Brokers provider OAuth for the browser client. The server holds the provider client secret and does the
 // code exchange; tokens exist only in a 60-second in-memory slot until the client redeems them.
-public sealed class OAuthBroker(IConfiguration settings, ServerConfig config, SafeFetcher fetcher, IMemoryCache cache, TimeProvider time)
+public sealed class OAuthBroker(
+    IConfiguration settings,
+    ServerConfig config,
+    SafeFetcher fetcher,
+    IMemoryCache cache,
+    TimeProvider time
+)
 {
     static readonly TimeSpan StateTtl = TimeSpan.FromMinutes(10);
     static readonly TimeSpan CodeTtl = TimeSpan.FromSeconds(60);
 
-    sealed record PendingAuth(Guid UserId, string ProviderId, string? InstanceUrl, string ServerVerifier, string? ClientChallenge, DateTimeOffset ExpiresAt);
-    sealed record PendingCode(Guid UserId, string ProviderId, ProviderTokens Tokens, string? ClientChallenge, DateTimeOffset ExpiresAt);
+    sealed record PendingAuth(
+        Guid UserId,
+        string ProviderId,
+        string? InstanceUrl,
+        string ServerVerifier,
+        string? ClientChallenge,
+        DateTimeOffset ExpiresAt
+    );
+
+    sealed record PendingCode(
+        Guid UserId,
+        string ProviderId,
+        ProviderTokens Tokens,
+        string? ClientChallenge,
+        DateTimeOffset ExpiresAt
+    );
 
     public OAuthStartResponse Start(Guid userId, string providerId, OAuthStartRequest req)
     {
@@ -49,7 +74,18 @@ public sealed class OAuthBroker(IConfiguration settings, ServerConfig config, Sa
 
         var state = Random();
         var verifier = Random();
-        cache.Set("oauth:" + state, new PendingAuth(userId, providerId, req.InstanceUrl, verifier, req.CodeChallenge, time.GetUtcNow() + StateTtl), StateTtl);
+        cache.Set(
+            "oauth:" + state,
+            new PendingAuth(
+                userId,
+                providerId,
+                req.InstanceUrl,
+                verifier,
+                req.CodeChallenge,
+                time.GetUtcNow() + StateTtl
+            ),
+            StateTtl
+        );
 
         var query = new List<(string, string)>
         {
@@ -58,27 +94,52 @@ public sealed class OAuthBroker(IConfiguration settings, ServerConfig config, Sa
             ("response_type", "code"),
             ("state", state),
         };
-        if (oauth.Scopes.Length > 0) query.Add((provider.Id == "slack" ? "user_scope" : "scope", string.Join(" ", oauth.Scopes)));
+        if (oauth.Scopes.Length > 0)
+            query.Add(
+                (provider.Id == "slack" ? "user_scope" : "scope", string.Join(" ", oauth.Scopes))
+            );
         if (oauth.Pkce)
         {
             query.Add(("code_challenge", Challenge(verifier)));
             query.Add(("code_challenge_method", "S256"));
         }
-        foreach (var (k, v) in oauth.ExtraAuthorizeParams ?? new Dictionary<string, string>()) query.Add((k, v));
+        foreach (var (k, v) in oauth.ExtraAuthorizeParams ?? new Dictionary<string, string>())
+            query.Add((k, v));
 
-        var authorize = tokenBase is null ? oauth.AuthorizeUrl : $"{tokenBase}{new Uri(oauth.AuthorizeUrl).AbsolutePath}";
-        return new OAuthStartResponse($"{authorize}?{string.Join("&", query.Select(q => $"{Uri.EscapeDataString(q.Item1)}={Uri.EscapeDataString(q.Item2)}"))}", state);
+        var authorize = tokenBase is null
+            ? oauth.AuthorizeUrl
+            : $"{tokenBase}{new Uri(oauth.AuthorizeUrl).AbsolutePath}";
+        return new OAuthStartResponse(
+            $"{authorize}?{string.Join("&", query.Select(q => $"{Uri.EscapeDataString(q.Item1)}={Uri.EscapeDataString(q.Item2)}"))}",
+            state
+        );
     }
 
     // Browser redirect target: exchanges the code and returns a one-time code for the opener window.
-    public async Task<string> CompleteAsync(string providerId, string? code, string? state, CancellationToken ct)
+    public async Task<string> CompleteAsync(
+        string providerId,
+        string? code,
+        string? state,
+        CancellationToken ct
+    )
     {
-        if (string.IsNullOrEmpty(state) || !cache.TryGetValue("oauth:" + state, out PendingAuth? pending) || pending is null)
-            throw ApiException.BadRequest("INVALID_STATE", "Unknown or expired authorization state");
+        if (
+            string.IsNullOrEmpty(state)
+            || !cache.TryGetValue("oauth:" + state, out PendingAuth? pending)
+            || pending is null
+        )
+            throw ApiException.BadRequest(
+                "INVALID_STATE",
+                "Unknown or expired authorization state"
+            );
         cache.Remove("oauth:" + state); // single use, even if the checks below fail
         if (pending.ProviderId != providerId || pending.ExpiresAt <= time.GetUtcNow())
-            throw ApiException.BadRequest("INVALID_STATE", "Unknown or expired authorization state");
-        if (string.IsNullOrEmpty(code)) throw ApiException.BadRequest("AUTHORIZATION_DENIED", "Authorization was not granted");
+            throw ApiException.BadRequest(
+                "INVALID_STATE",
+                "Unknown or expired authorization state"
+            );
+        if (string.IsNullOrEmpty(code))
+            throw ApiException.BadRequest("AUTHORIZATION_DENIED", "Authorization was not granted");
 
         var (provider, oauth, clientId, secret) = Configured(providerId);
         var fields = new Dictionary<string, string>
@@ -87,45 +148,97 @@ public sealed class OAuthBroker(IConfiguration settings, ServerConfig config, Sa
             ["code"] = code,
             ["redirect_uri"] = RedirectUri(providerId),
         };
-        if (oauth.Pkce) fields["code_verifier"] = pending.ServerVerifier;
+        if (oauth.Pkce)
+            fields["code_verifier"] = pending.ServerVerifier;
 
-        var tokens = await ExchangeAsync(provider, oauth, clientId, secret, pending.InstanceUrl, fields, ct);
+        var tokens = await ExchangeAsync(
+            provider,
+            oauth,
+            clientId,
+            secret,
+            pending.InstanceUrl,
+            fields,
+            ct
+        );
         var oneTime = Random();
-        cache.Set("code:" + oneTime, new PendingCode(pending.UserId, providerId, tokens, pending.ClientChallenge, time.GetUtcNow() + CodeTtl), CodeTtl);
+        cache.Set(
+            "code:" + oneTime,
+            new PendingCode(
+                pending.UserId,
+                providerId,
+                tokens,
+                pending.ClientChallenge,
+                time.GetUtcNow() + CodeTtl
+            ),
+            CodeTtl
+        );
         return oneTime;
     }
 
     public ProviderTokens Redeem(Guid userId, string providerId, RedeemRequest req)
     {
-        if (string.IsNullOrEmpty(req.OneTimeCode) || !cache.TryGetValue("code:" + req.OneTimeCode, out PendingCode? pending) || pending is null)
+        if (
+            string.IsNullOrEmpty(req.OneTimeCode)
+            || !cache.TryGetValue("code:" + req.OneTimeCode, out PendingCode? pending)
+            || pending is null
+        )
             throw ApiException.BadRequest("INVALID_CODE", "Unknown or expired code");
         cache.Remove("code:" + req.OneTimeCode); // single use, even when the checks below fail
-        if (pending.ExpiresAt <= time.GetUtcNow()) throw ApiException.BadRequest("INVALID_CODE", "Unknown or expired code");
+        if (pending.ExpiresAt <= time.GetUtcNow())
+            throw ApiException.BadRequest("INVALID_CODE", "Unknown or expired code");
 
-        if (pending.UserId != userId || pending.ProviderId != providerId) throw ApiException.Forbidden("INVALID_CODE", "Code was issued to another user");
-        if (pending.ClientChallenge is { } challenge && (req.CodeVerifier is null || Challenge(req.CodeVerifier) != challenge))
-            throw ApiException.Forbidden("PKCE_MISMATCH", "code_verifier does not match code_challenge");
+        if (pending.UserId != userId || pending.ProviderId != providerId)
+            throw ApiException.Forbidden("INVALID_CODE", "Code was issued to another user");
+        if (
+            pending.ClientChallenge is { } challenge
+            && (req.CodeVerifier is null || Challenge(req.CodeVerifier) != challenge)
+        )
+            throw ApiException.Forbidden(
+                "PKCE_MISMATCH",
+                "code_verifier does not match code_challenge"
+            );
         return pending.Tokens;
     }
 
-    public async Task<ProviderTokens> RefreshAsync(string providerId, RefreshRequest req, CancellationToken ct)
+    public async Task<ProviderTokens> RefreshAsync(
+        string providerId,
+        RefreshRequest req,
+        CancellationToken ct
+    )
     {
-        if (string.IsNullOrEmpty(req.RefreshToken)) throw ApiException.BadRequest("VALIDATION_ERROR", "refresh_token is required");
+        if (string.IsNullOrEmpty(req.RefreshToken))
+            throw ApiException.BadRequest("VALIDATION_ERROR", "refresh_token is required");
         var (provider, oauth, clientId, secret) = Configured(providerId);
-        var fields = new Dictionary<string, string> { ["grant_type"] = "refresh_token", ["refresh_token"] = req.RefreshToken };
+        var fields = new Dictionary<string, string>
+        {
+            ["grant_type"] = "refresh_token",
+            ["refresh_token"] = req.RefreshToken,
+        };
         return await ExchangeAsync(provider, oauth, clientId, secret, req.InstanceUrl, fields, ct);
     }
 
-    async Task<ProviderTokens> ExchangeAsync(ProviderDef provider, OAuthDef oauth, string clientId, string secret, string? instanceUrl,
-        Dictionary<string, string> fields, CancellationToken ct)
+    async Task<ProviderTokens> ExchangeAsync(
+        ProviderDef provider,
+        OAuthDef oauth,
+        string clientId,
+        string secret,
+        string? instanceUrl,
+        Dictionary<string, string> fields,
+        CancellationToken ct
+    )
     {
         var instance = InstanceBase(provider, instanceUrl);
-        var tokenUrl = instance is null ? oauth.TokenUrl : $"{instance}{new Uri(oauth.TokenUrl).AbsolutePath}";
+        var tokenUrl = instance is null
+            ? oauth.TokenUrl
+            : $"{instance}{new Uri(oauth.TokenUrl).AbsolutePath}";
 
         using var request = new HttpRequestMessage(HttpMethod.Post, tokenUrl);
         request.Headers.TryAddWithoutValidation("Accept", "application/json");
         if (oauth.BasicAuthToken)
-            request.Headers.TryAddWithoutValidation("Authorization", "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{secret}")));
+            request.Headers.TryAddWithoutValidation(
+                "Authorization",
+                "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes($"{clientId}:{secret}"))
+            );
         else
         {
             fields["client_id"] = clientId;
@@ -136,49 +249,103 @@ public sealed class OAuthBroker(IConfiguration settings, ServerConfig config, Sa
             ? new StringContent(JsonSerializer.Serialize(fields), Encoding.UTF8, "application/json")
             : new FormUrlEncodedContent(fields);
 
-        var response = await fetcher.SendAsync(request, new SafeFetchOptions { Timeout = TimeSpan.FromSeconds(10) }, ct);
+        var response = await fetcher.SendAsync(
+            request,
+            new SafeFetchOptions { Timeout = TimeSpan.FromSeconds(10) },
+            ct
+        );
         JsonObject? json;
-        try { json = JsonNode.Parse(response.Body) as JsonObject; }
-        catch (JsonException) { json = null; }
+        try
+        {
+            json = JsonNode.Parse(response.Body) as JsonObject;
+        }
+        catch (JsonException)
+        {
+            json = null;
+        }
 
         // Providers report failures in the body (Slack: ok=false) as well as in the status code.
-        if (response.Status is < 200 or >= 300 || json is null || json["access_token"] is null && json["authed_user"]?["access_token"] is null)
-            throw new ApiException(502, "PROVIDER_AUTH_FAILED", "Provider rejected the authorization");
+        if (
+            response.Status is < 200 or >= 300
+            || json is null
+            || json["access_token"] is null && json["authed_user"]?["access_token"] is null
+        )
+            throw new ApiException(
+                502,
+                "PROVIDER_AUTH_FAILED",
+                "Provider rejected the authorization"
+            );
 
-        var access = json["access_token"]?.GetValue<string>() ?? json["authed_user"]!["access_token"]!.GetValue<string>();
+        var access =
+            json["access_token"]?.GetValue<string>()
+            ?? json["authed_user"]!["access_token"]!.GetValue<string>();
         var expiresIn = json["expires_in"]?.GetValue<double>();
         return new ProviderTokens(
             access,
             json["refresh_token"]?.GetValue<string>(),
             expiresIn is { } s ? time.GetUtcNow().AddSeconds(s) : null,
             json["scope"]?.GetValue<string>(),
-            instance is null ? provider.Name : $"{provider.Name} ({new Uri(instance).Host})");
+            instance is null ? provider.Name : $"{provider.Name} ({new Uri(instance).Host})"
+        );
     }
 
-    (ProviderDef Provider, OAuthDef OAuth, string ClientId, string Secret) Configured(string providerId)
+    (ProviderDef Provider, OAuthDef OAuth, string ClientId, string Secret) Configured(
+        string providerId
+    )
     {
-        var provider = ProviderCatalog.Find(providerId) ?? throw ApiException.NotFound("UNKNOWN_PROVIDER", "Unknown provider");
+        var provider =
+            ProviderCatalog.Find(providerId)
+            ?? throw ApiException.NotFound("UNKNOWN_PROVIDER", "Unknown provider");
         var clientId = settings[$"{provider.EnvPrefix}_CLIENT_ID"];
         var secret = settings[$"{provider.EnvPrefix}_CLIENT_SECRET"];
-        if (provider.OAuth is null || string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(secret))
-            throw ApiException.NotFound("PROVIDER_NOT_CONFIGURED", "This provider is not enabled on this server");
+        if (
+            provider.OAuth is null
+            || string.IsNullOrEmpty(clientId)
+            || string.IsNullOrEmpty(secret)
+        )
+            throw ApiException.NotFound(
+                "PROVIDER_NOT_CONFIGURED",
+                "This provider is not enabled on this server"
+            );
         return (provider, provider.OAuth, clientId, secret);
     }
 
     // Self-hosted providers (GitLab, Atlassian DC) carry their own instance host in the OAuth URLs.
     static string? InstanceBase(ProviderDef provider, string? instanceUrl)
     {
-        if (string.IsNullOrWhiteSpace(instanceUrl)) return null;
-        if (!provider.AllowInstanceUrl) throw ApiException.BadRequest("INSTANCE_URL_NOT_SUPPORTED", "This provider has no instance_url");
-        if (!Uri.TryCreate(instanceUrl, UriKind.Absolute, out var uri) || uri.Scheme != "https" || !string.IsNullOrEmpty(uri.UserInfo))
-            throw ApiException.BadRequest("INVALID_INSTANCE_URL", "instance_url must be an absolute https URL");
+        if (string.IsNullOrWhiteSpace(instanceUrl))
+            return null;
+        if (!provider.AllowInstanceUrl)
+            throw ApiException.BadRequest(
+                "INSTANCE_URL_NOT_SUPPORTED",
+                "This provider has no instance_url"
+            );
+        if (
+            !Uri.TryCreate(instanceUrl, UriKind.Absolute, out var uri)
+            || uri.Scheme != "https"
+            || !string.IsNullOrEmpty(uri.UserInfo)
+        )
+            throw ApiException.BadRequest(
+                "INVALID_INSTANCE_URL",
+                "instance_url must be an absolute https URL"
+            );
         return uri.GetLeftPart(UriPartial.Authority);
     }
 
-    string RedirectUri(string providerId) => new Uri(config.PublicUrl, $"/v1/gateway/oauth/{providerId}/callback").ToString();
+    string RedirectUri(string providerId) =>
+        new Uri(config.PublicUrl, $"/v1/gateway/oauth/{providerId}/callback").ToString();
 
-    static string Random() => Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    static string Random() =>
+        Convert
+            .ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 
     public static string Challenge(string verifier) =>
-        Convert.ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        Convert
+            .ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 }

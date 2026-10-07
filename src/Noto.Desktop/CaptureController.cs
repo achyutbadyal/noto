@@ -20,7 +20,8 @@ sealed class CaptureController(AppServices services)
 
     public async void Show()
     {
-        if (_window is null || _vm is null) WarmUp();
+        if (_window is null || _vm is null)
+            WarmUp();
         await _vm!.PrepareAsync();
         _vm.Add.Text = "";
         _window!.Show();

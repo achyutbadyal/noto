@@ -16,8 +16,15 @@ public class StuckPromptTests
     [InlineData(Pressure.Gentle, 13, 4, false)]
     [InlineData(Pressure.Gentle, 14, 0, true)]
     [InlineData(Pressure.Relentless, 2, 0, true)]
-    public void Prompt_triggers_at_the_pressure_thresholds(Pressure level, int carry, int defers, bool expected) =>
-        StuckPrompt.ShouldPrompt(new ItemMetrics(carry, carry, defers), PressureThresholds.For(level)).ShouldBe(expected);
+    public void Prompt_triggers_at_the_pressure_thresholds(
+        Pressure level,
+        int carry,
+        int defers,
+        bool expected
+    ) =>
+        StuckPrompt
+            .ShouldPrompt(new ItemMetrics(carry, carry, defers), PressureThresholds.For(level))
+            .ShouldBe(expected);
 
     [Theory]
     [InlineData(StuckReason.TooBig, StuckFixKind.BreakDown)]
@@ -36,7 +43,10 @@ public class CompletionStreakTests
     {
         var days = new[]
         {
-            Days.Stats(Oct(1), 3, 0), Days.Stats(Oct(2), 2, 1), Days.Stats(Oct(3), 4, 0), Days.Stats(Oct(4), 1, 0),
+            Days.Stats(Oct(1), 3, 0),
+            Days.Stats(Oct(2), 2, 1),
+            Days.Stats(Oct(3), 4, 0),
+            Days.Stats(Oct(4), 1, 0),
         };
         CompletionStreak.Current(days).ShouldBe(2);
         CompletionStreak.Longest(days).ShouldBe(2);
@@ -45,14 +55,24 @@ public class CompletionStreakTests
     [Fact]
     public void Days_with_nothing_planned_do_not_break_the_streak()
     {
-        var days = new[] { Days.Stats(Oct(1), 2, 0), Days.Stats(Oct(2), 0, 0), Days.Stats(Oct(3), 1, 0) };
+        var days = new[]
+        {
+            Days.Stats(Oct(1), 2, 0),
+            Days.Stats(Oct(2), 0, 0),
+            Days.Stats(Oct(3), 1, 0),
+        };
         CompletionStreak.Current(days).ShouldBe(2);
     }
 
     [Fact]
     public void Input_order_does_not_matter()
     {
-        var days = new[] { Days.Stats(Oct(3), 1, 0), Days.Stats(Oct(1), 1, 1), Days.Stats(Oct(2), 1, 0) };
+        var days = new[]
+        {
+            Days.Stats(Oct(3), 1, 0),
+            Days.Stats(Oct(1), 1, 1),
+            Days.Stats(Oct(2), 1, 0),
+        };
         CompletionStreak.Current(days).ShouldBe(2);
     }
 
@@ -61,8 +81,11 @@ public class CompletionStreakTests
     {
         var days = new[]
         {
-            Days.Stats(Oct(1), 1, 0), Days.Stats(Oct(2), 1, 0), Days.Stats(Oct(3), 1, 0),
-            Days.Stats(Oct(4), 0, 2), Days.Stats(Oct(5), 1, 0),
+            Days.Stats(Oct(1), 1, 0),
+            Days.Stats(Oct(2), 1, 0),
+            Days.Stats(Oct(3), 1, 0),
+            Days.Stats(Oct(4), 0, 2),
+            Days.Stats(Oct(5), 1, 0),
         };
         (CompletionStreak.Current(days), CompletionStreak.Longest(days)).ShouldBe((1, 3));
     }
@@ -71,7 +94,11 @@ public class CompletionStreakTests
 public class PaceForecastTests
 {
     static IEnumerable<DayStats> History(int days, int done, int load = 8) =>
-        Enumerable.Range(0, days).Select(n => Days.Stats(Oct(1).AddDays(n), done, load - done, carried: 2, planned: load - 2));
+        Enumerable
+            .Range(0, days)
+            .Select(n =>
+                Days.Stats(Oct(1).AddDays(n), done, load - done, carried: 2, planned: load - 2)
+            );
 
     [Fact]
     public void Needs_two_weeks_of_history()
@@ -93,7 +120,9 @@ public class PaceForecastTests
     {
         var light = History(15, 2, load: 3);
         var heavy = History(15, 6, load: 10).Select(d => d with { Day = d.Day.AddDays(20) });
-        PaceForecaster.Forecast(Oct(1).AddDays(60), 10, light.Concat(heavy))!.ExpectedDone.ShouldBe(6);
+        PaceForecaster
+            .Forecast(Oct(1).AddDays(60), 10, light.Concat(heavy))!
+            .ExpectedDone.ShouldBe(6);
     }
 
     [Fact]
@@ -117,43 +146,69 @@ public class ContainerRulesTests
     {
         var i = Make.Item();
         i.Status = status;
-        if (status == ItemStatus.Done) { i.CompletedOn = completedOn ?? Oct(7); i.CompletedAt = DateTimeOffset.UtcNow; }
-        if (status == ItemStatus.Dropped) i.DroppedAt = DateTimeOffset.UtcNow;
-        if (status == ItemStatus.Waiting) i.WaitingOn = "x";
+        if (status == ItemStatus.Done)
+        {
+            i.CompletedOn = completedOn ?? Oct(7);
+            i.CompletedAt = DateTimeOffset.UtcNow;
+        }
+        if (status == ItemStatus.Dropped)
+            i.DroppedAt = DateTimeOffset.UtcNow;
+        if (status == ItemStatus.Waiting)
+            i.WaitingOn = "x";
         return i;
     }
 
     [Fact]
     public void Progress_counts_done_over_non_dropped()
     {
-        var kids = new[] { Child(ItemStatus.Done), Child(ItemStatus.Open), Child(ItemStatus.Dropped), Child(ItemStatus.Done) };
+        var kids = new[]
+        {
+            Child(ItemStatus.Done),
+            Child(ItemStatus.Open),
+            Child(ItemStatus.Dropped),
+            Child(ItemStatus.Done),
+        };
         ContainerRules.Progress(kids).ToString().ShouldBe("2/3");
     }
 
     [Fact]
     public void Open_or_waiting_children_keep_the_parent_open()
     {
-        ContainerRules.Evaluate([Child(ItemStatus.Done), Child(ItemStatus.Open)]).ShouldBe(ContainerOutcome.StillOpen);
-        ContainerRules.Evaluate([Child(ItemStatus.Done), Child(ItemStatus.Waiting)]).ShouldBe(ContainerOutcome.StillOpen);
+        ContainerRules
+            .Evaluate([Child(ItemStatus.Done), Child(ItemStatus.Open)])
+            .ShouldBe(ContainerOutcome.StillOpen);
+        ContainerRules
+            .Evaluate([Child(ItemStatus.Done), Child(ItemStatus.Waiting)])
+            .ShouldBe(ContainerOutcome.StillOpen);
         ContainerRules.Evaluate([]).ShouldBe(ContainerOutcome.StillOpen);
     }
 
     [Fact]
     public void Last_open_child_done_completes_the_parent_even_with_dropped_siblings()
     {
-        ContainerRules.Evaluate([Child(ItemStatus.Done), Child(ItemStatus.Dropped)]).ShouldBe(ContainerOutcome.AutoComplete);
+        ContainerRules
+            .Evaluate([Child(ItemStatus.Done), Child(ItemStatus.Dropped)])
+            .ShouldBe(ContainerOutcome.AutoComplete);
     }
 
     [Fact]
     public void All_children_dropped_asks_done_or_drop()
     {
-        ContainerRules.Evaluate([Child(ItemStatus.Dropped), Child(ItemStatus.Dropped)]).ShouldBe(ContainerOutcome.AskDoneOrDrop);
+        ContainerRules
+            .Evaluate([Child(ItemStatus.Dropped), Child(ItemStatus.Dropped)])
+            .ShouldBe(ContainerOutcome.AskDoneOrDrop);
     }
 
     [Fact]
     public void Parent_is_credited_to_the_latest_child_completion_day()
     {
-        ContainerRules.CompletionDay([Child(ItemStatus.Done, Oct(5)), Child(ItemStatus.Done, Oct(7)), Child(ItemStatus.Dropped)]).ShouldBe(Oct(7));
+        ContainerRules
+            .CompletionDay([
+                Child(ItemStatus.Done, Oct(5)),
+                Child(ItemStatus.Done, Oct(7)),
+                Child(ItemStatus.Dropped),
+            ])
+            .ShouldBe(Oct(7));
     }
 }
 
@@ -195,7 +250,12 @@ public class CapacityBarTests
     public void Unestimated_items_use_the_fallback_and_item_units_count_one_each()
     {
         var ws = Make.Workspace();
-        var view = TodayQuery.Build([Planned(ws, null), Planned(ws, null)], ws, Today, _ => new ItemMetrics(0, 0, 0));
+        var view = TodayQuery.Build(
+            [Planned(ws, null), Planned(ws, null)],
+            ws,
+            Today,
+            _ => new ItemMetrics(0, 0, 0)
+        );
         CapacityBar.Compute(ws, view, _ => new ItemMetrics(0, 0, 0), 45).Committed.ShouldBe(90);
 
         ws.CapacityUnit = CapacityUnit.Items;

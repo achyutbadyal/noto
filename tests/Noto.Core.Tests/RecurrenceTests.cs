@@ -16,7 +16,8 @@ public class RRuleTests
     [InlineData("FREQ=WEEKLY;BYDAY=1MO")]
     [InlineData("FREQ=MONTHLY;BYMONTHDAY=0")]
     [InlineData("FREQ=DAILY;COUNT=3")]
-    public void Rejects_invalid_or_unsupported_rules(string text) => Should.Throw<FormatException>(() => RRule.Parse(text));
+    public void Rejects_invalid_or_unsupported_rules(string text) =>
+        Should.Throw<FormatException>(() => RRule.Parse(text));
 
     [Fact]
     public void Daily_interval_counts_from_the_start()
@@ -28,7 +29,10 @@ public class RRuleTests
     [Fact]
     public void Weekly_defaults_to_the_start_weekday()
     {
-        RRule.Parse("FREQ=WEEKLY").Between(Oct(1), Oct(31), Oct(7)).ShouldBe([Oct(7), Oct(14), Oct(21), Oct(28)]);
+        RRule
+            .Parse("FREQ=WEEKLY")
+            .Between(Oct(1), Oct(31), Oct(7))
+            .ShouldBe([Oct(7), Oct(14), Oct(21), Oct(28)]);
     }
 
     [Fact]
@@ -49,7 +53,14 @@ public class RRuleTests
     {
         var rule = RRule.Parse("FREQ=MONTHLY;INTERVAL=2");
         rule.Between(D(2026, 1, 1), D(2026, 12, 31), D(2026, 1, 15))
-            .ShouldBe([D(2026, 1, 15), D(2026, 3, 15), D(2026, 5, 15), D(2026, 7, 15), D(2026, 9, 15), D(2026, 11, 15)]);
+            .ShouldBe([
+                D(2026, 1, 15),
+                D(2026, 3, 15),
+                D(2026, 5, 15),
+                D(2026, 7, 15),
+                D(2026, 9, 15),
+                D(2026, 11, 15),
+            ]);
     }
 
     [Fact]
@@ -63,24 +74,38 @@ public class RRuleTests
     public void Negative_monthdays_count_from_the_end()
     {
         var rule = RRule.Parse("FREQ=MONTHLY;BYMONTHDAY=-1");
-        rule.Between(D(2026, 2, 1), D(2026, 3, 31), D(2026, 1, 1)).ShouldBe([D(2026, 2, 28), D(2026, 3, 31)]);
+        rule.Between(D(2026, 2, 1), D(2026, 3, 31), D(2026, 1, 1))
+            .ShouldBe([D(2026, 2, 28), D(2026, 3, 31)]);
     }
 
     [Fact]
     public void Multiple_monthdays()
     {
-        RRule.Parse("FREQ=MONTHLY;BYMONTHDAY=1,15").Between(D(2026, 10, 1), D(2026, 10, 31), D(2026, 10, 1))
+        RRule
+            .Parse("FREQ=MONTHLY;BYMONTHDAY=1,15")
+            .Between(D(2026, 10, 1), D(2026, 10, 31), D(2026, 10, 1))
             .ShouldBe([D(2026, 10, 1), D(2026, 10, 15)]);
     }
 }
 
 public class RecurrenceEngineTests
 {
-    static RecurrenceRule Rule(string rrule, MissedBehavior behavior, DateOnly start, DateOnly? end = null) => new()
-    {
-        Id = Guid.CreateVersion7(), WorkspaceId = Guid.CreateVersion7(), RRule = rrule, MissedBehavior = behavior, StartDate = start,
-        EndDate = end, Template = new RuleTemplate("Standup notes", EstimateMinutes: 15, Priority: 2),
-    };
+    static RecurrenceRule Rule(
+        string rrule,
+        MissedBehavior behavior,
+        DateOnly start,
+        DateOnly? end = null
+    ) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(),
+            WorkspaceId = Guid.CreateVersion7(),
+            RRule = rrule,
+            MissedBehavior = behavior,
+            StartDate = start,
+            EndDate = end,
+            Template = new RuleTemplate("Standup notes", EstimateMinutes: 15, Priority: 2),
+        };
 
     [Fact]
     public void Carry_rule_creates_today_and_only_the_most_recent_missed_occurrence()
@@ -120,7 +145,9 @@ public class RecurrenceEngineTests
     [Fact]
     public void Rules_that_have_not_started_or_have_ended_generate_nothing_new_for_today()
     {
-        RecurrenceEngine.DatesToGenerate(Rule("FREQ=DAILY", MissedBehavior.Carry, Oct(10)), Oct(7), _ => false).ShouldBeEmpty();
+        RecurrenceEngine
+            .DatesToGenerate(Rule("FREQ=DAILY", MissedBehavior.Carry, Oct(10)), Oct(7), _ => false)
+            .ShouldBeEmpty();
 
         var ended = Rule("FREQ=DAILY", MissedBehavior.Carry, Oct(1), end: Oct(3));
         RecurrenceEngine.DatesToGenerate(ended, Oct(7), _ => false).ShouldBe([Oct(3)]);
@@ -155,7 +182,9 @@ public class RecurrenceEngineTests
         a.Id.ShouldBe(b.Id);
         a.CreatedAt.ShouldBe(b.CreatedAt);
         a.CreatedAt.ShouldBe(DateTimeOffset.Parse("2026-10-05T04:00:00Z"));
-        (a.Title, a.EstimateMinutes, a.Priority, a.PlannedFor).ShouldBe(("Standup notes", 15, 2, Oct(5)));
+        (a.Title, a.EstimateMinutes, a.Priority, a.PlannedFor).ShouldBe(
+            ("Standup notes", 15, 2, Oct(5))
+        );
         ItemInvariants.Check(a).ShouldBeEmpty();
         RecurrenceEngine.CreatedEvent(a).Id.ShouldBe(RecurrenceEngine.CreatedEvent(b).Id);
     }
@@ -169,7 +198,9 @@ public class RecurrenceEngineTests
         var created = RecurrenceEngine.CreatedEvent(item);
 
         var metrics = Noto.Core.Derivations.MetricsCalculator.Compute(
-            Noto.Core.Derivations.ItemTimeline.Build(item, [created], TimeOnly.MinValue), Oct(7));
+            Noto.Core.Derivations.ItemTimeline.Build(item, [created], TimeOnly.MinValue),
+            Oct(7)
+        );
 
         (metrics.Age, metrics.Carry).ShouldBe((3, 3));
     }
@@ -187,7 +218,15 @@ public class RecurrenceEngineTests
     public void Generation_properties_hold_for_random_rules()
     {
         var rng = new Random(7);
-        string[] rules = ["FREQ=DAILY", "FREQ=DAILY;INTERVAL=2", "FREQ=WEEKLY;BYDAY=MO,TH", "FREQ=WEEKLY;INTERVAL=2", "FREQ=MONTHLY", "FREQ=MONTHLY;BYMONTHDAY=-1"];
+        string[] rules =
+        [
+            "FREQ=DAILY",
+            "FREQ=DAILY;INTERVAL=2",
+            "FREQ=WEEKLY;BYDAY=MO,TH",
+            "FREQ=WEEKLY;INTERVAL=2",
+            "FREQ=MONTHLY",
+            "FREQ=MONTHLY;BYMONTHDAY=-1",
+        ];
 
         for (var n = 0; n < 300; n++)
         {
@@ -202,7 +241,8 @@ public class RecurrenceEngineTests
             first.Count.ShouldBeLessThanOrEqualTo(2);
             first.ShouldBe(first.OrderBy(d => d));
             first.ShouldAllBe(d => rrule.Occurs(d, start) && d <= today);
-            if (behavior == MissedBehavior.Skip) first.ShouldAllBe(d => d == today);
+            if (behavior == MissedBehavior.Skip)
+                first.ShouldAllBe(d => d == today);
             RecurrenceEngine.DatesToGenerate(rule, today, first.Contains).ShouldBeEmpty();
         }
     }

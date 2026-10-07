@@ -15,7 +15,8 @@ public sealed class ReviewFlowTests : IDisposable
     {
         var ids = new List<Guid>();
         var past = AppFixture.Today.AddDays(-3);
-        for (var n = 1; n <= 5; n++) ids.Add(await _app.AddAsync($"Task {n}", past));
+        for (var n = 1; n <= 5; n++)
+            ids.Add(await _app.AddAsync($"Task {n}", past));
         var review = new ReviewViewModel(_app.Services, _app.Workspace.Id, mode);
         await review.LoadAsync();
         return (ids.ToArray(), review);
@@ -39,13 +40,20 @@ public sealed class ReviewFlowTests : IDisposable
     {
         var (ids, review) = await SeedAsync();
         var keys = 0;
-        async Task Press(string key) { keys++; await review.HandleKeyAsync(Key(key)); }
+        async Task Press(string key)
+        {
+            keys++;
+            await review.HandleKeyAsync(Key(key));
+        }
 
-        await Press("t");                                   // Task 1: keep for today
-        await Press("d"); review.Decisions.Prompt!.Text = "fri"; await Press("Enter"); // Task 2: defer to Friday
-        await Press("s");                                   // Task 3: someday
-        await Press("x"); await Press("Enter");             // Task 4: drop (default reason)
-        await Press("a");                                   // Task 5: already done
+        await Press("t"); // Task 1: keep for today
+        await Press("d");
+        review.Decisions.Prompt!.Text = "fri";
+        await Press("Enter"); // Task 2: defer to Friday
+        await Press("s"); // Task 3: someday
+        await Press("x");
+        await Press("Enter"); // Task 4: drop (default reason)
+        await Press("a"); // Task 5: already done
 
         review.IsComplete.ShouldBeTrue();
         review.Entries.ShouldAllBe(e => e.IsDecided);
@@ -68,20 +76,33 @@ public sealed class ReviewFlowTests : IDisposable
 
         await review.HandleKeyAsync(Key("t"));
         await review.HandleKeyAsync(Key("s"));
-        await review.HandleKeyAsync(Key("w")); review.Decisions.Prompt!.Text = "Priya"; await review.HandleKeyAsync(Key("Enter"));
-        await review.HandleKeyAsync(Key("b")); review.Decisions.Prompt!.Text = "a; b"; await review.HandleKeyAsync(Key("Enter"));
-        await review.HandleKeyAsync(Key("x")); await review.HandleKeyAsync(Key("2"));
+        await review.HandleKeyAsync(Key("w"));
+        review.Decisions.Prompt!.Text = "Priya";
+        await review.HandleKeyAsync(Key("Enter"));
+        await review.HandleKeyAsync(Key("b"));
+        review.Decisions.Prompt!.Text = "a; b";
+        await review.HandleKeyAsync(Key("Enter"));
+        await review.HandleKeyAsync(Key("x"));
+        await review.HandleKeyAsync(Key("2"));
 
         // Undo newest-first, as ⌘Z does.
-        for (var i = 0; i < 5; i++) (await review.UndoAsync()).ShouldBeTrue();
+        for (var i = 0; i < 5; i++)
+            (await review.UndoAsync()).ShouldBeTrue();
 
         review.Entries.ShouldAllBe(e => !e.IsDecided);
         review.Index.ShouldBe(0);
         for (var n = 0; n < 5; n++)
         {
             var now = await _app.GetAsync(ids[n]);
-            (now.Status, now.IsSomeday, now.PlannedFor, now.IsContainer, now.WaitingOn)
-                .ShouldBe((original[n].Status, original[n].IsSomeday, original[n].PlannedFor, original[n].IsContainer, original[n].WaitingOn));
+            (now.Status, now.IsSomeday, now.PlannedFor, now.IsContainer, now.WaitingOn).ShouldBe(
+                (
+                    original[n].Status,
+                    original[n].IsSomeday,
+                    original[n].PlannedFor,
+                    original[n].IsContainer,
+                    original[n].WaitingOn
+                )
+            );
         }
     }
 
@@ -150,7 +171,8 @@ public sealed class ReviewFlowTests : IDisposable
         await review.KeepAllAsync();
 
         review.IsComplete.ShouldBeTrue();
-        foreach (var id in ids) (await _app.GetAsync(id)).PlannedFor.ShouldBe(AppFixture.Today);
+        foreach (var id in ids)
+            (await _app.GetAsync(id)).PlannedFor.ShouldBe(AppFixture.Today);
         await review.UndoAsync();
         (await _app.GetAsync(ids[^1])).PlannedFor.ShouldBe(AppFixture.Today.AddDays(-3));
     }
@@ -168,7 +190,10 @@ public sealed class ReviewFlowTests : IDisposable
         (await _app.GetAsync(id)).PlannedFor.ShouldBe(AppFixture.Today.AddDays(1));
         var metrics = (await _app.Services.Reader.LoadAsync(_app.Workspace.Id)).Metrics;
         metrics.Count.ShouldBe(1); // still a live item
-        (await _app.Services.Derive.GetMetricsAsync(_app.Workspace.Id, [await _app.GetAsync(id)]))[id].Defers.ShouldBe(1);
+        (await _app.Services.Derive.GetMetricsAsync(_app.Workspace.Id, [await _app.GetAsync(id)]))[
+            id
+        ]
+            .Defers.ShouldBe(1);
     }
 
     [Fact]
@@ -181,7 +206,8 @@ public sealed class ReviewFlowTests : IDisposable
         await review.HandleKeyAsync(Key("Escape"));
 
         closed.ShouldBeTrue();
-        _app.Services.UiState.Get(ReviewViewModel.DismissKey(_app.Workspace.Id)).ShouldBe("2026-10-07");
+        _app.Services.UiState.Get(ReviewViewModel.DismissKey(_app.Workspace.Id))
+            .ShouldBe("2026-10-07");
     }
 
     [Fact]

@@ -9,16 +9,26 @@ public sealed class OpenGraphProvider : ProviderBase
     public override string DisplayName => "Web link";
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } = [];
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods => [];
+
     public override AuthConfig GetAuthConfig() => new(null, null, [], "");
 
-    public override bool CanHandle(Uri url, AppConnection? connection) => url.Scheme is "http" or "https";
+    public override bool CanHandle(Uri url, AppConnection? connection) =>
+        url.Scheme is "http" or "https";
+
     public override Uri ApiRoot(string? instanceUrl) => throw new NotSupportedException();
+
     public override TimeSpan CacheTtl(Uri url) => TimeSpan.FromHours(24);
 
-    public override Task<ConnectionIdentity> ValidateAsync(IProviderHttp http, CancellationToken ct) =>
-        Task.FromResult(new ConnectionIdentity("Web"));
+    public override Task<ConnectionIdentity> ValidateAsync(
+        IProviderHttp http,
+        CancellationToken ct
+    ) => Task.FromResult(new ConnectionIdentity("Web"));
 
-    public override async Task<LinkPreview> FetchAsync(Uri url, IProviderHttp http, CancellationToken ct)
+    public override async Task<LinkPreview> FetchAsync(
+        Uri url,
+        IProviderHttp http,
+        CancellationToken ct
+    )
     {
         var og = await http.OpenGraphAsync(url, ct) ?? throw new ProviderHttpException(404);
         var p = New(url, og.Title ?? url.IdnHost, null); // no hash inputs: no live state

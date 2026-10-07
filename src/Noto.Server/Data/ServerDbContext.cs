@@ -43,7 +43,13 @@ public sealed class ServerDbContext(DbContextOptions<ServerDbContext> options) :
         {
             e.ToTable("current_rows");
             e.HasKey(r => new { r.EntityType, r.EntityId });
-            e.HasIndex(r => new { r.UserId, r.WorkspaceId, r.EntityType, r.EntityId });
+            e.HasIndex(r => new
+            {
+                r.UserId,
+                r.WorkspaceId,
+                r.EntityType,
+                r.EntityId,
+            });
             e.HasIndex(r => r.DeletedAt);
         });
         m.Entity<WorkspaceSync>(e =>

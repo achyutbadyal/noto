@@ -1,6 +1,11 @@
 namespace Noto.Sync;
 
-public enum SyncStatus { Idle, Syncing, Offline }
+public enum SyncStatus
+{
+    Idle,
+    Syncing,
+    Offline,
+}
 
 // Debounced 2s after a change, every 60s while foreground, immediately on reconnect (docs/05).
 // Errors are swallowed into `Offline`: sync must never block or break the app.
@@ -16,8 +21,18 @@ public sealed class SyncScheduler : IAsyncDisposable
     {
         _client = client;
         _options = options ?? new SyncOptions();
-        _debounce = time.CreateTimer(_ => _ = RunAsync(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-        _interval = time.CreateTimer(_ => _ = RunAsync(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+        _debounce = time.CreateTimer(
+            _ => _ = RunAsync(),
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan
+        );
+        _interval = time.CreateTimer(
+            _ => _ = RunAsync(),
+            null,
+            Timeout.InfiniteTimeSpan,
+            Timeout.InfiniteTimeSpan
+        );
     }
 
     public SyncStatus Status { get; private set; } = SyncStatus.Idle;
@@ -25,13 +40,17 @@ public sealed class SyncScheduler : IAsyncDisposable
     public event Action<SyncStatus>? StatusChanged;
 
     public void Start() => _interval.Change(_options.Interval, _options.Interval);
+
     public void Stop() => _interval.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
     public void NotifyChanged() => _debounce.Change(_options.Debounce, Timeout.InfiniteTimeSpan);
+
     public void NotifyReconnected() => _ = RunAsync();
 
     public async Task RunAsync()
     {
-        if (!await _gate.WaitAsync(0)) return; // a run is already in flight
+        if (!await _gate.WaitAsync(0))
+            return; // a run is already in flight
         try
         {
             Set(SyncStatus.Syncing);
@@ -44,12 +63,16 @@ public sealed class SyncScheduler : IAsyncDisposable
             LastError = e;
             Set(SyncStatus.Offline);
         }
-        finally { _gate.Release(); }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     void Set(SyncStatus status)
     {
-        if (Status == status) return;
+        if (Status == status)
+            return;
         Status = status;
         StatusChanged?.Invoke(status);
     }

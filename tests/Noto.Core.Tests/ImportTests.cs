@@ -15,7 +15,8 @@ public class CsvTests
     }
 
     [Fact]
-    public void Unterminated_quote_is_an_error() => Should.Throw<ImportFormatException>(() => Csv.Parse("a,\"b"));
+    public void Unterminated_quote_is_an_error() =>
+        Should.Throw<ImportFormatException>(() => Csv.Parse("a,\"b"));
 
     [Fact]
     public void Writer_quotes_and_guards_against_spreadsheet_formulas()
@@ -54,13 +55,18 @@ public class TodoistImporterTests
 
         items.Select(i => i.Title).ShouldBe(["Write report", "Water plants"]);
         var report = items[0];
-        (report.Notes, report.Priority, report.Date).ShouldBe(("Q3, final", 4, new DateOnly(2026, 10, 10)));
-        report.Subtasks!.Select(s => (s.Title, s.Priority)).ShouldBe([("Gather numbers", 0), ("Send to team", 2)]);
+        (report.Notes, report.Priority, report.Date).ShouldBe(
+            ("Q3, final", 4, new DateOnly(2026, 10, 10))
+        );
+        report
+            .Subtasks!.Select(s => (s.Title, s.Priority))
+            .ShouldBe([("Gather numbers", 0), ("Send to team", 2)]);
         items[1].Date.ShouldBeNull(); // "every Monday" isn't a date
     }
 
     [Fact]
-    public void Rejects_other_csv() => Should.Throw<ImportFormatException>(() => TodoistImporter.ParseCsv("a,b\n1,2"));
+    public void Rejects_other_csv() =>
+        Should.Throw<ImportFormatException>(() => TodoistImporter.ParseCsv("a,b\n1,2"));
 
     const string Json = """
         {"items":[
@@ -86,7 +92,10 @@ public class TodoistImporterTests
 
     [Fact]
     public void Accepts_a_bare_array() =>
-        TodoistImporter.ParseJson("""[{"id":"1","content":"X","priority":1}]""").ShouldHaveSingleItem().Title.ShouldBe("X");
+        TodoistImporter
+            .ParseJson("""[{"id":"1","content":"X","priority":1}]""")
+            .ShouldHaveSingleItem()
+            .Title.ShouldBe("X");
 }
 
 public class ThingsImporterTests
@@ -107,7 +116,9 @@ public class ThingsImporterTests
         var items = ThingsImporter.Parse(Json);
 
         items.Select(i => i.Title).ShouldBe(["Buy milk", "Learn Rust", "Done thing", "Trip"]);
-        (items[0].Date, items[0].Due, items[0].Notes).ShouldBe((new DateOnly(2026, 10, 8), new DateOnly(2026, 10, 9), "2%"));
+        (items[0].Date, items[0].Due, items[0].Notes).ShouldBe(
+            (new DateOnly(2026, 10, 8), new DateOnly(2026, 10, 9), "2%")
+        );
         items[1].IsSomeday.ShouldBeTrue();
         (items[2].IsDone, items[2].CompletedOn).ShouldBe((true, new DateOnly(2026, 10, 2)));
     }
@@ -116,16 +127,18 @@ public class ThingsImporterTests
     public void Checklists_become_subtasks()
     {
         var trip = ThingsImporter.Parse(Json).Last();
-        trip.Subtasks!.Select(s => (s.Title, s.IsDone)).ShouldBe([("Passport", true), ("Tickets", false)]);
+        trip.Subtasks!.Select(s => (s.Title, s.IsDone))
+            .ShouldBe([("Passport", true), ("Tickets", false)]);
     }
 }
 
 public class RemindersImporterTests
 {
-    const string Ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n" +
-        "BEGIN:VTODO\r\nSUMMARY:Call mum\r\nDESCRIPTION:About the\\, trip\\nbring photos\r\nDUE;VALUE=DATE:20261010\r\nPRIORITY:1\r\nSTATUS:NEEDS-ACTION\r\nEND:VTODO\r\n" +
-        "BEGIN:VTODO\r\nSUMMARY:Pay a very long\r\n  title that folds\r\nDUE:20261011T090000Z\r\nPRIORITY:5\r\nSTATUS:COMPLETED\r\nCOMPLETED:20261009T120000Z\r\nCATEGORIES:home,money\r\nEND:VTODO\r\n" +
-        "BEGIN:VTODO\r\nSUMMARY:Low\r\nPRIORITY:9\r\nEND:VTODO\r\nEND:VCALENDAR\r\n";
+    const string Ics =
+        "BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+        + "BEGIN:VTODO\r\nSUMMARY:Call mum\r\nDESCRIPTION:About the\\, trip\\nbring photos\r\nDUE;VALUE=DATE:20261010\r\nPRIORITY:1\r\nSTATUS:NEEDS-ACTION\r\nEND:VTODO\r\n"
+        + "BEGIN:VTODO\r\nSUMMARY:Pay a very long\r\n  title that folds\r\nDUE:20261011T090000Z\r\nPRIORITY:5\r\nSTATUS:COMPLETED\r\nCOMPLETED:20261009T120000Z\r\nCATEGORIES:home,money\r\nEND:VTODO\r\n"
+        + "BEGIN:VTODO\r\nSUMMARY:Low\r\nPRIORITY:9\r\nEND:VTODO\r\nEND:VCALENDAR\r\n";
 
     [Fact]
     public void Parses_vtodos_with_unfolding_unescaping_and_priority_mapping()
@@ -133,25 +146,30 @@ public class RemindersImporterTests
         var items = RemindersImporter.Parse(Ics);
 
         items.Count.ShouldBe(3);
-        (items[0].Title, items[0].Notes, items[0].Date, items[0].Priority)
-            .ShouldBe(("Call mum", "About the, trip\nbring photos", new DateOnly(2026, 10, 10), 3));
+        (items[0].Title, items[0].Notes, items[0].Date, items[0].Priority).ShouldBe(
+            ("Call mum", "About the, trip\nbring photos", new DateOnly(2026, 10, 10), 3)
+        );
         items[1].Title.ShouldBe("Pay a very long title that folds");
-        (items[1].IsDone, items[1].CompletedOn, items[1].Priority).ShouldBe((true, new DateOnly(2026, 10, 9), 2));
+        (items[1].IsDone, items[1].CompletedOn, items[1].Priority).ShouldBe(
+            (true, new DateOnly(2026, 10, 9), 2)
+        );
         items[1].Tags.ShouldBe(["home", "money"]);
         (items[2].Priority, items[2].Date).ShouldBe((1, null));
     }
 
     [Fact]
-    public void Rejects_non_ics() => Should.Throw<ImportFormatException>(() => RemindersImporter.Parse("hello"));
+    public void Rejects_non_ics() =>
+        Should.Throw<ImportFormatException>(() => RemindersImporter.Parse("hello"));
 }
 
 public class TickTickImporterTests
 {
-    const string Csv = "\"Date: 2026-10-07+0000\"\n\"Version: 7.1\"\n\"Status: 0 Normal; 1 Completed; 2 Archived\"\n" +
-        "\"Folder Name\",\"List Name\",\"Title\",\"Kind\",\"Tags\",\"Content\",\"Is Check list\",\"Start Date\",\"Due Date\",\"Reminder\",\"Repeat\",\"Priority\",\"Status\",\"Created Time\",\"Completed Time\",\"Order\",\"Timezone\",\"Is All Day\",\"Is Floating\",\"Column Name\",\"Column Order\",\"View Mode\",\"taskId\",\"parentId\"\n" +
-        "\"\",\"Inbox\",\"Plan trip\",\"TEXT\",\"travel, fun\",\"notes\",\"N\",\"2026-10-09T00:00:00+0000\",\"2026-10-12T00:00:00+0000\",\"\",\"\",\"5\",\"0\",\"2026-10-01T10:00:00+0000\",\"\",\"1\",\"UTC\",\"true\",\"false\",\"\",\"\",\"list\",\"1\",\"\"\n" +
-        "\"\",\"Inbox\",\"Book flights\",\"TEXT\",\"\",\"\",\"N\",\"\",\"\",\"\",\"\",\"0\",\"1\",\"2026-10-01T10:00:00+0000\",\"2026-10-05T08:00:00+0000\",\"2\",\"UTC\",\"true\",\"false\",\"\",\"\",\"list\",\"2\",\"1\"\n" +
-        "\"\",\"Inbox\",\"Old\",\"TEXT\",\"\",\"\",\"N\",\"\",\"\",\"\",\"\",\"0\",\"2\",\"\",\"\",\"3\",\"UTC\",\"true\",\"false\",\"\",\"\",\"list\",\"3\",\"\"\n";
+    const string Csv =
+        "\"Date: 2026-10-07+0000\"\n\"Version: 7.1\"\n\"Status: 0 Normal; 1 Completed; 2 Archived\"\n"
+        + "\"Folder Name\",\"List Name\",\"Title\",\"Kind\",\"Tags\",\"Content\",\"Is Check list\",\"Start Date\",\"Due Date\",\"Reminder\",\"Repeat\",\"Priority\",\"Status\",\"Created Time\",\"Completed Time\",\"Order\",\"Timezone\",\"Is All Day\",\"Is Floating\",\"Column Name\",\"Column Order\",\"View Mode\",\"taskId\",\"parentId\"\n"
+        + "\"\",\"Inbox\",\"Plan trip\",\"TEXT\",\"travel, fun\",\"notes\",\"N\",\"2026-10-09T00:00:00+0000\",\"2026-10-12T00:00:00+0000\",\"\",\"\",\"5\",\"0\",\"2026-10-01T10:00:00+0000\",\"\",\"1\",\"UTC\",\"true\",\"false\",\"\",\"\",\"list\",\"1\",\"\"\n"
+        + "\"\",\"Inbox\",\"Book flights\",\"TEXT\",\"\",\"\",\"N\",\"\",\"\",\"\",\"\",\"0\",\"1\",\"2026-10-01T10:00:00+0000\",\"2026-10-05T08:00:00+0000\",\"2\",\"UTC\",\"true\",\"false\",\"\",\"\",\"list\",\"2\",\"1\"\n"
+        + "\"\",\"Inbox\",\"Old\",\"TEXT\",\"\",\"\",\"N\",\"\",\"\",\"\",\"\",\"0\",\"2\",\"\",\"\",\"3\",\"UTC\",\"true\",\"false\",\"\",\"\",\"list\",\"3\",\"\"\n";
 
     [Fact]
     public void Skips_metadata_lines_and_archived_tasks_and_builds_the_tree()
@@ -159,14 +177,17 @@ public class TickTickImporterTests
         var items = TickTickImporter.Parse(Csv);
 
         var trip = items.ShouldHaveSingleItem();
-        (trip.Title, trip.Priority, trip.Date, trip.Due).ShouldBe(("Plan trip", 3, new DateOnly(2026, 10, 9), new DateOnly(2026, 10, 12)));
+        (trip.Title, trip.Priority, trip.Date, trip.Due).ShouldBe(
+            ("Plan trip", 3, new DateOnly(2026, 10, 9), new DateOnly(2026, 10, 12))
+        );
         trip.Tags.ShouldBe(["travel", "fun"]);
         var flights = trip.Subtasks.ShouldHaveSingleItem();
         (flights.IsDone, flights.CompletedOn).ShouldBe((true, new DateOnly(2026, 10, 5)));
     }
 
     [Fact]
-    public void Rejects_other_csv() => Should.Throw<ImportFormatException>(() => TickTickImporter.Parse("a,b\n1,2"));
+    public void Rejects_other_csv() =>
+        Should.Throw<ImportFormatException>(() => TickTickImporter.Parse("a,b\n1,2"));
 }
 
 public class MarkdownImporterTests
@@ -192,7 +213,9 @@ public class MarkdownImporterTests
         items[0].Due.ShouldBe(new DateOnly(2026, 10, 9));
         items[0].Tags.ShouldBe(["home"]);
         items[1].IsDone.ShouldBeTrue();
-        items[1].Subtasks!.Select(s => (s.Title, s.IsDone)).ShouldBe([("Sub item", false), ("Other sub", true)]);
+        items[1]
+            .Subtasks!.Select(s => (s.Title, s.IsDone))
+            .ShouldBe([("Sub item", false), ("Other sub", true)]);
     }
 
     [Fact]
@@ -206,6 +229,8 @@ public class MarkdownImporterTests
     public void Dispatches_by_format()
     {
         Importers.Parse(ImportFormat.MarkdownChecklist, "- [ ] x").ShouldHaveSingleItem();
-        Importers.Parse(ImportFormat.TodoistJson, """[{"id":"1","content":"y"}]""").ShouldHaveSingleItem();
+        Importers
+            .Parse(ImportFormat.TodoistJson, """[{"id":"1","content":"y"}]""")
+            .ShouldHaveSingleItem();
     }
 }

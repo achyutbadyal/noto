@@ -3,11 +3,21 @@ using Noto.Core.Models;
 
 namespace Noto.Core.Commands;
 
-public sealed record CommandContext(DateTimeOffset Now, string Tz, DateOnly Today, Workspace Workspace);
+public sealed record CommandContext(
+    DateTimeOffset Now,
+    string Tz,
+    DateOnly Today,
+    Workspace Workspace
+);
 
 // `Undo*` is the compensating event appended when the command is undone.
 // `Spawned` are new child items created in the same transaction (break down).
-public sealed record Change(ItemEventType Type, JsonObject? Data, ItemEventType UndoType, JsonObject? UndoData)
+public sealed record Change(
+    ItemEventType Type,
+    JsonObject? Data,
+    ItemEventType UndoType,
+    JsonObject? UndoData
+)
 {
     public IReadOnlyList<TodoItem> Spawned { get; init; } = [];
 }

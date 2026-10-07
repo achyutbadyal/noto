@@ -13,7 +13,14 @@ public class InsightsTests
     readonly Workspace _ws = Make.Workspace();
 
     InsightsReport Report(IReadOnlyList<Story> stories) =>
-        InsightsEngine.Compute(_ws, stories.Select(s => s.Record()).ToList(), stories.DayStats(From, To), Today, From, To);
+        InsightsEngine.Compute(
+            _ws,
+            stories.Select(s => s.Record()).ToList(),
+            stories.DayStats(From, To),
+            Today,
+            From,
+            To
+        );
 
     static Story Sized(int day, int estimate, int doneOffset)
     {
@@ -35,8 +42,11 @@ public class InsightsTests
     [Fact]
     public void Size_vs_completion_compares_same_day_rate_and_carry_per_bucket()
     {
-        var stories = Enumerable.Range(1, 10).Select(d => Sized(d, 15, 0))
-            .Concat(Enumerable.Range(1, 6).Select(d => Sized(d, 180, 2))).ToList();
+        var stories = Enumerable
+            .Range(1, 10)
+            .Select(d => Sized(d, 15, 0))
+            .Concat(Enumerable.Range(1, 6).Select(d => Sized(d, 180, 2)))
+            .ToList();
 
         var size = Report(stories).SizeVsCompletion!;
 
@@ -53,7 +63,8 @@ public class InsightsTests
     [InlineData(31, SizeBucket.Medium)]
     [InlineData(119, SizeBucket.Medium)]
     [InlineData(120, SizeBucket.Large)]
-    public void Estimate_buckets(int minutes, SizeBucket bucket) => InsightsEngine.BucketOf(minutes).ShouldBe(bucket);
+    public void Estimate_buckets(int minutes, SizeBucket bucket) =>
+        InsightsEngine.BucketOf(minutes).ShouldBe(bucket);
 
     [Fact]
     public void Open_items_planned_today_are_not_counted_as_failures()
@@ -70,8 +81,10 @@ public class InsightsTests
     public void Stuck_reason_mix_counts_events_in_the_period()
     {
         var story = new Story(Oct(1), Oct(1));
-        for (var d = 2; d <= 7; d++) story.Stuck(Oct(d), "too_big");
-        for (var d = 8; d <= 11; d++) story.Stuck(Oct(d), "blocked");
+        for (var d = 2; d <= 7; d++)
+            story.Stuck(Oct(d), "too_big");
+        for (var d = 8; d <= 11; d++)
+            story.Stuck(Oct(d), "blocked");
 
         var mix = Report([story]).StuckMix!;
 
@@ -83,11 +96,14 @@ public class InsightsTests
     [Fact]
     public void Estimate_accuracy_is_focused_over_estimated()
     {
-        var stories = Enumerable.Range(1, 10).Select(d =>
-        {
-            var s = Sized(d, 60, 0).Focus(Oct(d), 30);
-            return s;
-        }).ToList();
+        var stories = Enumerable
+            .Range(1, 10)
+            .Select(d =>
+            {
+                var s = Sized(d, 60, 0).Focus(Oct(d), 30);
+                return s;
+            })
+            .ToList();
 
         var acc = Report(stories).EstimateAccuracy!;
 
@@ -98,7 +114,10 @@ public class InsightsTests
     [Fact]
     public void Waiting_duration_is_the_median_per_person_case_insensitively()
     {
-        var stories = Enumerable.Range(1, 10).Select(d => new Story(Oct(d), Oct(d)).Wait(Oct(d)).EndWait(Oct(d + 3))).ToList();
+        var stories = Enumerable
+            .Range(1, 10)
+            .Select(d => new Story(Oct(d), Oct(d)).Wait(Oct(d)).EndWait(Oct(d + 3)))
+            .ToList();
 
         var wait = Report(stories).WaitingByPerson!;
 
@@ -110,7 +129,10 @@ public class InsightsTests
     [Fact]
     public void Still_waiting_counts_until_today()
     {
-        var stories = Enumerable.Range(1, 10).Select(d => new Story(Oct(d), Oct(d)).Wait(Oct(20))).ToList();
+        var stories = Enumerable
+            .Range(1, 10)
+            .Select(d => new Story(Oct(d), Oct(d)).Wait(Oct(20)))
+            .ToList();
         Report(stories).WaitingByPerson!.Data.Single().MedianDays.ShouldBe(5);
     }
 

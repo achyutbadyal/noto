@@ -8,7 +8,9 @@ public static class KeyChordMapper
 {
     public static KeyChord? From(KeyEventArgs e)
     {
-        var meta = e.KeyModifiers.HasFlag(KeyModifiers.Meta) || (!OperatingSystem.IsMacOS() && e.KeyModifiers.HasFlag(KeyModifiers.Control));
+        var meta =
+            e.KeyModifiers.HasFlag(KeyModifiers.Meta)
+            || (!OperatingSystem.IsMacOS() && e.KeyModifiers.HasFlag(KeyModifiers.Control));
         var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var alt = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
 

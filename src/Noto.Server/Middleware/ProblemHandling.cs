@@ -23,7 +23,12 @@ public sealed class ApiExceptionHandler(ILogger<ApiExceptionHandler> log) : IExc
         }
 
         ctx.Response.StatusCode = problem.Status!.Value;
-        await ctx.Response.WriteAsJsonAsync(problem, options: null, contentType: "application/problem+json", ct);
+        await ctx.Response.WriteAsJsonAsync(
+            problem,
+            options: null,
+            contentType: "application/problem+json",
+            ct
+        );
         return true;
     }
 

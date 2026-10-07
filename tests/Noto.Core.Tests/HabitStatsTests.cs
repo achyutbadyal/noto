@@ -6,25 +6,46 @@ namespace Noto.Core.Tests;
 
 public class HabitStatsTests
 {
-    static RecurrenceRule Rule(string rrule = "FREQ=DAILY", int? count = null, TargetPeriod? period = null, DateOnly? start = null) => new()
-    {
-        Id = Guid.CreateVersion7(), WorkspaceId = Guid.CreateVersion7(), RRule = rrule, MissedBehavior = MissedBehavior.Skip,
-        StartDate = start ?? Oct5, TargetCount = count, TargetPeriod = period, Template = new RuleTemplate("Run"),
-    };
+    static RecurrenceRule Rule(
+        string rrule = "FREQ=DAILY",
+        int? count = null,
+        TargetPeriod? period = null,
+        DateOnly? start = null
+    ) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(),
+            WorkspaceId = Guid.CreateVersion7(),
+            RRule = rrule,
+            MissedBehavior = MissedBehavior.Skip,
+            StartDate = start ?? Oct5,
+            TargetCount = count,
+            TargetPeriod = period,
+            Template = new RuleTemplate("Run"),
+        };
 
-    static IEnumerable<TodoItem> Done(RecurrenceRule rule, params DateOnly[] days) => days.Select(d =>
-    {
-        var i = Make.Item(rule.WorkspaceId);
-        i.RecurrenceRuleId = rule.Id; i.OccurrenceDate = d; i.Status = ItemStatus.Done;
-        i.CompletedOn = d; i.CompletedAt = DateTimeOffset.UtcNow;
-        return i;
-    });
+    static IEnumerable<TodoItem> Done(RecurrenceRule rule, params DateOnly[] days) =>
+        days.Select(d =>
+        {
+            var i = Make.Item(rule.WorkspaceId);
+            i.RecurrenceRuleId = rule.Id;
+            i.OccurrenceDate = d;
+            i.Status = ItemStatus.Done;
+            i.CompletedOn = d;
+            i.CompletedAt = DateTimeOffset.UtcNow;
+            return i;
+        });
 
     [Fact]
     public void Per_occurrence_streak_counts_consecutive_done_days_and_ignores_unfinished_today()
     {
         var rule = Rule();
-        var stats = HabitCalculator.Compute(rule, Done(rule, Oct(5), Oct(6), Oct(8), Oct(9), Oct(10)), Oct(11), Oct5);
+        var stats = HabitCalculator.Compute(
+            rule,
+            Done(rule, Oct(5), Oct(6), Oct(8), Oct(9), Oct(10)),
+            Oct(11),
+            Oct5
+        );
 
         stats.CurrentStreak.ShouldBe(3);
         stats.LongestStreak.ShouldBe(3);
@@ -35,14 +56,18 @@ public class HabitStatsTests
     public void Missing_yesterday_breaks_the_streak()
     {
         var rule = Rule();
-        HabitCalculator.Compute(rule, Done(rule, Oct(5), Oct(6), Oct(7)), Oct(9), Oct5).CurrentStreak.ShouldBe(0);
+        HabitCalculator
+            .Compute(rule, Done(rule, Oct(5), Oct(6), Oct(7)), Oct(9), Oct5)
+            .CurrentStreak.ShouldBe(0);
     }
 
     [Fact]
     public void Today_done_extends_the_streak()
     {
         var rule = Rule();
-        HabitCalculator.Compute(rule, Done(rule, Oct(7), Oct(8), Oct(9)), Oct(9), Oct5).CurrentStreak.ShouldBe(3);
+        HabitCalculator
+            .Compute(rule, Done(rule, Oct(7), Oct(8), Oct(9)), Oct(9), Oct5)
+            .CurrentStreak.ShouldBe(3);
     }
 
     [Fact]
@@ -62,7 +87,10 @@ public class HabitStatsTests
     public void Heatmap_shows_today_as_pending_not_missed()
     {
         var rule = Rule();
-        HabitCalculator.Compute(rule, [], Oct(7), Oct5).Heatmap.Last().State.ShouldBe(HabitDayState.Pending);
+        HabitCalculator
+            .Compute(rule, [], Oct(7), Oct5)
+            .Heatmap.Last()
+            .State.ShouldBe(HabitDayState.Pending);
     }
 
     [Fact]
@@ -70,7 +98,19 @@ public class HabitStatsTests
     {
         // 5 of 7 days: week 1 met (5 done), week 2 met (5 done, two missed days), today = Monday of week 3.
         var rule = Rule(count: 5, period: TargetPeriod.Week);
-        var done = Done(rule, Oct(5), Oct(6), Oct(7), Oct(8), Oct(9), Oct(12), Oct(13), Oct(14), Oct(15), Oct(17));
+        var done = Done(
+            rule,
+            Oct(5),
+            Oct(6),
+            Oct(7),
+            Oct(8),
+            Oct(9),
+            Oct(12),
+            Oct(13),
+            Oct(14),
+            Oct(15),
+            Oct(17)
+        );
 
         var stats = HabitCalculator.Compute(rule, done, Oct(19), Oct5);
 
@@ -116,10 +156,19 @@ public class HabitStatsTests
     public void Monthly_targets()
     {
         var rule = Rule(count: 3, period: TargetPeriod.Month, start: new DateOnly(2026, 9, 1));
-        var done = Done(rule, new DateOnly(2026, 9, 3), new DateOnly(2026, 9, 10), new DateOnly(2026, 9, 20),
-            new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 2), new DateOnly(2026, 10, 3));
+        var done = Done(
+            rule,
+            new DateOnly(2026, 9, 3),
+            new DateOnly(2026, 9, 10),
+            new DateOnly(2026, 9, 20),
+            new DateOnly(2026, 10, 1),
+            new DateOnly(2026, 10, 2),
+            new DateOnly(2026, 10, 3)
+        );
 
-        HabitCalculator.Compute(rule, done, new DateOnly(2026, 10, 15), new DateOnly(2026, 9, 1)).CurrentStreak.ShouldBe(2);
+        HabitCalculator
+            .Compute(rule, done, new DateOnly(2026, 10, 15), new DateOnly(2026, 9, 1))
+            .CurrentStreak.ShouldBe(2);
     }
 
     [Fact]

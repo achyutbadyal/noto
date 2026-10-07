@@ -11,7 +11,8 @@ public sealed class WorkspaceToggleTests : IDisposable
 {
     readonly TestServer _server = new();
     readonly Guid _user;
-    readonly Replica _a, _b;
+    readonly Replica _a,
+        _b;
 
     public WorkspaceToggleTests()
     {
@@ -20,7 +21,12 @@ public sealed class WorkspaceToggleTests : IDisposable
         _b = new Replica(_server, _user, TimeSpan.Zero);
     }
 
-    public void Dispose() { _a.Dispose(); _b.Dispose(); _server.Dispose(); }
+    public void Dispose()
+    {
+        _a.Dispose();
+        _b.Dispose();
+        _server.Dispose();
+    }
 
     [Fact]
     public async Task Enabling_pushes_the_whole_workspace_including_history_and_tombstones()
@@ -37,7 +43,8 @@ public sealed class WorkspaceToggleTests : IDisposable
 
         (await _b.ItemAsync(kept))!.Status.ShouldBe(ItemStatus.Done);
         (await _b.ItemAsync(gone))!.DeletedAt.ShouldNotBeNull();
-        (await _b.Db.RunAsync(s => s.Events.ListForItemAsync(kept))).Select(e => e.Type)
+        (await _b.Db.RunAsync(s => s.Events.ListForItemAsync(kept)))
+            .Select(e => e.Type)
             .ShouldBe([ItemEventType.Created, ItemEventType.Completed]);
     }
 
@@ -46,7 +53,9 @@ public sealed class WorkspaceToggleTests : IDisposable
     {
         var ws = await _a.AddWorkspaceAsync();
         var item = await _a.AddItemAsync(ws.Id, "old title");
-        var clockBefore = (await _a.Db.RunAsync(s => s.Sync.GetClocksAsync(EntityTypes.TodoItem, item)))["title"];
+        var clockBefore = (
+            await _a.Db.RunAsync(s => s.Sync.GetClocksAsync(EntityTypes.TodoItem, item))
+        )["title"];
         await _a.Workspaces.EnableAsync(ws.Id);
 
         var pending = await _a.PendingAsync();
@@ -88,7 +97,7 @@ public sealed class WorkspaceToggleTests : IDisposable
         await _a.Workspaces.DisableAsync(ws.Id, removeFromServer: false);
         await _a.Bus.SendAsync(new RenameItem(item, "A renamed while off"));
         _server.Time.Advance(TimeSpan.FromMinutes(1));
-        await _b.Bus.SendAsync(new CompleteItem(item));   // different field, on the other side
+        await _b.Bus.SendAsync(new CompleteItem(item)); // different field, on the other side
         await _b.Client.SyncAsync();
 
         await _a.Workspaces.EnableAsync(ws.Id);
@@ -126,7 +135,8 @@ public sealed class WorkspaceToggleTests : IDisposable
         var small = new SyncOptions { SnapshotPage = 3 };
         using var c = new Replica(_server, _user, TimeSpan.Zero, small);
         var ws = await _a.AddWorkspaceAsync();
-        for (var n = 0; n < 8; n++) await _a.AddItemAsync(ws.Id, $"item {n}");
+        for (var n = 0; n < 8; n++)
+            await _a.AddItemAsync(ws.Id, $"item {n}");
         await _a.Workspaces.EnableAsync(ws.Id);
         await _a.Client.SyncAsync();
 
@@ -205,7 +215,9 @@ public sealed class WorkspaceToggleTests : IDisposable
         var item = await _a.AddItemAsync(ws.Id);
         await _a.Bus.SendAsync(new DeleteItem(item));
 
-        var purged = await _a.Db.RunAsync(s => s.Sync.PurgeTombstonedItemsAsync(ws.Id, DateTimeOffset.UtcNow.AddYears(10)));
+        var purged = await _a.Db.RunAsync(s =>
+            s.Sync.PurgeTombstonedItemsAsync(ws.Id, DateTimeOffset.UtcNow.AddYears(10))
+        );
 
         purged.ShouldBe(1);
         (await _a.ItemAsync(item)).ShouldBeNull();

@@ -21,7 +21,11 @@ public static class Contrast
     public static (byte R, byte G, byte B) Parse(string hex)
     {
         var s = hex.TrimStart('#');
-        return (byte.Parse(s[0..2], NumberStyles.HexNumber), byte.Parse(s[2..4], NumberStyles.HexNumber), byte.Parse(s[4..6], NumberStyles.HexNumber));
+        return (
+            byte.Parse(s[0..2], NumberStyles.HexNumber),
+            byte.Parse(s[2..4], NumberStyles.HexNumber),
+            byte.Parse(s[4..6], NumberStyles.HexNumber)
+        );
     }
 
     static double Linear(byte channel)

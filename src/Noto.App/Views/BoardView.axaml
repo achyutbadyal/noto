@@ -1,24 +1,52 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:Noto.App.ViewModels"
-             xmlns:v="using:Noto.App.Views"
-             x:Class="Noto.App.Views.BoardView"
-             x:DataType="vm:BoardViewModel">
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.BoardView"
+  x:DataType="vm:BoardViewModel"
+>
   <Grid RowDefinitions="Auto,*,Auto" Margin="24,8,24,16">
     <v:PromptBar Grid.Row="0" DataContext="{Binding Decisions}" Margin="0,0,0,8" />
 
-    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+    <ScrollViewer
+      Grid.Row="1"
+      HorizontalScrollBarVisibility="Auto"
+      VerticalScrollBarVisibility="Disabled"
+    >
       <ItemsControl ItemsSource="{Binding Columns}">
-        <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="12" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="12" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:SectionViewModel">
-            <Border Classes="panel appear" Width="236" Padding="8" Background="{DynamicResource SurfaceBrush}">
+            <Border
+              Classes="panel appear"
+              Width="236"
+              Padding="8"
+              Background="{DynamicResource SurfaceBrush}"
+            >
               <DockPanel>
-                <TextBlock DockPanel.Dock="Top" Text="{Binding Header}" Classes="section" Margin="6,2,0,8"
-                           Classes.carry="{Binding IsOverWip}" Classes.hot="{Binding IsOverWip}" />
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock
+                  DockPanel.Dock="Top"
+                  Text="{Binding Header}"
+                  Classes="section"
+                  Margin="6,2,0,8"
+                  Classes.carry="{Binding IsOverWip}"
+                  Classes.hot="{Binding IsOverWip}"
+                />
+                <ScrollViewer
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled"
+                >
                   <ItemsControl ItemsSource="{Binding Rows}">
-                    <ItemsControl.ItemTemplate><DataTemplate x:DataType="vm:ItemRowViewModel"><v:ItemRowView /></DataTemplate></ItemsControl.ItemTemplate>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ItemRowViewModel">
+                        <v:ItemRowView />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
                   </ItemsControl>
                 </ScrollViewer>
               </DockPanel>
@@ -29,8 +57,17 @@
     </ScrollViewer>
 
     <Grid Grid.Row="2" ColumnDefinitions="*,80,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-      <TextBox Text="{Binding NewColumnName, Mode=TwoWay}" Watermark="+ New column (between Backlog and Today)" AutomationProperties.Name="New column name" />
-      <TextBox Grid.Column="1" Text="{Binding NewColumnWip, Mode=TwoWay}" Watermark="WIP" AutomationProperties.Name="WIP limit" />
+      <TextBox
+        Text="{Binding NewColumnName, Mode=TwoWay}"
+        Watermark="+ New column (between Backlog and Today)"
+        AutomationProperties.Name="New column name"
+      />
+      <TextBox
+        Grid.Column="1"
+        Text="{Binding NewColumnWip, Mode=TwoWay}"
+        Watermark="WIP"
+        AutomationProperties.Name="WIP limit"
+      />
       <Button Grid.Column="2" Content="Add column" Command="{Binding AddColumnCommand}" />
     </Grid>
   </Grid>

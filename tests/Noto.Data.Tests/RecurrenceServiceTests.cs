@@ -20,26 +20,66 @@ public class RecurrenceServiceTests : IDisposable
 
     static readonly DateOnly Oct5 = new(2026, 10, 5);
 
-    Task<RecurrenceRule> Rule(string rrule = "FREQ=DAILY", MissedBehavior missed = MissedBehavior.Carry, DateOnly? start = null, Guid[]? tags = null) =>
-        _svc.CreateRuleAsync(_f.Ws.Id, rrule, new RuleTemplate("Standup notes", EstimateMinutes: 10, TagIds: tags), start ?? Oct5, missed);
+    Task<RecurrenceRule> Rule(
+        string rrule = "FREQ=DAILY",
+        MissedBehavior missed = MissedBehavior.Carry,
+        DateOnly? start = null,
+        Guid[]? tags = null
+    ) =>
+        _svc.CreateRuleAsync(
+            _f.Ws.Id,
+            rrule,
+            new RuleTemplate("Standup notes", EstimateMinutes: 10, TagIds: tags),
+            start ?? Oct5,
+            missed
+        );
 
     [Fact]
     public async Task Rules_round_trip_through_the_repository()
     {
-        var rule = await _svc.CreateRuleAsync(_f.Ws.Id, "FREQ=WEEKLY;BYDAY=MO", new RuleTemplate("Run", Priority: 2, TimeOfDay: TimeOfDay.Morning),
-            Oct5, MissedBehavior.Skip, targetCount: 3, targetPeriod: TargetPeriod.Week, end: new DateOnly(2027, 1, 1));
+        var rule = await _svc.CreateRuleAsync(
+            _f.Ws.Id,
+            "FREQ=WEEKLY;BYDAY=MO",
+            new RuleTemplate("Run", Priority: 2, TimeOfDay: TimeOfDay.Morning),
+            Oct5,
+            MissedBehavior.Skip,
+            targetCount: 3,
+            targetPeriod: TargetPeriod.Week,
+            end: new DateOnly(2027, 1, 1)
+        );
 
         var back = (await _f.Uow.RunAsync(s => s.Rules.GetAsync(rule.Id)))!;
 
-        (back.RRule, back.MissedBehavior, back.TargetCount, back.TargetPeriod, back.EndDate)
-            .ShouldBe(("FREQ=WEEKLY;BYDAY=MO", MissedBehavior.Skip, 3, TargetPeriod.Week, new DateOnly(2027, 1, 1)));
-        back.Template.ShouldBe(new RuleTemplate("Run", null, null, 2, TimeOfDay.Morning, []), new RuleTemplateComparer());
+        (
+            back.RRule,
+            back.MissedBehavior,
+            back.TargetCount,
+            back.TargetPeriod,
+            back.EndDate
+        ).ShouldBe(
+            (
+                "FREQ=WEEKLY;BYDAY=MO",
+                MissedBehavior.Skip,
+                3,
+                TargetPeriod.Week,
+                new DateOnly(2027, 1, 1)
+            )
+        );
+        back.Template.ShouldBe(
+            new RuleTemplate("Run", null, null, 2, TimeOfDay.Morning, []),
+            new RuleTemplateComparer()
+        );
     }
 
     sealed class RuleTemplateComparer : IEqualityComparer<RuleTemplate>
     {
         public bool Equals(RuleTemplate? a, RuleTemplate? b) =>
-            a is not null && b is not null && a.Title == b.Title && a.Priority == b.Priority && a.TimeOfDay == b.TimeOfDay;
+            a is not null
+            && b is not null
+            && a.Title == b.Title
+            && a.Priority == b.Priority
+            && a.TimeOfDay == b.TimeOfDay;
+
         public int GetHashCode(RuleTemplate t) => t.Title.GetHashCode();
     }
 
@@ -47,8 +87,18 @@ public class RecurrenceServiceTests : IDisposable
     public async Task Invalid_rules_are_rejected()
     {
         await Should.ThrowAsync<FormatException>(() => Rule("FREQ=YEARLY"));
-        await Should.ThrowAsync<CommandException>(() => _svc.CreateRuleAsync(_f.Ws.Id, "FREQ=DAILY", new RuleTemplate(" "), Oct5));
-        await Should.ThrowAsync<CommandException>(() => _svc.CreateRuleAsync(_f.Ws.Id, "FREQ=DAILY", new RuleTemplate("x"), Oct5, targetCount: 3));
+        await Should.ThrowAsync<CommandException>(() =>
+            _svc.CreateRuleAsync(_f.Ws.Id, "FREQ=DAILY", new RuleTemplate(" "), Oct5)
+        );
+        await Should.ThrowAsync<CommandException>(() =>
+            _svc.CreateRuleAsync(
+                _f.Ws.Id,
+                "FREQ=DAILY",
+                new RuleTemplate("x"),
+                Oct5,
+                targetCount: 3
+            )
+        );
     }
 
     [Fact]
@@ -58,15 +108,21 @@ public class RecurrenceServiceTests : IDisposable
 
         var created = await _svc.GenerateDueAsync(_f.Ws.Id);
 
-        created.Select(i => i.OccurrenceDate).ShouldBe([new DateOnly(2026, 10, 6), new DateOnly(2026, 10, 7)]);
+        created
+            .Select(i => i.OccurrenceDate)
+            .ShouldBe([new DateOnly(2026, 10, 6), new DateOnly(2026, 10, 7)]);
         created.ShouldAllBe(i => i.RecurrenceRuleId == rule.Id && i.Title == "Standup notes");
         var yesterday = created[0];
-        (await _f.Uow.RunAsync(s => s.Events.ListForItemAsync(yesterday.Id))).ShouldHaveSingleItem().Type.ShouldBe(ItemEventType.Created);
+        (await _f.Uow.RunAsync(s => s.Events.ListForItemAsync(yesterday.Id)))
+            .ShouldHaveSingleItem()
+            .Type.ShouldBe(ItemEventType.Created);
 
         // The carried instance has 1 day of carry as of today and the missed older one stays un-materialized.
         var metrics = await _f.Derive.GetMetricsAsync(_f.Ws.Id, [yesterday]);
         (metrics[yesterday.Id].Age, metrics[yesterday.Id].Carry).ShouldBe((1, 1));
-        (await _f.Uow.RunAsync(s => s.Items.GetAsync(RecurrenceEngine.InstanceId(rule, Oct5)))).ShouldBeNull();
+        (
+            await _f.Uow.RunAsync(s => s.Items.GetAsync(RecurrenceEngine.InstanceId(rule, Oct5)))
+        ).ShouldBeNull();
     }
 
     [Fact]
@@ -113,7 +169,9 @@ public class RecurrenceServiceTests : IDisposable
         var b = (await new RecurrenceService(other, _f.Clock).GenerateDueAsync(_f.Ws.Id)).Single();
 
         b.Id.ShouldBe(a.Id);
-        (b.CreatedAt, b.CreatedTz, b.Title, b.PlannedFor).ShouldBe((a.CreatedAt, a.CreatedTz, a.Title, a.PlannedFor));
+        (b.CreatedAt, b.CreatedTz, b.Title, b.PlannedFor).ShouldBe(
+            (a.CreatedAt, a.CreatedTz, a.Title, a.PlannedFor)
+        );
         var ea = (await _f.Uow.RunAsync(s => s.Events.ListForItemAsync(a.Id))).Single();
         var eb = (await other.RunAsync(s => s.Events.ListForItemAsync(b.Id))).Single();
         eb.Id.ShouldBe(ea.Id);
@@ -148,8 +206,17 @@ public class RecurrenceServiceTests : IDisposable
     [Fact]
     public async Task Template_tags_are_applied_to_generated_instances()
     {
-        var tag = new Tag { Id = Guid.CreateVersion7(), WorkspaceId = _f.Ws.Id, Name = "daily" };
-        await _f.Uow.RunAsync(async s => { await s.Tags.UpsertAsync(tag); return 0; });
+        var tag = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            WorkspaceId = _f.Ws.Id,
+            Name = "daily",
+        };
+        await _f.Uow.RunAsync(async s =>
+        {
+            await s.Tags.UpsertAsync(tag);
+            return 0;
+        });
         await Rule(missed: MissedBehavior.Skip, tags: [tag.Id]);
 
         var item = (await _svc.GenerateDueAsync(_f.Ws.Id)).Single();
@@ -169,10 +236,17 @@ public class RecurrenceServiceTests : IDisposable
         } // Oct 7, 8, 9 done
 
         var instances = await _f.Uow.RunAsync(s => s.Items.ListAsync(_f.Ws.Id));
-        var stats = HabitCalculator.Compute(rule, instances, new DateOnly(2026, 10, 10), new DateOnly(2026, 10, 5));
+        var stats = HabitCalculator.Compute(
+            rule,
+            instances,
+            new DateOnly(2026, 10, 10),
+            new DateOnly(2026, 10, 5)
+        );
 
         stats.CurrentStreak.ShouldBe(3);
-        stats.Heatmap.Single(c => c.Day == new DateOnly(2026, 10, 5)).State.ShouldBe(HabitDayState.Missed);
+        stats
+            .Heatmap.Single(c => c.Day == new DateOnly(2026, 10, 5))
+            .State.ShouldBe(HabitDayState.Missed);
     }
 }
 
@@ -186,8 +260,20 @@ public class AuxRepositoryTests : IDisposable
     public async Task Tags_and_item_tags_round_trip_and_replace()
     {
         var id = await _f.CreateItemAsync("x");
-        var a = new Tag { Id = Guid.CreateVersion7(), WorkspaceId = _f.Ws.Id, Name = "alpha", Color = "#111" };
-        var b = new Tag { Id = Guid.CreateVersion7(), WorkspaceId = _f.Ws.Id, Name = "beta", Color = "#222" };
+        var a = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            WorkspaceId = _f.Ws.Id,
+            Name = "alpha",
+            Color = "#111",
+        };
+        var b = new Tag
+        {
+            Id = Guid.CreateVersion7(),
+            WorkspaceId = _f.Ws.Id,
+            Name = "beta",
+            Color = "#222",
+        };
 
         await _f.Uow.RunAsync(async s =>
         {
@@ -198,9 +284,15 @@ public class AuxRepositoryTests : IDisposable
         });
         (await _f.Uow.RunAsync(s => s.Tags.GetItemTagIdsAsync(id))).Count.ShouldBe(2);
 
-        await _f.Uow.RunAsync(async s => { await s.Tags.SetItemTagsAsync(id, [b.Id]); return 0; });
+        await _f.Uow.RunAsync(async s =>
+        {
+            await s.Tags.SetItemTagsAsync(id, [b.Id]);
+            return 0;
+        });
         (await _f.Uow.RunAsync(s => s.Tags.ListItemTagsAsync(_f.Ws.Id))).ShouldBe([(id, b.Id)]);
-        (await _f.Uow.RunAsync(s => s.Tags.ListAsync(_f.Ws.Id))).Select(t => t.Name).ShouldBe(["alpha", "beta"]);
+        (await _f.Uow.RunAsync(s => s.Tags.ListAsync(_f.Ws.Id)))
+            .Select(t => t.Name)
+            .ShouldBe(["alpha", "beta"]);
     }
 
     [Fact]
@@ -224,7 +316,11 @@ public class AuxRepositoryTests : IDisposable
 
         await notes.SetOutcomesAsync(_f.Ws.Id, wednesday, ["a", " ", "b", "c", "d"]);
 
-        (await notes.GetOutcomesAsync(_f.Ws.Id, new DateOnly(2026, 10, 12))).ShouldBe(["a", "b", "c"]);
+        (await notes.GetOutcomesAsync(_f.Ws.Id, new DateOnly(2026, 10, 12))).ShouldBe([
+            "a",
+            "b",
+            "c",
+        ]);
         (await notes.GetNoteAsync(_f.Ws.Id, new DateOnly(2026, 10, 12))).ShouldBeNull(); // separate from the shutdown note
         (await notes.GetOutcomesAsync(_f.Ws.Id, new DateOnly(2026, 10, 19))).ShouldBeEmpty();
     }
@@ -232,6 +328,8 @@ public class AuxRepositoryTests : IDisposable
     [Fact]
     public async Task Notes_for_unknown_workspaces_are_rejected()
     {
-        await Should.ThrowAsync<CommandException>(() => new DayNoteService(_f.Uow).SetNoteAsync(Guid.NewGuid(), new DateOnly(2026, 10, 7), "x"));
+        await Should.ThrowAsync<CommandException>(() =>
+            new DayNoteService(_f.Uow).SetNoteAsync(Guid.NewGuid(), new DateOnly(2026, 10, 7), "x")
+        );
     }
 }

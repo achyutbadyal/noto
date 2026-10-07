@@ -88,8 +88,12 @@ public class InvariantTests
 
         var valid = new TodoItem
         {
-            Id = Uuid5.ForOccurrence(rule, day), WorkspaceId = item.WorkspaceId, Title = "x",
-            RecurrenceRuleId = rule, OccurrenceDate = day, CreatedTz = "UTC",
+            Id = Uuid5.ForOccurrence(rule, day),
+            WorkspaceId = item.WorkspaceId,
+            Title = "x",
+            RecurrenceRuleId = rule,
+            OccurrenceDate = day,
+            CreatedTz = "UTC",
         };
         ItemInvariants.Check(valid).ShouldBeEmpty();
     }

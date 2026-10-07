@@ -14,17 +14,40 @@ public sealed class MacKeyring : IKeyring
     public Task SetAsync(string service, string account, string secret)
     {
         var (svc, acc, pwd) = (Bytes(service), Bytes(account), Bytes(secret));
-        var status = Native.SecKeychainFindGenericPassword(IntPtr.Zero, (uint)svc.Length, svc, (uint)acc.Length, acc, out var len, out var data, out var item);
+        var status = Native.SecKeychainFindGenericPassword(
+            IntPtr.Zero,
+            (uint)svc.Length,
+            svc,
+            (uint)acc.Length,
+            acc,
+            out var len,
+            out var data,
+            out var item
+        );
 
         if (status == 0)
         {
             Native.SecKeychainItemFreeContent(IntPtr.Zero, data);
-            status = Native.SecKeychainItemModifyAttributesAndData(item, IntPtr.Zero, (uint)pwd.Length, pwd);
+            status = Native.SecKeychainItemModifyAttributesAndData(
+                item,
+                IntPtr.Zero,
+                (uint)pwd.Length,
+                pwd
+            );
             Native.CFRelease(item);
         }
         else if (status == Native.ErrSecItemNotFound)
         {
-            status = Native.SecKeychainAddGenericPassword(IntPtr.Zero, (uint)svc.Length, svc, (uint)acc.Length, acc, (uint)pwd.Length, pwd, IntPtr.Zero);
+            status = Native.SecKeychainAddGenericPassword(
+                IntPtr.Zero,
+                (uint)svc.Length,
+                svc,
+                (uint)acc.Length,
+                acc,
+                (uint)pwd.Length,
+                pwd,
+                IntPtr.Zero
+            );
         }
 
         Check(status);
@@ -34,8 +57,18 @@ public sealed class MacKeyring : IKeyring
     public Task<string?> GetAsync(string service, string account)
     {
         var (svc, acc) = (Bytes(service), Bytes(account));
-        var status = Native.SecKeychainFindGenericPassword(IntPtr.Zero, (uint)svc.Length, svc, (uint)acc.Length, acc, out var len, out var data, out var item);
-        if (status == Native.ErrSecItemNotFound) return Task.FromResult<string?>(null);
+        var status = Native.SecKeychainFindGenericPassword(
+            IntPtr.Zero,
+            (uint)svc.Length,
+            svc,
+            (uint)acc.Length,
+            acc,
+            out var len,
+            out var data,
+            out var item
+        );
+        if (status == Native.ErrSecItemNotFound)
+            return Task.FromResult<string?>(null);
         Check(status);
 
         var secret = new byte[len];
@@ -48,8 +81,18 @@ public sealed class MacKeyring : IKeyring
     public Task DeleteAsync(string service, string account)
     {
         var (svc, acc) = (Bytes(service), Bytes(account));
-        var status = Native.SecKeychainFindGenericPassword(IntPtr.Zero, (uint)svc.Length, svc, (uint)acc.Length, acc, out _, out var data, out var item);
-        if (status == Native.ErrSecItemNotFound) return Task.CompletedTask;
+        var status = Native.SecKeychainFindGenericPassword(
+            IntPtr.Zero,
+            (uint)svc.Length,
+            svc,
+            (uint)acc.Length,
+            acc,
+            out _,
+            out var data,
+            out var item
+        );
+        if (status == Native.ErrSecItemNotFound)
+            return Task.CompletedTask;
         Check(status);
 
         Native.SecKeychainItemFreeContent(IntPtr.Zero, data);
@@ -63,6 +106,7 @@ public sealed class MacKeyring : IKeyring
 
     static void Check(int status)
     {
-        if (status != 0) throw new InvalidOperationException($"Keychain error {status}");
+        if (status != 0)
+            throw new InvalidOperationException($"Keychain error {status}");
     }
 }

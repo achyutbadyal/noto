@@ -107,26 +107,39 @@ public class WorkspaceServiceTests : IDisposable
         ws.Preset.ShouldBe("sprint (custom)");
 
         await _f.Workspaces.ApplyPresetAsync(_f.Ws.Id, BuiltInPresets.Accountability);
-        (await _f.Uow.RunAsync(s => s.Workspaces.GetAsync(_f.Ws.Id)))!.Preset.ShouldBe("accountability");
+        (await _f.Uow.RunAsync(s => s.Workspaces.GetAsync(_f.Ws.Id)))!.Preset.ShouldBe(
+            "accountability"
+        );
 
         var after = await _f.LoadAsync(id);
-        (after.Title, after.PlannedFor, after.Status).ShouldBe((before.Title, before.PlannedFor, before.Status));
+        (after.Title, after.PlannedFor, after.Status).ShouldBe(
+            (before.Title, before.PlannedFor, before.Status)
+        );
         (await _f.Uow.RunAsync(s => s.Events.ListForItemAsync(id))).Count.ShouldBe(1);
     }
 
     [Fact]
     public async Task Focus_hours_capacity_and_time_settings()
     {
-        await _f.Workspaces.SetFocusHoursAsync(_f.Ws.Id, FocusHours.Weekdays(new TimeOnly(8, 0), new TimeOnly(16, 0)));
+        await _f.Workspaces.SetFocusHoursAsync(
+            _f.Ws.Id,
+            FocusHours.Weekdays(new TimeOnly(8, 0), new TimeOnly(16, 0))
+        );
         await _f.Workspaces.SetCapacityAsync(_f.Ws.Id, CapacityUnit.Items, 5);
         await _f.Workspaces.SetTimeAsync(_f.Ws.Id, "Asia/Tokyo", false, new TimeOnly(4, 0));
 
         var ws = (await _f.Uow.RunAsync(s => s.Workspaces.GetAsync(_f.Ws.Id)))!;
-        (ws.CapacityUnit, ws.DailyCapacity, ws.TimeZone, ws.DayBoundary).ShouldBe((CapacityUnit.Items, 5, "Asia/Tokyo", new TimeOnly(4, 0)));
+        (ws.CapacityUnit, ws.DailyCapacity, ws.TimeZone, ws.DayBoundary).ShouldBe(
+            (CapacityUnit.Items, 5, "Asia/Tokyo", new TimeOnly(4, 0))
+        );
         FocusHours.FromJson(ws.FocusHoursJson)!.Start.ShouldBe(new TimeOnly(8, 0));
 
-        await Should.ThrowAsync<CommandException>(() => _f.Workspaces.SetCapacityAsync(_f.Ws.Id, CapacityUnit.Items, 0));
-        await Should.ThrowAsync<TimeZoneNotFoundException>(() => _f.Workspaces.SetTimeAsync(_f.Ws.Id, "Mars/Base", false, TimeOnly.MinValue));
+        await Should.ThrowAsync<CommandException>(() =>
+            _f.Workspaces.SetCapacityAsync(_f.Ws.Id, CapacityUnit.Items, 0)
+        );
+        await Should.ThrowAsync<TimeZoneNotFoundException>(() =>
+            _f.Workspaces.SetTimeAsync(_f.Ws.Id, "Mars/Base", false, TimeOnly.MinValue)
+        );
     }
 }
 
@@ -140,12 +153,22 @@ public class TodayAllTests : IDisposable
     public async Task Workspaces_outside_focus_hours_drop_out_and_go_quiet()
     {
         var personal = await _f.Workspaces.CreateAsync(WorkspaceTemplates.Personal);
-        await _f.Workspaces.SetFocusHoursAsync(_f.Ws.Id, FocusHours.Weekdays(new TimeOnly(9, 0), new TimeOnly(18, 0)));
+        await _f.Workspaces.SetFocusHoursAsync(
+            _f.Ws.Id,
+            FocusHours.Weekdays(new TimeOnly(9, 0), new TimeOnly(18, 0))
+        );
         await _f.Workspaces.SetTimeAsync(_f.Ws.Id, "UTC", false, TimeOnly.MinValue);
         await _f.Workspaces.SetTimeAsync(personal.Id, "UTC", false, TimeOnly.MinValue);
 
         var work = await _f.CreateItemAsync("report", new DateOnly(2026, 10, 5));
-        await _f.Bus.SendAsync(new CreateItem(Guid.CreateVersion7(), personal.Id, "groceries", new DateOnly(2026, 10, 7)));
+        await _f.Bus.SendAsync(
+            new CreateItem(
+                Guid.CreateVersion7(),
+                personal.Id,
+                "groceries",
+                new DateOnly(2026, 10, 7)
+            )
+        );
         var lens = new TodayAllService(_f.Uow, _f.Clock, _f.Derive);
 
         var inHours = await lens.GetAsync(); // Wed 10:00 UTC, within 09–18
@@ -164,6 +187,8 @@ public class TodayAllTests : IDisposable
     public async Task Archived_workspaces_are_not_in_the_lens()
     {
         await _f.Workspaces.ArchiveAsync(_f.Ws.Id);
-        (await new TodayAllService(_f.Uow, _f.Clock, _f.Derive).GetAsync()).Sections.ShouldBeEmpty();
+        (
+            await new TodayAllService(_f.Uow, _f.Clock, _f.Derive).GetAsync()
+        ).Sections.ShouldBeEmpty();
     }
 }

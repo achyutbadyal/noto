@@ -23,7 +23,14 @@ sealed class Composition : IDisposable
         var bus = new CommandBus(_db, clock, DeviceId(dir));
 
         Platform = PlatformFactory.Create();
-        Services = new AppServices(_db, bus, clock, _db, Platform, new FileUiState(Path.Combine(dir, "ui-state.json")));
+        Services = new AppServices(
+            _db,
+            bus,
+            clock,
+            _db,
+            Platform,
+            new FileUiState(Path.Combine(dir, "ui-state.json"))
+        );
     }
 
     public AppServices Services { get; }
@@ -34,7 +41,11 @@ sealed class Composition : IDisposable
     public static string DefaultDataDirectory()
     {
         var root = OperatingSystem.IsMacOS()
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support")
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "Library",
+                "Application Support"
+            )
             : Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
         return Path.Combine(root, "Noto");
     }
@@ -42,7 +53,8 @@ sealed class Composition : IDisposable
     static Guid DeviceId(string dir)
     {
         var path = Path.Combine(dir, "device.id");
-        if (File.Exists(path) && Guid.TryParse(File.ReadAllText(path).Trim(), out var existing)) return existing;
+        if (File.Exists(path) && Guid.TryParse(File.ReadAllText(path).Trim(), out var existing))
+            return existing;
         var id = Guid.CreateVersion7();
         File.WriteAllText(path, id.ToString());
         return id;

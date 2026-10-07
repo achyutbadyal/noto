@@ -18,9 +18,20 @@ sealed class AvaloniaFocusWindow : IFocusWindow
 
         _window = new Window
         {
-            Title = "Noto focus", Width = 340, Height = 52, CanResize = false, Topmost = true, ShowInTaskbar = false,
+            Title = "Noto focus",
+            Width = 340,
+            Height = 52,
+            CanResize = false,
+            Topmost = true,
+            ShowInTaskbar = false,
             SystemDecorations = SystemDecorations.BorderOnly,
-            Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new(12, 8), Children = { _label, done } },
+            Content = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                Spacing = 12,
+                Margin = new(12, 8),
+                Children = { _label, done },
+            },
         };
     }
 
@@ -31,8 +42,10 @@ sealed class AvaloniaFocusWindow : IFocusWindow
     {
         Dispatcher.UIThread.Post(() =>
         {
-            _label.Text = $"{state.Title} · {(int)state.Remaining.TotalMinutes:00}:{state.Remaining.Seconds:00}";
-            if (!_window.IsVisible) _window.Show();
+            _label.Text =
+                $"{state.Title} · {(int)state.Remaining.TotalMinutes:00}:{state.Remaining.Seconds:00}";
+            if (!_window.IsVisible)
+                _window.Show();
         });
     }
 

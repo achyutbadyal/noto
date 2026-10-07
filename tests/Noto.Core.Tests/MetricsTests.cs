@@ -30,8 +30,7 @@ public class MetricsTests
     [Fact]
     public void Defer_stops_carry_from_growing_until_the_new_date_and_counts_a_defer()
     {
-        var story = new Story(Oct(1), Oct(1))
-            .Plan(Oct(4), Oct(7), "defer");
+        var story = new Story(Oct(1), Oct(1)).Plan(Oct(4), Oct(7), "defer");
 
         var m = story.Metrics(Oct(7));
         m.Carry.ShouldBe(3); // days 2,3,4 carried before the defer took effect
@@ -43,7 +42,7 @@ public class MetricsTests
     {
         var story = new Story(Oct5, Oct5).Wait(Oct(6)).EndWait(Oct(9));
 
-        story.Metrics(Oct(9)).Carry.ShouldBe(1);  // only Oct 6, before the wait took effect
+        story.Metrics(Oct(9)).Carry.ShouldBe(1); // only Oct 6, before the wait took effect
         story.Metrics(Oct(10)).Carry.ShouldBe(2); // open again at the start of Oct 10
         story.Metrics(Oct(9)).Age.ShouldBe(4);
     }
@@ -89,7 +88,9 @@ public class MetricsTests
     [Fact]
     public void Undone_defer_does_not_count()
     {
-        var story = new Story(Oct(1), Oct(1)).Plan(Oct(2), Oct(5), "defer").Plan(Oct(2), Oct(1), "undo_defer");
+        var story = new Story(Oct(1), Oct(1))
+            .Plan(Oct(2), Oct(5), "defer")
+            .Plan(Oct(2), Oct(1), "undo_defer");
         story.Metrics(Oct(2)).Defers.ShouldBe(0);
     }
 

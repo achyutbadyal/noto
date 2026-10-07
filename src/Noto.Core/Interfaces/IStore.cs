@@ -8,8 +8,10 @@ public interface IItemRepository
     Task<TodoItem?> GetAsync(Guid id);
     Task UpsertAsync(TodoItem item);
     Task<IReadOnlyList<TodoItem>> ListAsync(Guid workspaceId);
+
     // Open and waiting items plus those completed on `today`: everything the Today view can show.
     Task<IReadOnlyList<TodoItem>> ListForTodayAsync(Guid workspaceId, DateOnly today);
+
     // Includes tombstones; sync needs them to push deletes.
     Task<IReadOnlyList<TodoItem>> ListAllAsync(Guid workspaceId);
 }
@@ -33,11 +35,18 @@ public interface IEventStore
 // Local-only derived caches; always safe to drop and rebuild.
 public interface ICacheStore
 {
-    Task<IReadOnlyDictionary<DateOnly, DayStats>> GetDayStatsAsync(Guid workspaceId, DateOnly from, DateOnly to);
+    Task<IReadOnlyDictionary<DateOnly, DayStats>> GetDayStatsAsync(
+        Guid workspaceId,
+        DateOnly from,
+        DateOnly to
+    );
     Task PutDayStatsAsync(Guid workspaceId, DayStats stats);
     Task InvalidateDayStatsFromAsync(Guid workspaceId, DateOnly from);
 
-    Task<IReadOnlyDictionary<Guid, ItemMetrics>> GetMetricsAsync(IReadOnlyCollection<Guid> itemIds, DateOnly asOf);
+    Task<IReadOnlyDictionary<Guid, ItemMetrics>> GetMetricsAsync(
+        IReadOnlyCollection<Guid> itemIds,
+        DateOnly asOf
+    );
     Task PutMetricsAsync(Guid itemId, DateOnly asOf, ItemMetrics metrics);
     Task InvalidateMetricsAsync(Guid itemId);
 }

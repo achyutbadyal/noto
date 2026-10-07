@@ -29,7 +29,8 @@ public sealed class TodayTests : IDisposable
         return id;
     }
 
-    static ItemRowViewModel Row(TodayViewModel vm, string title) => vm.FlatRows.Concat(vm.Sections.SelectMany(s => s.Rows)).First(r => r.Title == title);
+    static ItemRowViewModel Row(TodayViewModel vm, string title) =>
+        vm.FlatRows.Concat(vm.Sections.SelectMany(s => s.Rows)).First(r => r.Title == title);
 
     [Fact]
     public async Task Groups_items_into_now_planned_waiting_and_done()
@@ -59,11 +60,13 @@ public sealed class TodayTests : IDisposable
 
         var row = Row(vm, "Deploy v2.3");
         row.CarryText.ShouldBe("4");
-        row.Pressure.ShouldBe(PressureState.Hot);   // honest: 3–5 is hot
+        row.Pressure.ShouldBe(PressureState.Hot); // honest: 3–5 is hot
         row.ShowBar.ShouldBeTrue();
         row.EstimateText.ShouldBe("~1h");
         row.Glyph.ShouldBe("planned");
-        row.AutomationName.ShouldBe("Deploy v2.3, needs a decision, carried 4 times, stuck, estimate 1 hour");
+        row.AutomationName.ShouldBe(
+            "Deploy v2.3, needs a decision, carried 4 times, stuck, estimate 1 hour"
+        );
         vm.NeedsDecision.ShouldBe(1);
         vm.BannerText.ShouldBe("1 item carried over need a decision");
     }
@@ -76,7 +79,10 @@ public sealed class TodayTests : IDisposable
         Row(vm, "Old").IsStuck.ShouldBeTrue();
         Row(vm, "Old").Pressure.ShouldBe(PressureState.Stale);
 
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => ws.Pressure = Pressure.Gentle);
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws => ws.Pressure = Pressure.Gentle
+        );
         await vm.ReloadAsync();
         Row(vm, "Old").ShowBar.ShouldBeFalse();
     }
@@ -220,7 +226,9 @@ public sealed class TodayTests : IDisposable
         (await vm.Add.SubmitAsync()).ShouldBeTrue();
 
         var item = (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id))).Single();
-        (item.Title, item.EstimateMinutes, item.Priority, item.PlannedFor).ShouldBe(("Write API tests", 120, 3, new DateOnly(2026, 10, 8)));
+        (item.Title, item.EstimateMinutes, item.Priority, item.PlannedFor).ShouldBe(
+            ("Write API tests", 120, 3, new DateOnly(2026, 10, 8))
+        );
         vm.Add.Text.ShouldBe("");
     }
 
@@ -231,7 +239,9 @@ public sealed class TodayTests : IDisposable
         vm.Add.Text = "Need keys @waiting:Priya";
         await vm.Add.SubmitAsync();
         var item = (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id))).Single();
-        (item.Status, item.WaitingOn, item.PlannedFor).ShouldBe((ItemStatus.Waiting, "Priya", AppFixture.Today));
+        (item.Status, item.WaitingOn, item.PlannedFor).ShouldBe(
+            (ItemStatus.Waiting, "Priya", AppFixture.Today)
+        );
 
         vm.Add.Text = "~15m";
         (await vm.Add.SubmitAsync()).ShouldBeFalse();
@@ -277,8 +287,16 @@ public sealed class TodayTests : IDisposable
     [Fact]
     public async Task Items_unit_capacity_counts_items()
     {
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => { ws.CapacityUnit = CapacityUnit.Items; ws.DailyCapacity = 2; });
-        for (var n = 0; n < 3; n++) await _app.AddAsync($"T{n}", AppFixture.Today);
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws =>
+            {
+                ws.CapacityUnit = CapacityUnit.Items;
+                ws.DailyCapacity = 2;
+            }
+        );
+        for (var n = 0; n < 3; n++)
+            await _app.AddAsync($"T{n}", AppFixture.Today);
 
         var vm = await LoadAsync();
 
@@ -315,8 +333,14 @@ public sealed class TodayTests : IDisposable
     [Fact]
     public async Task Relentless_pressure_pins_the_most_carried_items()
     {
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => BuiltInPresets.Accountability.ApplyTo(ws));
-        await AddPastAsync("one", 1); await AddPastAsync("two", 2); await AddPastAsync("three", 3); await AddPastAsync("four", 4);
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws => BuiltInPresets.Accountability.ApplyTo(ws)
+        );
+        await AddPastAsync("one", 1);
+        await AddPastAsync("two", 2);
+        await AddPastAsync("three", 3);
+        await AddPastAsync("four", 4);
 
         var vm = await LoadAsync();
 
@@ -330,7 +354,9 @@ public sealed class TodayTests : IDisposable
 
         await _app.AddAsync("Unscheduled");
         var someday = Guid.CreateVersion7();
-        await _app.Services.Bus.SendAsync(new Noto.Core.Commands.CreateItem(someday, _app.Workspace.Id, "Maybe", IsSomeday: true));
+        await _app.Services.Bus.SendAsync(
+            new Noto.Core.Commands.CreateItem(someday, _app.Workspace.Id, "Maybe", IsSomeday: true)
+        );
 
         var backlog = new BacklogViewModel(_app.Services, _app.Workspace.Id);
         await backlog.ReloadAsync();
@@ -340,7 +366,9 @@ public sealed class TodayTests : IDisposable
 
         // t pulls a backlog item into today
         await backlog.HandleKeyAsync(Key("t"));
-        (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id))).Count(i => i.PlannedFor == AppFixture.Today).ShouldBe(1);
+        (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id)))
+            .Count(i => i.PlannedFor == AppFixture.Today)
+            .ShouldBe(1);
     }
 
     [Fact]
@@ -351,11 +379,15 @@ public sealed class TodayTests : IDisposable
         var vm = await LoadAsync();
 
         Row(vm, "a").Item.PlannedFor.ShouldBe(AppFixture.Today);
-        await vm.HandleKeyAsync(Key("x"));                     // completes "a"
+        await vm.HandleKeyAsync(Key("x")); // completes "a"
         (await _app.GetAsync(parent)).Status.ShouldBe(ItemStatus.Open);
 
-        var b = (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id))).First(i => i.Title == "b");
-        await _app.Services.Bus.SendAsync(new Noto.Core.Commands.PlanItem(b.Id, null, Noto.Core.Commands.PlanKind.KeepToday));
+        var b = (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id))).First(i =>
+            i.Title == "b"
+        );
+        await _app.Services.Bus.SendAsync(
+            new Noto.Core.Commands.PlanItem(b.Id, null, Noto.Core.Commands.PlanKind.KeepToday)
+        );
         await vm.ReloadAsync();
         vm.SetFocus(Row(vm, "b"));
         await vm.HandleKeyAsync(Key("x"));
@@ -376,13 +408,16 @@ public sealed class TodayTests : IDisposable
             for (var n = 0; n < 3; n++)
             {
                 var id = await _app.AddAsync($"h{day}-{n}", d);
-                await _app.Services.Bus.SendAsync(n < 2
-                    ? new Noto.Core.Commands.CompleteItem(id)
-                    : new Noto.Core.Commands.DropItem(id, DropReason.NotNeeded)); // no leftovers carrying into the test day
+                await _app.Services.Bus.SendAsync(
+                    n < 2
+                        ? new Noto.Core.Commands.CompleteItem(id)
+                        : new Noto.Core.Commands.DropItem(id, DropReason.NotNeeded)
+                ); // no leftovers carrying into the test day
             }
             _app.Clock.Advance(TimeSpan.FromDays(day));
         }
-        for (var n = 0; n < 3; n++) await _app.AddAsync($"today-{n}", AppFixture.Today);
+        for (var n = 0; n < 3; n++)
+            await _app.AddAsync($"today-{n}", AppFixture.Today);
 
         var vm = await LoadAsync();
 

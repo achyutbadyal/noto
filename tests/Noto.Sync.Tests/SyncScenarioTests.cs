@@ -9,7 +9,8 @@ public sealed class SyncScenarioTests : IDisposable
 {
     readonly TestServer _server = new();
     readonly Guid _user;
-    readonly Replica _a, _b;
+    readonly Replica _a,
+        _b;
     Guid _ws;
 
     public SyncScenarioTests()
@@ -19,7 +20,12 @@ public sealed class SyncScenarioTests : IDisposable
         _b = new Replica(_server, _user, TimeSpan.FromSeconds(3)); // B's clock runs 3s ahead
     }
 
-    public void Dispose() { _a.Dispose(); _b.Dispose(); _server.Dispose(); }
+    public void Dispose()
+    {
+        _a.Dispose();
+        _b.Dispose();
+        _server.Dispose();
+    }
 
     // A owns a synced workspace with one item; B bootstraps from the server.
     async Task<Guid> SharedItemAsync(string title = "Task")
@@ -35,7 +41,11 @@ public sealed class SyncScenarioTests : IDisposable
 
     async Task SyncBothAsync()
     {
-        for (var i = 0; i < 3; i++) { await _a.Client.SyncAsync(); await _b.Client.SyncAsync(); }
+        for (var i = 0; i < 3; i++)
+        {
+            await _a.Client.SyncAsync();
+            await _b.Client.SyncAsync();
+        }
     }
 
     [Fact]
@@ -59,8 +69,12 @@ public sealed class SyncScenarioTests : IDisposable
         var b = SyncRows.ToRow((await _b.ItemAsync(item))!).ToJsonString();
         b.ShouldBe(a);
 
-        var wsA = SyncRows.ToRow((await _a.Db.RunAsync(s => s.Workspaces.GetAsync(_ws)))!).ToJsonString();
-        var wsB = SyncRows.ToRow((await _b.Db.RunAsync(s => s.Workspaces.GetAsync(_ws)))!).ToJsonString();
+        var wsA = SyncRows
+            .ToRow((await _a.Db.RunAsync(s => s.Workspaces.GetAsync(_ws)))!)
+            .ToJsonString();
+        var wsB = SyncRows
+            .ToRow((await _b.Db.RunAsync(s => s.Workspaces.GetAsync(_ws)))!)
+            .ToJsonString();
         wsB.ShouldBe(wsA);
     }
 
@@ -124,7 +138,10 @@ public sealed class SyncScenarioTests : IDisposable
         await _b.Bus.SendAsync(new SetPriority(item, 3));
         await SyncBothAsync();
 
-        var fields = (await _b.Db.RunAsync(s => s.Sync.ListConflictsAsync(item))).Select(c => c.Field).Distinct().ToList();
+        var fields = (await _b.Db.RunAsync(s => s.Sync.ListConflictsAsync(item)))
+            .Select(c => c.Field)
+            .Distinct()
+            .ToList();
         fields.ShouldBe(["notes"]);
     }
 
@@ -197,7 +214,8 @@ public sealed class SyncScenarioTests : IDisposable
         var small = new SyncOptions { PullLimit = 5, PushBatch = 5 };
         using var c = new Replica(_server, _user, TimeSpan.Zero, small);
         await SharedItemAsync();
-        for (var n = 0; n < 12; n++) await _a.AddItemAsync(_ws, $"item {n}");
+        for (var n = 0; n < 12; n++)
+            await _a.AddItemAsync(_ws, $"item {n}");
         await _a.Client.SyncAsync();
 
         await c.Workspaces.BootstrapNewDeviceAsync();
@@ -215,7 +233,8 @@ public sealed class SyncScenarioTests : IDisposable
         using var c = new Replica(_server, _user, TimeSpan.Zero, small);
         var ws = await c.AddWorkspaceAsync();
         await c.Workspaces.EnableAsync(ws.Id);
-        for (var n = 0; n < 10; n++) await c.AddItemAsync(ws.Id, $"item {n}");
+        for (var n = 0; n < 10; n++)
+            await c.AddItemAsync(ws.Id, $"item {n}");
 
         var result = await c.Client.SyncAsync();
 
@@ -231,8 +250,12 @@ public sealed class SyncScenarioTests : IDisposable
         await _a.AddItemAsync(ws.Id);
         var ops = await _a.PendingAsync();
 
-        var first = await _a.Transport.SyncAsync(new SyncRequest(_a.DeviceId, 0, [ws.Id], 500, ops));
-        var second = await _a.Transport.SyncAsync(new SyncRequest(_a.DeviceId, 0, [ws.Id], 500, ops));
+        var first = await _a.Transport.SyncAsync(
+            new SyncRequest(_a.DeviceId, 0, [ws.Id], 500, ops)
+        );
+        var second = await _a.Transport.SyncAsync(
+            new SyncRequest(_a.DeviceId, 0, [ws.Id], 500, ops)
+        );
 
         second.AcceptedOpIds.ShouldBe(first.AcceptedOpIds);
         await using var db = _server.NewDb();
@@ -243,7 +266,11 @@ public sealed class SyncScenarioTests : IDisposable
     public async Task Cursor_ahead_of_the_server_triggers_a_rebootstrap()
     {
         var item = await SharedItemAsync();
-        await _b.Db.RunAsync(async s => { await s.Sync.SetStateAsync(SyncClient.CursorKey, "999999"); return 0; });
+        await _b.Db.RunAsync(async s =>
+        {
+            await s.Sync.SetStateAsync(SyncClient.CursorKey, "999999");
+            return 0;
+        });
         await _a.Bus.SendAsync(new RenameItem(item, "after restore"));
         await _a.Client.SyncAsync();
 
@@ -259,10 +286,25 @@ public sealed class SyncScenarioTests : IDisposable
         await SharedItemAsync();
         var other = _server.RegisterUser();
         using var intruder = new Replica(_server, other, TimeSpan.Zero);
-        var op = new Op(Guid.NewGuid(), EntityTypes.Workspace, _ws, _ws, OpKinds.Set, "name", "hijacked",
-            new Hlc(long.Parse(_server.Time.GetUtcNow().ToUnixTimeMilliseconds().ToString()) + 100, 0, intruder.DeviceId).ToString(), intruder.DeviceId);
+        var op = new Op(
+            Guid.NewGuid(),
+            EntityTypes.Workspace,
+            _ws,
+            _ws,
+            OpKinds.Set,
+            "name",
+            "hijacked",
+            new Hlc(
+                long.Parse(_server.Time.GetUtcNow().ToUnixTimeMilliseconds().ToString()) + 100,
+                0,
+                intruder.DeviceId
+            ).ToString(),
+            intruder.DeviceId
+        );
 
-        var response = await intruder.Transport.SyncAsync(new SyncRequest(intruder.DeviceId, 0, [], 500, [op]));
+        var response = await intruder.Transport.SyncAsync(
+            new SyncRequest(intruder.DeviceId, 0, [], 500, [op])
+        );
 
         response.Rejected.Single().Code.ShouldBe("WORKSPACE_NOT_OWNED");
         var ws = await _a.Db.RunAsync(s => s.Workspaces.GetAsync(_ws));
@@ -273,8 +315,22 @@ public sealed class SyncScenarioTests : IDisposable
     public async Task Ops_with_absurdly_future_clocks_are_rejected()
     {
         await SharedItemAsync();
-        var future = new Hlc(_server.Time.GetUtcNow().AddDays(30).ToUnixTimeMilliseconds(), 0, _a.DeviceId).ToString();
-        var op = new Op(Guid.NewGuid(), EntityTypes.Workspace, _ws, _ws, OpKinds.Set, "name", "x", future, _a.DeviceId);
+        var future = new Hlc(
+            _server.Time.GetUtcNow().AddDays(30).ToUnixTimeMilliseconds(),
+            0,
+            _a.DeviceId
+        ).ToString();
+        var op = new Op(
+            Guid.NewGuid(),
+            EntityTypes.Workspace,
+            _ws,
+            _ws,
+            OpKinds.Set,
+            "name",
+            "x",
+            future,
+            _a.DeviceId
+        );
 
         var response = await _a.Transport.SyncAsync(new SyncRequest(_a.DeviceId, 0, [], 500, [op]));
 
@@ -284,9 +340,30 @@ public sealed class SyncScenarioTests : IDisposable
     [Fact]
     public async Task Pushing_more_than_2000_ops_is_refused()
     {
-        var ops = Enumerable.Range(0, 2001).Select(_ => new Op(Guid.NewGuid(), EntityTypes.Workspace, _ws, _ws, OpKinds.Set, "name", "x", new Hlc(1, 0, _a.DeviceId).ToString(), _a.DeviceId)).ToList();
+        var ops = Enumerable
+            .Range(0, 2001)
+            .Select(_ => new Op(
+                Guid.NewGuid(),
+                EntityTypes.Workspace,
+                _ws,
+                _ws,
+                OpKinds.Set,
+                "name",
+                "x",
+                new Hlc(1, 0, _a.DeviceId).ToString(),
+                _a.DeviceId
+            ))
+            .ToList();
         var ex = await Should.ThrowAsync<Noto.Server.Middleware.ApiException>(() =>
-            _server.WithServiceAsync(s => s.SyncAsync(_user, _a.DeviceId, new SyncRequest(_a.DeviceId, 0, [], 500, ops), default)));
+            _server.WithServiceAsync(s =>
+                s.SyncAsync(
+                    _user,
+                    _a.DeviceId,
+                    new SyncRequest(_a.DeviceId, 0, [], 500, ops),
+                    default
+                )
+            )
+        );
         ex.Status.ShouldBe(413);
     }
 

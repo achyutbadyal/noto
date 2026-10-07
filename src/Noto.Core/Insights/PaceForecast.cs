@@ -11,13 +11,17 @@ public static class PaceForecaster
     const int SimilarDays = 10;
 
     // Median `done` over the most similar past days. Same weekday is preferred, then closest load.
-    public static PaceForecast? Forecast(DateOnly day, int plannedCount, IEnumerable<DayStats> history)
+    public static PaceForecast? Forecast(
+        DateOnly day,
+        int plannedCount,
+        IEnumerable<DayStats> history
+    )
     {
         var past = history.Where(d => d.Day < day && Load(d) > 0).ToList();
-        if (past.Count < MinHistoryDays) return null;
+        if (past.Count < MinHistoryDays)
+            return null;
 
-        var similar = past
-            .OrderBy(d => d.Day.DayOfWeek == day.DayOfWeek ? 0 : 1)
+        var similar = past.OrderBy(d => d.Day.DayOfWeek == day.DayOfWeek ? 0 : 1)
             .ThenBy(d => Math.Abs(Load(d) - plannedCount))
             .ThenByDescending(d => d.Day)
             .Take(SimilarDays)
@@ -33,5 +37,7 @@ public static class PaceForecaster
     static int Load(DayStats d) => d.CarriedIn + d.PlannedIn + d.Added;
 
     static double Median(List<int> sorted) =>
-        sorted.Count % 2 == 1 ? sorted[sorted.Count / 2] : (sorted[sorted.Count / 2 - 1] + sorted[sorted.Count / 2]) / 2.0;
+        sorted.Count % 2 == 1
+            ? sorted[sorted.Count / 2]
+            : (sorted[sorted.Count / 2 - 1] + sorted[sorted.Count / 2]) / 2.0;
 }

@@ -34,7 +34,9 @@ public class PlatformTests
     public void Default_capture_gesture_is_control_option_space()
     {
         HotkeyGesture.DefaultCapture.Key.ShouldBe("Space");
-        HotkeyGesture.DefaultCapture.Modifiers.ShouldBe(HotkeyModifiers.Control | HotkeyModifiers.Alt);
+        HotkeyGesture.DefaultCapture.Modifiers.ShouldBe(
+            HotkeyModifiers.Control | HotkeyModifiers.Alt
+        );
     }
 
     [Fact]
@@ -47,7 +49,8 @@ public class PlatformTests
     [Fact]
     public async Task Mac_keychain_stores_updates_reads_and_deletes_a_secret()
     {
-        if (!OperatingSystem.IsMacOS()) return; // verified on macOS only
+        if (!OperatingSystem.IsMacOS())
+            return; // verified on macOS only
 
         var keyring = new MacKeyring();
         var service = $"app.noto.tests.{Guid.NewGuid():N}";
@@ -57,7 +60,7 @@ public class PlatformTests
             await keyring.SetAsync(service, "conn-1", "token-one");
             (await keyring.GetAsync(service, "conn-1")).ShouldBe("token-one");
 
-            await keyring.SetAsync(service, "conn-1", "tökén-two ✓");     // update in place, UTF-8
+            await keyring.SetAsync(service, "conn-1", "tökén-two ✓"); // update in place, UTF-8
             (await keyring.GetAsync(service, "conn-1")).ShouldBe("tökén-two ✓");
         }
         finally
@@ -71,7 +74,8 @@ public class PlatformTests
     [Fact]
     public void Mac_reduce_motion_reads_the_os_flag_without_throwing()
     {
-        if (!OperatingSystem.IsMacOS()) return;
+        if (!OperatingSystem.IsMacOS())
+            return;
         using var motion = new MacReduceMotion();
         _ = motion.IsEnabled; // value depends on the user's accessibility settings
     }
@@ -79,8 +83,11 @@ public class PlatformTests
     [Fact]
     public void Mac_hotkey_rejects_unknown_keys_without_registering()
     {
-        if (!OperatingSystem.IsMacOS()) return;
+        if (!OperatingSystem.IsMacOS())
+            return;
         using var hotkey = new MacHotkey();
-        hotkey.Register(new HotkeyGesture("NotAKey", HotkeyModifiers.Control), () => { }).ShouldBeFalse();
+        hotkey
+            .Register(new HotkeyGesture("NotAKey", HotkeyModifiers.Control), () => { })
+            .ShouldBeFalse();
     }
 }

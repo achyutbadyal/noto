@@ -12,26 +12,30 @@ public class GraphQlGuardTests
 {
     [Theory]
     [InlineData("{ viewer { login } }")]
-    [InlineData("query Q($n: Int) { repository(name: \"x\") { issues(first: $n) { nodes { title } } } }")]
+    [InlineData(
+        "query Q($n: Int) { repository(name: \"x\") { issues(first: $n) { nodes { title } } } }"
+    )]
     [InlineData("query { a }  # mutation in a comment\n")]
-    [InlineData("query { search(query: \"mutation { x }\") { id } }")]            // keyword only inside a string
-    [InlineData("query { mutation }")]                                           // a field *named* mutation
+    [InlineData("query { search(query: \"mutation { x }\") { id } }")] // keyword only inside a string
+    [InlineData("query { mutation }")] // a field *named* mutation
     [InlineData("fragment F on User { id } query { viewer { ...F } }")]
     [InlineData("query { a(arg: \"\"\"mutation\"\"\") }")]
-    public void Allows_read_only_queries(string query) => GraphQlGuard.IsReadOnly(query).ShouldBeTrue();
+    public void Allows_read_only_queries(string query) =>
+        GraphQlGuard.IsReadOnly(query).ShouldBeTrue();
 
     [Theory]
     [InlineData("mutation { deleteRepo(id: 1) { ok } }")]
     [InlineData("mutation M { x }")]
     [InlineData("subscription { events }")]
-    [InlineData("query { a } mutation { b }")]                                   // mixed document
+    [InlineData("query { a } mutation { b }")] // mixed document
     [InlineData("query { a }\nmutation\n{ b }")]
     [InlineData("  mutation { b }  ")]
     [InlineData("")]
     [InlineData("   ")]
-    [InlineData("query { a")]                                                    // unbalanced
-    [InlineData("fragment F on User { id }")]                                    // no operation at all
-    public void Rejects_everything_else(string query) => GraphQlGuard.IsReadOnly(query).ShouldBeFalse();
+    [InlineData("query { a")] // unbalanced
+    [InlineData("fragment F on User { id }")] // no operation at all
+    public void Rejects_everything_else(string query) =>
+        GraphQlGuard.IsReadOnly(query).ShouldBeFalse();
 
     [Fact]
     public void Request_bodies_must_be_a_single_json_object_with_a_query()
@@ -54,27 +58,57 @@ public class HostPatternTests
     [InlineData("*.atlassian.net", "atlassian.net", false)]
     [InlineData("*.atlassian.net", "acme.atlassian.net.evil.com", false)]
     [InlineData("*.atlassian.net", "evilatlassian.net", false)]
-    public void Matches(string pattern, string host, bool expected) => HostPattern.Matches(pattern, host).ShouldBe(expected);
+    public void Matches(string pattern, string host, bool expected) =>
+        HostPattern.Matches(pattern, host).ShouldBe(expected);
 }
 
 public sealed class GatewayTests : IDisposable
 {
     readonly ServerFactory _f = new();
+
     public void Dispose() => _f.Dispose();
 
-    static StringContent Json(object o) => new(JsonSerializer.Serialize(o), Encoding.UTF8, "application/json");
+    static StringContent Json(object o) =>
+        new(JsonSerializer.Serialize(o), Encoding.UTF8, "application/json");
 
-    static async Task<JsonElement> Body(HttpResponseMessage r) => await r.Content.ReadFromJsonAsync<JsonElement>();
+    static async Task<JsonElement> Body(HttpResponseMessage r) =>
+        await r.Content.ReadFromJsonAsync<JsonElement>();
 
-    async Task<HttpResponseMessage> Fetch(ServerFactory.Session s, object request, string? providerToken = "Bearer provider-token")
+    async Task<HttpResponseMessage> Fetch(
+        ServerFactory.Session s,
+        object request,
+        string? providerToken = "Bearer provider-token"
+    )
     {
-        var message = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch") { Content = Json(request) };
-        if (providerToken is not null) message.Headers.TryAddWithoutValidation("X-Provider-Authorization", providerToken);
+        var message = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch")
+        {
+            Content = Json(request),
+        };
+        if (providerToken is not null)
+            message.Headers.TryAddWithoutValidation("X-Provider-Authorization", providerToken);
         return await s.Client.SendAsync(message);
     }
 
-    static object Req(string provider, string path, string method = "GET", object? query = null, object? body = null, string? instance = null) =>
-        new { provider_id = provider, instance_url = instance, request = new { method, path, query, body } };
+    static object Req(
+        string provider,
+        string path,
+        string method = "GET",
+        object? query = null,
+        object? body = null,
+        string? instance = null
+    ) =>
+        new
+        {
+            provider_id = provider,
+            instance_url = instance,
+            request = new
+            {
+                method,
+                path,
+                query,
+                body,
+            },
+        };
 
     // --- fetch ---------------------------------------------------------------------------
 
@@ -84,7 +118,12 @@ public sealed class GatewayTests : IDisposable
         var anonymous = _f.CreateClient();
         var response = await anonymous.PostAsync("/v1/gateway/fetch", Json(Req("github", "/user")));
         response.StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
-        (await anonymous.PostAsync("/v1/gateway/opengraph", Json(new { url = "https://example.com" }))).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
+        (
+            await anonymous.PostAsync(
+                "/v1/gateway/opengraph",
+                Json(new { url = "https://example.com" })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -93,24 +132,39 @@ public sealed class GatewayTests : IDisposable
         var s = await _f.RegisterAsync();
         _f.Upstream.Respond = _ =>
         {
-            var r = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"merged":true}""", Encoding.UTF8, "application/json") };
+            var r = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"merged":true}""",
+                    Encoding.UTF8,
+                    "application/json"
+                ),
+            };
             r.Headers.TryAddWithoutValidation("X-RateLimit-Remaining", "4999");
             r.Headers.TryAddWithoutValidation("Set-Cookie", "session=leak");
             return r;
         };
 
-        var response = await Fetch(s, Req("github", "/repos/acme/app/pulls/7", query: new { state = "all" }));
+        var response = await Fetch(
+            s,
+            Req("github", "/repos/acme/app/pulls/7", query: new { state = "all" })
+        );
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var json = await Body(response);
         json.GetProperty("status").GetInt32().ShouldBe(200);
         json.GetProperty("body").GetString().ShouldBe("""{"merged":true}""");
-        json.GetProperty("headers").GetProperty("x-ratelimit-remaining").GetString().ShouldBe("4999");
+        json.GetProperty("headers")
+            .GetProperty("x-ratelimit-remaining")
+            .GetString()
+            .ShouldBe("4999");
         json.GetProperty("headers").TryGetProperty("set-cookie", out _).ShouldBeFalse(); // only an allowlist of headers is exposed
 
         var upstream = _f.Upstream.Requests.Single();
         upstream.Method.ShouldBe(HttpMethod.Get);
-        upstream.RequestUri!.ToString().ShouldBe("https://api.github.com/repos/acme/app/pulls/7?state=all");
+        upstream
+            .RequestUri!.ToString()
+            .ShouldBe("https://api.github.com/repos/acme/app/pulls/7?state=all");
         upstream.Headers.GetValues("Authorization").Single().ShouldBe("Bearer provider-token");
     }
 
@@ -118,18 +172,28 @@ public sealed class GatewayTests : IDisposable
     public async Task The_noto_bearer_token_is_never_sent_upstream()
     {
         var s = await _f.RegisterAsync();
-        await Fetch(s, Req("linear", "/graphql", "POST", body: new { query = "{ viewer { id } }" }), providerToken: null);
+        await Fetch(
+            s,
+            Req("linear", "/graphql", "POST", body: new { query = "{ viewer { id } }" }),
+            providerToken: null
+        );
 
         _f.Upstream.Requests.Single().Headers.Contains("Authorization").ShouldBeFalse();
     }
 
     [Theory]
-    [InlineData("POST")] [InlineData("PUT")] [InlineData("PATCH")] [InlineData("DELETE")]
+    [InlineData("POST")]
+    [InlineData("PUT")]
+    [InlineData("PATCH")]
+    [InlineData("DELETE")]
     public async Task Writes_are_refused_outside_graphql(string method)
     {
         var s = await _f.RegisterAsync();
 
-        var response = await Fetch(s, Req("github", "/repos/acme/app/issues", method, body: new { title = "x" }));
+        var response = await Fetch(
+            s,
+            Req("github", "/repos/acme/app/issues", method, body: new { title = "x" })
+        );
 
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         (await Body(response)).GetProperty("code").GetString().ShouldBe("METHOD_NOT_ALLOWED");
@@ -141,8 +205,22 @@ public sealed class GatewayTests : IDisposable
     {
         var s = await _f.RegisterAsync();
 
-        var ok = await Fetch(s, Req("github", "/graphql", "POST", body: new { query = "query { viewer { login } }" }));
-        var bad = await Fetch(s, Req("github", "/graphql", "POST", body: new { query = "mutation { addStar(input:{starrableId:\"x\"}) { clientMutationId } }" }));
+        var ok = await Fetch(
+            s,
+            Req("github", "/graphql", "POST", body: new { query = "query { viewer { login } }" })
+        );
+        var bad = await Fetch(
+            s,
+            Req(
+                "github",
+                "/graphql",
+                "POST",
+                body: new
+                {
+                    query = "mutation { addStar(input:{starrableId:\"x\"}) { clientMutationId } }",
+                }
+            )
+        );
 
         ok.StatusCode.ShouldBe(HttpStatusCode.OK);
         bad.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
@@ -155,7 +233,10 @@ public sealed class GatewayTests : IDisposable
     public async Task Post_to_a_non_graphql_path_on_a_graphql_provider_is_refused()
     {
         var s = await _f.RegisterAsync();
-        var response = await Fetch(s, Req("github", "/repos/a/b/issues", "POST", body: new { query = "{ a }" }));
+        var response = await Fetch(
+            s,
+            Req("github", "/repos/a/b/issues", "POST", body: new { query = "{ a }" })
+        );
         response.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
@@ -165,7 +246,7 @@ public sealed class GatewayTests : IDisposable
     [InlineData("/repos/%2e%2e/%2e%2e/admin")]
     [InlineData("/a\\b")]
     [InlineData("relative/path")]
-    [InlineData("/redirect?u=http://evil.com")]   // a query string smuggled into the path
+    [InlineData("/redirect?u=http://evil.com")] // a query string smuggled into the path
     [InlineData("/x://evil")]
     public async Task Malicious_paths_never_reach_the_upstream(string path)
     {
@@ -174,7 +255,8 @@ public sealed class GatewayTests : IDisposable
         var response = await Fetch(s, Req("github", path));
 
         ((int)response.StatusCode).ShouldBeInRange(400, 403);
-        if (path == "/redirect?u=http://evil.com") return; // encoded into the path, so it stays on api.github.com
+        if (path == "/redirect?u=http://evil.com")
+            return; // encoded into the path, so it stays on api.github.com
         _f.Upstream.Requests.ShouldBeEmpty();
     }
 
@@ -185,7 +267,8 @@ public sealed class GatewayTests : IDisposable
         await Fetch(s, Req("github", "/user?x=1#frag"));
 
         var uri = _f.Upstream.Requests.SingleOrDefault()?.RequestUri;
-        if (uri is not null) uri.Host.ShouldBe("api.github.com");
+        if (uri is not null)
+            uri.Host.ShouldBe("api.github.com");
     }
 
     [Fact]
@@ -196,12 +279,15 @@ public sealed class GatewayTests : IDisposable
     }
 
     [Theory]
-    [InlineData("github", "https://evil.example.com")]       // github has no self-hosted instances
+    [InlineData("github", "https://evil.example.com")] // github has no self-hosted instances
     [InlineData("linear", "https://evil.example.com")]
     [InlineData("figma", "https://acme.atlassian.net")]
     [InlineData("github", "http://api.github.com")]
     [InlineData("github", "https://user:pw@api.github.com")]
-    public async Task Instance_urls_outside_the_allowlist_are_refused(string provider, string instance)
+    public async Task Instance_urls_outside_the_allowlist_are_refused(
+        string provider,
+        string instance
+    )
     {
         var s = await _f.RegisterAsync();
         var response = await Fetch(s, Req(provider, "/x", instance: instance));
@@ -214,10 +300,25 @@ public sealed class GatewayTests : IDisposable
     {
         var s = await _f.RegisterAsync();
 
-        (await Fetch(s, Req("atlassian", "/rest/api/3/issue/ENG-1", instance: "https://acme.atlassian.net"))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await Fetch(s, Req("gitlab", "/api/v4/projects/1/merge_requests/2", instance: "https://gitlab.acme.dev"))).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (
+            await Fetch(
+                s,
+                Req("atlassian", "/rest/api/3/issue/ENG-1", instance: "https://acme.atlassian.net")
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (
+            await Fetch(
+                s,
+                Req(
+                    "gitlab",
+                    "/api/v4/projects/1/merge_requests/2",
+                    instance: "https://gitlab.acme.dev"
+                )
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.OK);
 
-        _f.Upstream.Requests.Select(r => r.RequestUri!.Host).ShouldBe(["acme.atlassian.net", "gitlab.acme.dev"]);
+        _f.Upstream.Requests.Select(r => r.RequestUri!.Host)
+            .ShouldBe(["acme.atlassian.net", "gitlab.acme.dev"]);
     }
 
     [Fact]
@@ -225,13 +326,21 @@ public sealed class GatewayTests : IDisposable
     {
         _f.Dns.Records["gitlab.acme.internal"] = [IPAddress.Parse("10.0.0.7")];
         var s = await _f.RegisterAsync();
-        var blocked = await Fetch(s, Req("gitlab", "/api/v4/user", instance: "https://gitlab.acme.internal"));
+        var blocked = await Fetch(
+            s,
+            Req("gitlab", "/api/v4/user", instance: "https://gitlab.acme.internal")
+        );
         blocked.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
 
-        using var open = new ServerFactory(new() { ["GATEWAY_ALLOW_PRIVATE_HOSTS"] = "gitlab.acme.internal" });
+        using var open = new ServerFactory(
+            new() { ["GATEWAY_ALLOW_PRIVATE_HOSTS"] = "gitlab.acme.internal" }
+        );
         open.Dns.Records["gitlab.acme.internal"] = [IPAddress.Parse("10.0.0.7")];
         var s2 = await open.RegisterAsync();
-        var message = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch") { Content = Json(Req("gitlab", "/api/v4/user", instance: "https://gitlab.acme.internal")) };
+        var message = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch")
+        {
+            Content = Json(Req("gitlab", "/api/v4/user", instance: "https://gitlab.acme.internal")),
+        };
         (await s2.Client.SendAsync(message)).StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
@@ -239,15 +348,27 @@ public sealed class GatewayTests : IDisposable
     public async Task Slack_is_limited_to_its_api_path()
     {
         var s = await _f.RegisterAsync();
-        (await Fetch(s, Req("slack", "/api/conversations.history", query: new { channel = "C1" }))).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await Fetch(s, Req("slack", "/files/secret"))).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (
+            await Fetch(
+                s,
+                Req("slack", "/api/conversations.history", query: new { channel = "C1" })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await Fetch(s, Req("slack", "/files/secret"))).StatusCode.ShouldBe(
+            HttpStatusCode.Forbidden
+        );
     }
 
     [Fact]
     public async Task Upstream_redirects_to_other_hosts_are_not_followed()
     {
         var s = await _f.RegisterAsync();
-        _f.Upstream.Respond = _ => { var r = new HttpResponseMessage(HttpStatusCode.Found); r.Headers.Location = new Uri("https://evil.example.com/steal"); return r; };
+        _f.Upstream.Respond = _ =>
+        {
+            var r = new HttpResponseMessage(HttpStatusCode.Found);
+            r.Headers.Location = new Uri("https://evil.example.com/steal");
+            return r;
+        };
 
         var response = await Fetch(s, Req("github", "/user"));
 
@@ -260,7 +381,10 @@ public sealed class GatewayTests : IDisposable
     public async Task Upstream_errors_pass_through_with_their_status()
     {
         var s = await _f.RegisterAsync();
-        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("""{"message":"Not Found"}""") };
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent("""{"message":"Not Found"}"""),
+        };
 
         var json = await Body(await Fetch(s, Req("github", "/repos/a/b")));
 
@@ -271,7 +395,10 @@ public sealed class GatewayTests : IDisposable
     public async Task Oversized_provider_responses_become_502()
     {
         var s = await _f.RegisterAsync();
-        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(new string('x', 2_000_000)) };
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(new string('x', 2_000_000)),
+        };
 
         (await Fetch(s, Req("github", "/big"))).StatusCode.ShouldBe(HttpStatusCode.BadGateway);
     }
@@ -279,20 +406,33 @@ public sealed class GatewayTests : IDisposable
     [Fact]
     public async Task Fetch_is_rate_limited_per_provider_per_user()
     {
-        using var limited = new ServerFactory(new() { ["RATE_GATEWAY_FETCH_PROVIDER_PER_MIN"] = "2" });
+        using var limited = new ServerFactory(
+            new() { ["RATE_GATEWAY_FETCH_PROVIDER_PER_MIN"] = "2" }
+        );
         var s = await limited.RegisterAsync();
 
         var codes = new List<HttpStatusCode>();
         for (var i = 0; i < 3; i++)
         {
-            var m = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch") { Content = Json(Req("github", "/user")) };
+            var m = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch")
+            {
+                Content = Json(Req("github", "/user")),
+            };
             codes.Add((await s.Client.SendAsync(m)).StatusCode);
         }
         // A different provider has its own budget.
-        var other = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch") { Content = Json(Req("linear", "/graphql", "POST", body: new { query = "{ a }" })) };
+        var other = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch")
+        {
+            Content = Json(Req("linear", "/graphql", "POST", body: new { query = "{ a }" })),
+        };
         codes.Add((await s.Client.SendAsync(other)).StatusCode);
 
-        codes.ShouldBe([HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.TooManyRequests, HttpStatusCode.OK]);
+        codes.ShouldBe([
+            HttpStatusCode.OK,
+            HttpStatusCode.OK,
+            HttpStatusCode.TooManyRequests,
+            HttpStatusCode.OK,
+        ]);
     }
 
     [Fact]
@@ -302,7 +442,16 @@ public sealed class GatewayTests : IDisposable
         var s = await limited.RegisterAsync();
         var codes = new List<HttpStatusCode>();
         for (var i = 0; i < 3; i++)
-            codes.Add((await s.Client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch") { Content = Json(Req("github", "/user")) })).StatusCode);
+            codes.Add(
+                (
+                    await s.Client.SendAsync(
+                        new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch")
+                        {
+                            Content = Json(Req("github", "/user")),
+                        }
+                    )
+                ).StatusCode
+            );
 
         codes.Last().ShouldBe(HttpStatusCode.TooManyRequests);
     }
@@ -313,10 +462,19 @@ public sealed class GatewayTests : IDisposable
         var logs = _f.Logs;
         var factory = _f;
         var s = await factory.RegisterAsync();
-        factory.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"secret_body":"TOP-SECRET-BODY"}""") };
+        factory.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("""{"secret_body":"TOP-SECRET-BODY"}"""),
+        };
 
-        var m = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch") { Content = Json(Req("github", "/user")) };
-        m.Headers.TryAddWithoutValidation("X-Provider-Authorization", "Bearer ghp_SUPERSECRETTOKEN");
+        var m = new HttpRequestMessage(HttpMethod.Post, "/v1/gateway/fetch")
+        {
+            Content = Json(Req("github", "/user")),
+        };
+        m.Headers.TryAddWithoutValidation(
+            "X-Provider-Authorization",
+            "Bearer ghp_SUPERSECRETTOKEN"
+        );
         await s.Client.SendAsync(m);
 
         var all = string.Join("\n", logs.Messages);
@@ -332,16 +490,25 @@ public sealed class GatewayTests : IDisposable
         var s = await _f.RegisterAsync();
         _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent("""
+            Content = new StringContent(
+                """
                 <html><head><title>Fallback &amp; title</title>
                 <meta property="og:title" content="Launch &quot;Noto&quot;">
                 <meta property="og:description" content="A todo app">
                 <meta property="og:image" content="/img/card.png">
                 <meta property="og:site_name" content="Noto"></head></html>
-                """, Encoding.UTF8, "text/html"),
+                """,
+                Encoding.UTF8,
+                "text/html"
+            ),
         };
 
-        var json = await Body(await s.Client.PostAsync("/v1/gateway/opengraph", Json(new { url = "https://example.com/post" })));
+        var json = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/opengraph",
+                Json(new { url = "https://example.com/post" })
+            )
+        );
 
         json.GetProperty("title").GetString().ShouldBe("Launch \"Noto\"");
         json.GetProperty("description").GetString().ShouldBe("A todo app");
@@ -355,10 +522,22 @@ public sealed class GatewayTests : IDisposable
         var s = await _f.RegisterAsync();
         _f.Dns.Records["intranet.example.com"] = [IPAddress.Parse("192.168.1.10")];
 
-        foreach (var url in new[] { "https://127.0.0.1/", "https://169.254.169.254/latest/meta-data/", "https://intranet.example.com/", "http://example.com/" })
-            (await s.Client.PostAsync("/v1/gateway/opengraph", Json(new { url }))).StatusCode.ShouldBe(HttpStatusCode.Forbidden, url);
+        foreach (
+            var url in new[]
+            {
+                "https://127.0.0.1/",
+                "https://169.254.169.254/latest/meta-data/",
+                "https://intranet.example.com/",
+                "http://example.com/",
+            }
+        )
+            (
+                await s.Client.PostAsync("/v1/gateway/opengraph", Json(new { url }))
+            ).StatusCode.ShouldBe(HttpStatusCode.Forbidden, url);
         foreach (var url in new[] { "file:///etc/passwd", "javascript:alert(1)", "not a url", "" })
-            (await s.Client.PostAsync("/v1/gateway/opengraph", Json(new { url }))).StatusCode.ShouldBe(HttpStatusCode.BadRequest, url);
+            (
+                await s.Client.PostAsync("/v1/gateway/opengraph", Json(new { url }))
+            ).StatusCode.ShouldBe(HttpStatusCode.BadRequest, url);
 
         _f.Upstream.Requests.ShouldBeEmpty();
     }
@@ -366,28 +545,48 @@ public sealed class GatewayTests : IDisposable
     [Fact]
     public void Opengraph_drops_non_http_image_urls_and_clips_long_values()
     {
-        var html = $"""<meta property="og:title" content="{new string('t', 500)}"><meta property="og:image" content="javascript:alert(1)">""";
+        var html =
+            $"""<meta property="og:title" content="{new string('t', 500)}"><meta property="og:image" content="javascript:alert(1)">""";
         var og = OpenGraphFetcher.Parse(html, new Uri("https://example.com/"));
         og.Image.ShouldBeNull();
         og.Title!.Length.ShouldBe(300);
 
-        OpenGraphFetcher.Parse("""<meta property="og:image" content="data:image/png;base64,AAAA">""", new Uri("https://example.com/")).Image.ShouldBeNull();
+        OpenGraphFetcher
+            .Parse(
+                """<meta property="og:image" content="data:image/png;base64,AAAA">""",
+                new Uri("https://example.com/")
+            )
+            .Image.ShouldBeNull();
     }
 
     // --- oauth ---------------------------------------------------------------------------
 
     static string Challenge(string verifier) =>
-        Convert.ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        Convert
+            .ToBase64String(SHA256.HashData(Encoding.ASCII.GetBytes(verifier)))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
 
     static Dictionary<string, string> Query(string url) =>
-        System.Web.HttpUtility.ParseQueryString(new Uri(url).Query).AllKeys.ToDictionary(k => k!, k => System.Web.HttpUtility.ParseQueryString(new Uri(url).Query)[k]!);
+        System
+            .Web.HttpUtility.ParseQueryString(new Uri(url).Query)
+            .AllKeys.ToDictionary(
+                k => k!,
+                k => System.Web.HttpUtility.ParseQueryString(new Uri(url).Query)[k]!
+            );
 
     [Fact]
     public async Task Oauth_start_builds_an_authorize_url_with_state_pkce_and_the_server_redirect()
     {
         var s = await _f.RegisterAsync();
 
-        var json = await Body(await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { code_challenge = Challenge("client-verifier") })));
+        var json = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/start",
+                Json(new { code_challenge = Challenge("client-verifier") })
+            )
+        );
 
         var url = json.GetProperty("authorize_url").GetString()!;
         url.ShouldStartWith("https://github.com/login/oauth/authorize?");
@@ -409,22 +608,39 @@ public sealed class GatewayTests : IDisposable
         (await Body(response)).GetProperty("code").GetString().ShouldBe("PROVIDER_NOT_CONFIGURED");
     }
 
-    async Task<(ServerFactory.Session Session, string OneTimeCode, string Verifier)> CompleteFlowAsync(string provider = "github")
+    async Task<(
+        ServerFactory.Session Session,
+        string OneTimeCode,
+        string Verifier
+    )> CompleteFlowAsync(string provider = "github")
     {
         var s = await _f.RegisterAsync();
         const string verifier = "a-long-random-client-verifier-0123456789";
-        var start = await Body(await s.Client.PostAsync($"/v1/gateway/oauth/{provider}/start", Json(new { code_challenge = Challenge(verifier) })));
+        var start = await Body(
+            await s.Client.PostAsync(
+                $"/v1/gateway/oauth/{provider}/start",
+                Json(new { code_challenge = Challenge(verifier) })
+            )
+        );
         var state = start.GetProperty("state").GetString()!;
         _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent("""{"access_token":"gho_abc","refresh_token":"ghr_def","expires_in":3600,"scope":"repo"}""", Encoding.UTF8, "application/json"),
+            Content = new StringContent(
+                """{"access_token":"gho_abc","refresh_token":"ghr_def","expires_in":3600,"scope":"repo"}""",
+                Encoding.UTF8,
+                "application/json"
+            ),
         };
 
         // The provider redirects the popup back; no bearer token is present there.
-        var callback = await _f.CreateClient().GetAsync($"/v1/gateway/oauth/{provider}/callback?code=provider-code&state={state}");
+        var callback = await _f.CreateClient()
+            .GetAsync($"/v1/gateway/oauth/{provider}/callback?code=provider-code&state={state}");
         callback.StatusCode.ShouldBe(HttpStatusCode.OK);
         var html = await callback.Content.ReadAsStringAsync();
-        var code = System.Text.RegularExpressions.Regex.Match(html, "\"code\":\"([^\"]+)\"").Groups[1].Value;
+        var code = System
+            .Text.RegularExpressions.Regex.Match(html, "\"code\":\"([^\"]+)\"")
+            .Groups[1]
+            .Value;
         return (s, code, verifier);
     }
 
@@ -446,10 +662,22 @@ public sealed class GatewayTests : IDisposable
     public async Task Callback_page_uses_a_nonce_csp_and_posts_only_to_our_origin()
     {
         var s = await _f.RegisterAsync();
-        var start = await Body(await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { })));
-        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"access_token":"t"}""", Encoding.UTF8, "application/json") };
+        var start = await Body(
+            await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { }))
+        );
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"access_token":"t"}""",
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
 
-        var response = await _f.CreateClient().GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={start.GetProperty("state").GetString()}");
+        var response = await _f.CreateClient()
+            .GetAsync(
+                $"/v1/gateway/oauth/github/callback?code=c&state={start.GetProperty("state").GetString()}"
+            );
 
         var csp = response.Headers.GetValues("Content-Security-Policy").Single();
         csp.ShouldContain("script-src 'nonce-");
@@ -467,11 +695,19 @@ public sealed class GatewayTests : IDisposable
         var (s, code, verifier) = await CompleteFlowAsync();
         var other = await _f.RegisterAsync();
 
-        (await other.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = verifier }))).StatusCode
-            .ShouldBe(HttpStatusCode.Forbidden);
+        (
+            await other.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = code, code_verifier = verifier })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
         // The failed attempt burned the code.
-        (await s.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = verifier }))).StatusCode
-            .ShouldBe(HttpStatusCode.BadRequest);
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = code, code_verifier = verifier })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -479,7 +715,10 @@ public sealed class GatewayTests : IDisposable
     {
         var (s, code, verifier) = await CompleteFlowAsync();
 
-        var response = await s.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = verifier }));
+        var response = await s.Client.PostAsync(
+            "/v1/gateway/oauth/github/redeem",
+            Json(new { one_time_code = code, code_verifier = verifier })
+        );
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         var json = await Body(response);
@@ -489,8 +728,12 @@ public sealed class GatewayTests : IDisposable
         json.GetProperty("display_label").GetString().ShouldBe("GitHub");
         json.GetProperty("expires_at").GetDateTimeOffset().ShouldBeGreaterThan(_f.Time.GetUtcNow());
 
-        (await s.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = verifier }))).StatusCode
-            .ShouldBe(HttpStatusCode.BadRequest); // single use
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = code, code_verifier = verifier })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest); // single use
     }
 
     [Fact]
@@ -498,10 +741,18 @@ public sealed class GatewayTests : IDisposable
     {
         var (s, code, verifier) = await CompleteFlowAsync();
 
-        (await s.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = "wrong" }))).StatusCode
-            .ShouldBe(HttpStatusCode.Forbidden);
-        (await s.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = verifier }))).StatusCode
-            .ShouldBe(HttpStatusCode.BadRequest);
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = code, code_verifier = "wrong" })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = code, code_verifier = verifier })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
@@ -511,35 +762,72 @@ public sealed class GatewayTests : IDisposable
 
         _f.Time.Advance(TimeSpan.FromSeconds(61));
 
-        (await s.Client.PostAsync("/v1/gateway/oauth/github/redeem", Json(new { one_time_code = code, code_verifier = verifier }))).StatusCode
-            .ShouldBe(HttpStatusCode.BadRequest);
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = code, code_verifier = verifier })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task Oauth_state_is_single_use_and_unknown_state_is_rejected()
     {
         var s = await _f.RegisterAsync();
-        var start = await Body(await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { })));
+        var start = await Body(
+            await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { }))
+        );
         var state = start.GetProperty("state").GetString();
-        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"access_token":"t"}""", Encoding.UTF8, "application/json") };
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"access_token":"t"}""",
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
         var anonymous = _f.CreateClient();
 
-        (await anonymous.GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={state}")).StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await anonymous.GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={state}")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await anonymous.GetAsync("/v1/gateway/oauth/github/callback?code=c&state=forged")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (
+            await anonymous.GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={state}")
+        ).StatusCode.ShouldBe(HttpStatusCode.OK);
+        (
+            await anonymous.GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={state}")
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (
+            await anonymous.GetAsync("/v1/gateway/oauth/github/callback?code=c&state=forged")
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         // A state issued for one provider can't complete another provider's flow.
-        var gl = await Body(await s.Client.PostAsync("/v1/gateway/oauth/gitlab/start", Json(new { })));
-        (await anonymous.GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={gl.GetProperty("state").GetString()}")).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var gl = await Body(
+            await s.Client.PostAsync("/v1/gateway/oauth/gitlab/start", Json(new { }))
+        );
+        (
+            await anonymous.GetAsync(
+                $"/v1/gateway/oauth/github/callback?code=c&state={gl.GetProperty("state").GetString()}"
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
     [Fact]
     public async Task Provider_rejection_surfaces_as_502_without_leaking_the_response()
     {
         var s = await _f.RegisterAsync();
-        var start = await Body(await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { })));
-        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"error":"bad_verification_code","error_description":"INTERNAL-DETAIL"}""", Encoding.UTF8, "application/json") };
+        var start = await Body(
+            await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { }))
+        );
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"error":"bad_verification_code","error_description":"INTERNAL-DETAIL"}""",
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
 
-        var response = await _f.CreateClient().GetAsync($"/v1/gateway/oauth/github/callback?code=c&state={start.GetProperty("state").GetString()}");
+        var response = await _f.CreateClient()
+            .GetAsync(
+                $"/v1/gateway/oauth/github/callback?code=c&state={start.GetProperty("state").GetString()}"
+            );
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadGateway);
         (await response.Content.ReadAsStringAsync()).ShouldNotContain("INTERNAL-DETAIL");
@@ -549,9 +837,21 @@ public sealed class GatewayTests : IDisposable
     public async Task Refresh_applies_the_client_secret_server_side()
     {
         var s = await _f.RegisterAsync();
-        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("""{"access_token":"new","refresh_token":"newr","expires_in":60}""", Encoding.UTF8, "application/json") };
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"access_token":"new","refresh_token":"newr","expires_in":60}""",
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
 
-        var json = await Body(await s.Client.PostAsync("/v1/gateway/oauth/github/refresh", Json(new { refresh_token = "old-refresh" })));
+        var json = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/refresh",
+                Json(new { refresh_token = "old-refresh" })
+            )
+        );
 
         json.GetProperty("access_token").GetString().ShouldBe("new");
         var form = _f.Upstream.Bodies.Single();
@@ -564,10 +864,21 @@ public sealed class GatewayTests : IDisposable
     {
         var s = await _f.RegisterAsync();
 
-        var json = await Body(await s.Client.PostAsync("/v1/gateway/oauth/gitlab/start", Json(new { instance_url = "https://gitlab.acme.dev" })));
+        var json = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/gitlab/start",
+                Json(new { instance_url = "https://gitlab.acme.dev" })
+            )
+        );
 
-        json.GetProperty("authorize_url").GetString()!.ShouldStartWith("https://gitlab.acme.dev/oauth/authorize?");
-        (await s.Client.PostAsync("/v1/gateway/oauth/github/start", Json(new { instance_url = "https://evil.example.com" }))).StatusCode
-            .ShouldBe(HttpStatusCode.BadRequest);
+        json.GetProperty("authorize_url")
+            .GetString()!
+            .ShouldStartWith("https://gitlab.acme.dev/oauth/authorize?");
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/start",
+                Json(new { instance_url = "https://evil.example.com" })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 }

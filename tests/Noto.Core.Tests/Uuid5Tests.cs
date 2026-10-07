@@ -8,7 +8,9 @@ public class Uuid5Tests
     public void Matches_the_rfc_4122_reference_vector()
     {
         var dns = Guid.Parse("6ba7b810-9dad-11d1-80b4-00c04fd430c8");
-        Uuid5.Create(dns, "python.org").ShouldBe(Guid.Parse("886313e1-3b8a-5372-9b90-0c9aee199e5d"));
+        Uuid5
+            .Create(dns, "python.org")
+            .ShouldBe(Guid.Parse("886313e1-3b8a-5372-9b90-0c9aee199e5d"));
     }
 
     [Fact]

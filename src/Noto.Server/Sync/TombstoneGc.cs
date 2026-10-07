@@ -14,23 +14,47 @@ public sealed class TombstoneGc(ServerDbContext db, TimeProvider time)
         var cutoff = time.GetUtcNow().UtcDateTime - Retention;
         var removed = 0;
 
-        var candidates = await db.CurrentRows
-            .Where(r => r.EntityType == EntityTypes.TodoItem && r.DeletedAt != null && r.DeletedAt < cutoff)
+        var candidates = await db
+            .CurrentRows.Where(r =>
+                r.EntityType == EntityTypes.TodoItem && r.DeletedAt != null && r.DeletedAt < cutoff
+            )
             .ToListAsync(ct);
 
         foreach (var byUser in candidates.GroupBy(r => r.UserId))
         {
-            var cursors = await db.Devices.Where(d => d.UserId == byUser.Key && d.RevokedAt == null).Select(d => d.Cursor).ToListAsync(ct);
-            if (cursors.Count == 0) continue;
+            var cursors = await db
+                .Devices.Where(d => d.UserId == byUser.Key && d.RevokedAt == null)
+                .Select(d => d.Cursor)
+                .ToListAsync(ct);
+            if (cursors.Count == 0)
+                continue;
             var safeSeq = cursors.Min();
 
             foreach (var item in byUser.Where(r => r.LastSeq <= safeSeq))
             {
-                await db.Ops.Where(o => o.EntityId == item.EntityId && o.Seq <= safeSeq).ExecuteDeleteAsync(ct);
-                var events = await db.CurrentRows.Where(r => r.EntityType == EntityTypes.ItemEvent && r.RefId == item.EntityId && r.LastSeq <= safeSeq)
-                    .Select(r => r.EntityId).ToListAsync(ct);
-                await db.Ops.Where(o => o.EntityType == EntityTypes.ItemEvent && events.Contains(o.EntityId) && o.Seq <= safeSeq).ExecuteDeleteAsync(ct);
-                await db.CurrentRows.Where(r => r.EntityType == EntityTypes.ItemEvent && events.Contains(r.EntityId)).ExecuteDeleteAsync(ct);
+                await db
+                    .Ops.Where(o => o.EntityId == item.EntityId && o.Seq <= safeSeq)
+                    .ExecuteDeleteAsync(ct);
+                var events = await db
+                    .CurrentRows.Where(r =>
+                        r.EntityType == EntityTypes.ItemEvent
+                        && r.RefId == item.EntityId
+                        && r.LastSeq <= safeSeq
+                    )
+                    .Select(r => r.EntityId)
+                    .ToListAsync(ct);
+                await db
+                    .Ops.Where(o =>
+                        o.EntityType == EntityTypes.ItemEvent
+                        && events.Contains(o.EntityId)
+                        && o.Seq <= safeSeq
+                    )
+                    .ExecuteDeleteAsync(ct);
+                await db
+                    .CurrentRows.Where(r =>
+                        r.EntityType == EntityTypes.ItemEvent && events.Contains(r.EntityId)
+                    )
+                    .ExecuteDeleteAsync(ct);
                 db.CurrentRows.Remove(item);
                 removed++;
             }
@@ -40,7 +64,8 @@ public sealed class TombstoneGc(ServerDbContext db, TimeProvider time)
     }
 }
 
-public sealed class TombstoneGcService(IServiceScopeFactory scopes, ILogger<TombstoneGcService> log) : BackgroundService
+public sealed class TombstoneGcService(IServiceScopeFactory scopes, ILogger<TombstoneGcService> log)
+    : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -50,8 +75,11 @@ public sealed class TombstoneGcService(IServiceScopeFactory scopes, ILogger<Tomb
             try
             {
                 await using var scope = scopes.CreateAsyncScope();
-                var removed = await scope.ServiceProvider.GetRequiredService<TombstoneGc>().RunAsync(stoppingToken);
-                if (removed > 0) log.LogInformation("Tombstone GC removed {Count} items", removed);
+                var removed = await scope
+                    .ServiceProvider.GetRequiredService<TombstoneGc>()
+                    .RunAsync(stoppingToken);
+                if (removed > 0)
+                    log.LogInformation("Tombstone GC removed {Count} items", removed);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {

@@ -27,7 +27,9 @@ sealed class AvaloniaMenuBar : IMenuBar
         {
             ToolTipText = "Noto",
             Menu = menu,
-            Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://Noto.Desktop/Assets/tray.png"))),
+            Icon = new WindowIcon(
+                AssetLoader.Open(new Uri("avares://Noto.Desktop/Assets/tray.png"))
+            ),
         };
         TrayIcon.SetIcons(app, [_icon]);
     }
@@ -37,8 +39,12 @@ sealed class AvaloniaMenuBar : IMenuBar
 
     public void Update(MenuBarState state)
     {
-        var now = state.NowTitle is null ? "No Now item" : $"Now: {state.NowTitle}" + (state.Remaining is { } r ? $" · {(int)r.TotalMinutes:00}:{r.Seconds:00}" : "");
-        _status.Header = state.NeedsDecision > 0 ? $"{now}  ·  {state.NeedsDecision} to decide" : now;
+        var now = state.NowTitle is null
+            ? "No Now item"
+            : $"Now: {state.NowTitle}"
+                + (state.Remaining is { } r ? $" · {(int)r.TotalMinutes:00}:{r.Seconds:00}" : "");
+        _status.Header =
+            state.NeedsDecision > 0 ? $"{now}  ·  {state.NeedsDecision} to decide" : now;
         _icon.ToolTipText = _status.Header;
     }
 

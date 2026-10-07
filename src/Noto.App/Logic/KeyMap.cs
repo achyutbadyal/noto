@@ -1,7 +1,12 @@
 namespace Noto.App.Logic;
 
 // A normalized key press. Printable keys are their lowercase character; named keys use Avalonia's names.
-public readonly record struct KeyChord(string Key, bool Command = false, bool Shift = false, bool Alt = false)
+public readonly record struct KeyChord(
+    string Key,
+    bool Command = false,
+    bool Shift = false,
+    bool Alt = false
+)
 {
     public override string ToString() =>
         (Command ? "cmd+" : "") + (Shift ? "shift+" : "") + (Alt ? "alt+" : "") + Key;
@@ -9,21 +14,72 @@ public readonly record struct KeyChord(string Key, bool Command = false, bool Sh
     public static KeyChord Of(string spec)
     {
         var parts = spec.Split('+');
-        return new(parts[^1], parts.Contains("cmd"), parts.Contains("shift"), parts.Contains("alt"));
+        return new(
+            parts[^1],
+            parts.Contains("cmd"),
+            parts.Contains("shift"),
+            parts.Contains("alt")
+        );
     }
 }
 
 public enum AppAction
 {
-    CommandBar, ToggleInspector, ToggleSidebar, JumpToday, WorkspaceN, TodayAll, ModeSwitcher, StartReview, Shutdown, Undo,
-    MoveDown, MoveUp, ExtendDown, ExtendUp, SelectAll, Complete, Edit, MakeNow, Defer, KeepToday, Someday, WaitOn, BreakDown,
-    Drop, SetPriority, SetEstimate, NewItem, Search, PrevDay, NextDay, Help, GoBacklog, GoToday, AlreadyDone,
-    Escape, Confirm, PrevReview, NextReview,
+    CommandBar,
+    ToggleInspector,
+    ToggleSidebar,
+    JumpToday,
+    WorkspaceN,
+    TodayAll,
+    ModeSwitcher,
+    StartReview,
+    Shutdown,
+    Undo,
+    MoveDown,
+    MoveUp,
+    ExtendDown,
+    ExtendUp,
+    SelectAll,
+    Complete,
+    Edit,
+    MakeNow,
+    Defer,
+    KeepToday,
+    Someday,
+    WaitOn,
+    BreakDown,
+    Drop,
+    SetPriority,
+    SetEstimate,
+    NewItem,
+    Search,
+    PrevDay,
+    NextDay,
+    Help,
+    GoBacklog,
+    GoToday,
+    AlreadyDone,
+    Escape,
+    Confirm,
+    PrevReview,
+    NextReview,
 }
 
-public enum KeyScope { Global, List, Review }
+public enum KeyScope
+{
+    Global,
+    List,
+    Review,
+}
 
-public sealed record Binding(KeyScope Scope, string Chord, AppAction Action, string Display, string Description, int Arg = 0);
+public sealed record Binding(
+    KeyScope Scope,
+    string Chord,
+    AppAction Action,
+    string Display,
+    string Description,
+    int Arg = 0
+);
 
 public static class KeyMap
 {
@@ -39,15 +95,23 @@ public static class KeyMap
             new(KeyScope.Global, "cmd+b", AppAction.ToggleSidebar, "⌘B", "Toggle sidebar"),
             new(KeyScope.Global, "cmd+t", AppAction.JumpToday, "⌘T", "Jump to today"),
             new(KeyScope.Global, "cmd+0", AppAction.TodayAll, "⌘0", "Today (all workspaces)"),
-            new(KeyScope.Global, "cmd+shift+m", AppAction.ModeSwitcher, "⌘⇧M", "Switch mode / preset"),
+            new(
+                KeyScope.Global,
+                "cmd+shift+m",
+                AppAction.ModeSwitcher,
+                "⌘⇧M",
+                "Switch mode / preset"
+            ),
             new(KeyScope.Global, "cmd+shift+r", AppAction.StartReview, "⌘⇧R", "Start review"),
             new(KeyScope.Global, "cmd+shift+d", AppAction.Shutdown, "⌘⇧D", "Shutdown"),
             new(KeyScope.Global, "cmd+z", AppAction.Undo, "⌘Z", "Undo"),
         };
-        for (var n = 1; n <= 9; n++) b.Add(new(KeyScope.Global, $"cmd+{n}", AppAction.WorkspaceN, $"⌘{n}", $"Workspace {n}", n));
+        for (var n = 1; n <= 9; n++)
+            b.Add(
+                new(KeyScope.Global, $"cmd+{n}", AppAction.WorkspaceN, $"⌘{n}", $"Workspace {n}", n)
+            );
 
-        b.AddRange(
-        [
+        b.AddRange([
             new(KeyScope.List, "j", AppAction.MoveDown, "j / ↓", "Move down"),
             new(KeyScope.List, "ArrowDown", AppAction.MoveDown, "↓", "Move down"),
             new(KeyScope.List, "k", AppAction.MoveUp, "k / ↑", "Move up"),
@@ -71,7 +135,6 @@ public static class KeyMap
             new(KeyScope.List, "[", AppAction.PrevDay, "[", "Previous day"),
             new(KeyScope.List, "]", AppAction.NextDay, "]", "Next day"),
             new(KeyScope.List, "?", AppAction.Help, "?", "Shortcut help"),
-
             new(KeyScope.Review, "t", AppAction.KeepToday, "T", "Today"),
             new(KeyScope.Review, "d", AppAction.Defer, "D", "Defer…"),
             new(KeyScope.Review, "s", AppAction.Someday, "S", "Someday"),
@@ -85,18 +148,34 @@ public static class KeyMap
             new(KeyScope.Review, "ArrowDown", AppAction.NextReview, "↓", "Next item"),
             new(KeyScope.Review, "Escape", AppAction.Escape, "Esc", "Close review"),
         ]);
-        for (var p = 1; p <= 4; p++) b.Add(new(KeyScope.List, p.ToString(), AppAction.SetPriority, p.ToString(), $"Priority {p}", p));
+        for (var p = 1; p <= 4; p++)
+            b.Add(
+                new(
+                    KeyScope.List,
+                    p.ToString(),
+                    AppAction.SetPriority,
+                    p.ToString(),
+                    $"Priority {p}",
+                    p
+                )
+            );
         return b;
     }
 
-    static readonly Dictionary<(KeyScope, string), Binding> Index = All.ToDictionary(x => (x.Scope, x.Chord));
+    static readonly Dictionary<(KeyScope, string), Binding> Index = All.ToDictionary(x =>
+        (x.Scope, x.Chord)
+    );
 
     // Resolves a chord in a scope; modifier shortcuts fall through to the Global scope.
     public static Binding? Resolve(KeyScope scope, KeyChord chord)
     {
         var spec = chord.ToString();
-        if (Index.TryGetValue((scope, spec), out var hit)) return hit;
-        return scope != KeyScope.Global && Index.TryGetValue((KeyScope.Global, spec), out var global) ? global : null;
+        if (Index.TryGetValue((scope, spec), out var hit))
+            return hit;
+        return
+            scope != KeyScope.Global && Index.TryGetValue((KeyScope.Global, spec), out var global)
+            ? global
+            : null;
     }
 
     public static string? ShortcutFor(AppAction action) =>

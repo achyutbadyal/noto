@@ -18,7 +18,11 @@ public sealed class ActionRunner(ICommandBus bus, UndoService undo, ContainerSer
             foreach (var command in commands)
             {
                 tokens.Add((await bus.SendAsync(command)).UndoToken);
-                if (command is CompleteItem or DropItem && await containers.AfterChildResolvedAsync(command.ItemId) is { AutoCompleted: { } auto })
+                if (
+                    command is CompleteItem or DropItem
+                    && await containers.AfterChildResolvedAsync(command.ItemId)
+                        is { AutoCompleted: { } auto }
+                )
                     tokens.Add(auto.UndoToken);
             }
         }

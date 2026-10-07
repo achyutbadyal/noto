@@ -10,12 +10,15 @@ public sealed class RateGate(TimeProvider time)
     public bool TryAcquire(string key, int limit, TimeSpan window)
     {
         var current = time.GetUtcNow().Ticks / window.Ticks;
-        var entry = _windows.AddOrUpdate(key,
+        var entry = _windows.AddOrUpdate(
+            key,
             _ => (current, 1),
-            (_, e) => e.Window == current ? (current, e.Count + 1) : (current, 1));
+            (_, e) => e.Window == current ? (current, e.Count + 1) : (current, 1)
+        );
 
         if (_windows.Count > 10_000) // opportunistic cleanup of stale windows
-            foreach (var kv in _windows.Where(kv => kv.Value.Window < current)) _windows.TryRemove(kv.Key, out _);
+            foreach (var kv in _windows.Where(kv => kv.Value.Window < current))
+                _windows.TryRemove(kv.Key, out _);
         return entry.Count <= limit;
     }
 }

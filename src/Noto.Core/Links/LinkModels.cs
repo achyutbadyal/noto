@@ -4,14 +4,53 @@ using System.Text.Json.Serialization;
 namespace Noto.Core.Links;
 
 // Normalized across providers so live-link rules are written once.
-public enum LinkState { Unknown, Open, InProgress, InReview, Blocked, Done, Closed }
-public enum PreviewStatus { Loading, Loaded, Stale, Error, AuthRequired, Unavailable }
-public enum AuthMethod { OAuth2, PersonalToken, ApiKey, BasicAuth }
-public enum ConnectionStatus { Active, Expired, RefreshFailed, Revoked }
+public enum LinkState
+{
+    Unknown,
+    Open,
+    InProgress,
+    InReview,
+    Blocked,
+    Done,
+    Closed,
+}
+
+public enum PreviewStatus
+{
+    Loading,
+    Loaded,
+    Stale,
+    Error,
+    AuthRequired,
+    Unavailable,
+}
+
+public enum AuthMethod
+{
+    OAuth2,
+    PersonalToken,
+    ApiKey,
+    BasicAuth,
+}
+
+public enum ConnectionStatus
+{
+    Active,
+    Expired,
+    RefreshFailed,
+    Revoked,
+}
 
 public sealed record ChipFact(string Text, string? Glyph = null);
 
-public sealed record TodoLink(Guid Id, Guid ItemId, string Url, int Position, DateTimeOffset CreatedAt, string Source);
+public sealed record TodoLink(
+    Guid Id,
+    Guid ItemId,
+    string Url,
+    int Position,
+    DateTimeOffset CreatedAt,
+    string Source
+);
 
 // Local-only cache row (docs/04 §6). Never synced: it holds private third-party content.
 public sealed class LinkPreview

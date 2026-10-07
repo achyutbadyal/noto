@@ -51,9 +51,6 @@ mise run lint:fix          # apply those fixes
 mise run ci                # fmt:check + lint + build + test
 ```
 
-> The codebase has never been formatted, so the first `mise run fmt` produces a large diff (roughly every
-> `.cs` file). Run it as its own commit.
-
 ## Run the desktop app
 
 ```sh

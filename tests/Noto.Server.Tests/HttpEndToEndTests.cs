@@ -13,6 +13,7 @@ namespace Noto.Server.Tests;
 public sealed class HttpEndToEndTests : IDisposable
 {
     readonly ServerFactory _f = new();
+
     public void Dispose() => _f.Dispose();
 
     sealed class Clock(Func<DateTimeOffset> now) : IClock
@@ -28,15 +29,26 @@ public sealed class HttpEndToEndTests : IDisposable
         public required CommandBus Bus;
         public required SyncClient Client;
         public required WorkspaceSyncService Workspaces;
+
         public void Dispose() => Db.Dispose();
     }
 
     Device NewDevice(HttpClient http, string email, Guid id)
     {
-        string? token = null, refresh = null;
+        string? token = null,
+            refresh = null;
         async Task LoginAsync(CancellationToken ct)
         {
-            var r = await http.PostAsJsonAsync("/v1/auth/login", new { email, password = "correct horse battery", device = ServerFactory.Device(id) }, ct);
+            var r = await http.PostAsJsonAsync(
+                "/v1/auth/login",
+                new
+                {
+                    email,
+                    password = "correct horse battery",
+                    device = ServerFactory.Device(id),
+                },
+                ct
+            );
             var json = await r.Content.ReadFromJsonAsync<JsonElement>(ct);
             token = json.GetProperty("access_token").GetString();
             refresh = json.GetProperty("refresh_token").GetString();
@@ -45,22 +57,37 @@ public sealed class HttpEndToEndTests : IDisposable
         var clock = new Clock(() => _f.Time.GetUtcNow());
         var hlc = new HybridClock(() => clock.UtcNow.ToUnixTimeMilliseconds(), id);
         var db = SqliteUnitOfWork.InMemory(hlc);
-        var transport = new HttpSyncTransport(http,
-            async ct => { if (token is null) await LoginAsync(ct); return token; },
+        var transport = new HttpSyncTransport(
+            http,
             async ct =>
             {
-                var r = await http.PostAsJsonAsync("/v1/auth/refresh", new { refresh_token = refresh }, ct);
-                if (!r.IsSuccessStatusCode) return false;
+                if (token is null)
+                    await LoginAsync(ct);
+                return token;
+            },
+            async ct =>
+            {
+                var r = await http.PostAsJsonAsync(
+                    "/v1/auth/refresh",
+                    new { refresh_token = refresh },
+                    ct
+                );
+                if (!r.IsSuccessStatusCode)
+                    return false;
                 var json = await r.Content.ReadFromJsonAsync<JsonElement>(ct);
                 token = json.GetProperty("access_token").GetString();
                 refresh = json.GetProperty("refresh_token").GetString();
                 return true;
-            });
+            }
+        );
         var merger = new Merger(EntityCodecs.Default, hlc, _f.Time);
         var workspaces = new WorkspaceSyncService(db, transport, merger, id);
         return new Device
         {
-            Id = id, Db = db, Bus = new CommandBus(db, clock, id, hlc), Workspaces = workspaces,
+            Id = id,
+            Db = db,
+            Bus = new CommandBus(db, clock, id, hlc),
+            Workspaces = workspaces,
             Client = new SyncClient(db, transport, merger, workspaces, hlc, id),
         };
     }
@@ -73,7 +100,14 @@ public sealed class HttpEndToEndTests : IDisposable
         using var a = NewDevice(http, "e2e@example.com", first.DeviceId);
         using var b = NewDevice(http, "e2e@example.com", Guid.NewGuid());
 
-        var ws = new Workspace { Id = Guid.NewGuid(), Name = "Work", TimeZone = "UTC", TzFollowsDevice = false, CreatedAt = _f.Time.GetUtcNow() };
+        var ws = new Workspace
+        {
+            Id = Guid.NewGuid(),
+            Name = "Work",
+            TimeZone = "UTC",
+            TzFollowsDevice = false,
+            CreatedAt = _f.Time.GetUtcNow(),
+        };
         await a.Bus.SaveWorkspaceAsync(ws);
         var item = Guid.NewGuid();
         await a.Bus.SendAsync(new CreateItem(item, ws.Id, "Over HTTP", new DateOnly(2026, 10, 7)));
@@ -89,7 +123,8 @@ public sealed class HttpEndToEndTests : IDisposable
         await a.Client.SyncAsync();
 
         (await a.Db.RunAsync(s => s.Items.GetAsync(item)))!.Status.ShouldBe(ItemStatus.Done);
-        (await a.Db.RunAsync(s => s.Events.ListForItemAsync(item))).Select(e => e.Type)
+        (await a.Db.RunAsync(s => s.Events.ListForItemAsync(item)))
+            .Select(e => e.Type)
             .ShouldBe([ItemEventType.Created, ItemEventType.Completed]);
     }
 
@@ -100,12 +135,21 @@ public sealed class HttpEndToEndTests : IDisposable
         var http = _f.CreateClient();
         var laptopId = Guid.NewGuid();
         using var laptop = NewDevice(http, "revoke@example.com", laptopId);
-        var ws = new Workspace { Id = Guid.NewGuid(), Name = "W", TimeZone = "UTC", TzFollowsDevice = false, CreatedAt = _f.Time.GetUtcNow() };
+        var ws = new Workspace
+        {
+            Id = Guid.NewGuid(),
+            Name = "W",
+            TimeZone = "UTC",
+            TzFollowsDevice = false,
+            CreatedAt = _f.Time.GetUtcNow(),
+        };
         await laptop.Bus.SaveWorkspaceAsync(ws);
         await laptop.Workspaces.EnableAsync(ws.Id);
         await laptop.Client.SyncAsync();
 
-        (await owner.Client.DeleteAsync($"/v1/devices/{laptopId}")).IsSuccessStatusCode.ShouldBeTrue();
+        (
+            await owner.Client.DeleteAsync($"/v1/devices/{laptopId}")
+        ).IsSuccessStatusCode.ShouldBeTrue();
         await laptop.Bus.SendAsync(new CreateItem(Guid.NewGuid(), ws.Id, "after revoke"));
 
         await Should.ThrowAsync<SyncTransportException>(() => laptop.Client.SyncAsync());

@@ -13,12 +13,18 @@ public class TodayQueryTests
         var i = Make.Item(_ws.Id);
         i.PlannedFor = planned;
         i.Status = status;
-        if (status == ItemStatus.Waiting) i.WaitingOn = "bob";
+        if (status == ItemStatus.Waiting)
+            i.WaitingOn = "bob";
         return i;
     }
 
     TodayView Build(params TodoItem[] items) =>
-        TodayQuery.Build(items, _ws, Today, i => new ItemMetrics(0, i.PlannedFor is { } p ? Today.DayNumber - p.DayNumber : 0, 0));
+        TodayQuery.Build(
+            items,
+            _ws,
+            Today,
+            i => new ItemMetrics(0, i.PlannedFor is { } p ? Today.DayNumber - p.DayNumber : 0, 0)
+        );
 
     [Fact]
     public void Past_planned_items_appear_and_need_a_decision()
@@ -31,15 +37,21 @@ public class TodayQueryTests
     [Fact]
     public void Someday_containers_and_unplanned_items_are_excluded()
     {
-        var someday = Item(null); someday.IsSomeday = true;
-        var container = Item(null); container.IsContainer = true;
+        var someday = Item(null);
+        someday.IsSomeday = true;
+        var container = Item(null);
+        container.IsContainer = true;
         Build(someday, container, Item(null)).Planned.ShouldBeEmpty();
     }
 
     [Fact]
     public void Waiting_is_separate_and_future_planned_waiting_stays_hidden()
     {
-        var view = Build(Item(Today, ItemStatus.Waiting), Item(null, ItemStatus.Waiting), Item(Today.AddDays(3), ItemStatus.Waiting));
+        var view = Build(
+            Item(Today, ItemStatus.Waiting),
+            Item(null, ItemStatus.Waiting),
+            Item(Today.AddDays(3), ItemStatus.Waiting)
+        );
         view.Waiting.Count.ShouldBe(2);
         view.Planned.ShouldBeEmpty();
     }
@@ -48,9 +60,11 @@ public class TodayQueryTests
     public void Done_today_uses_the_credited_day()
     {
         var yesterday = Item(Today.AddDays(-1), ItemStatus.Done);
-        yesterday.CompletedOn = Today.AddDays(-1); yesterday.CompletedAt = DateTimeOffset.UtcNow;
+        yesterday.CompletedOn = Today.AddDays(-1);
+        yesterday.CompletedAt = DateTimeOffset.UtcNow;
         var todays = Item(Today, ItemStatus.Done);
-        todays.CompletedOn = Today; todays.CompletedAt = DateTimeOffset.UtcNow;
+        todays.CompletedOn = Today;
+        todays.CompletedAt = DateTimeOffset.UtcNow;
 
         Build(yesterday, todays).DoneToday.ShouldHaveSingleItem().Id.ShouldBe(todays.Id);
     }
@@ -74,7 +88,8 @@ public class TodayQueryTests
         var view = Build(items);
 
         view.Pinned.Count.ShouldBe(3);
-        view.Pinned.Select(i => i.PlannedFor).ShouldBe([Today.AddDays(-4), Today.AddDays(-3), Today.AddDays(-2)]);
+        view.Pinned.Select(i => i.PlannedFor)
+            .ShouldBe([Today.AddDays(-4), Today.AddDays(-3), Today.AddDays(-2)]);
         view.Planned.Count.ShouldBe(2);
     }
 }

@@ -5,11 +5,13 @@ namespace Noto.Core.Tests;
 public class FocusHoursTests
 {
     static readonly TimeZoneInfo Utc = TimeZoneInfo.Utc;
+
     static DateTimeOffset At(string iso) => DateTimeOffset.Parse(iso + "Z");
+
     readonly FocusHours _work = FocusHours.Weekdays(new TimeOnly(9, 0), new TimeOnly(18, 0));
 
     [Theory]
-    [InlineData("2026-10-07T09:00:00", true)]  // Wed
+    [InlineData("2026-10-07T09:00:00", true)] // Wed
     [InlineData("2026-10-07T17:59:00", true)]
     [InlineData("2026-10-07T18:00:00", false)]
     [InlineData("2026-10-07T08:59:00", false)]

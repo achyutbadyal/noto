@@ -16,7 +16,8 @@ public sealed class ShellTests : IDisposable
 
     public void Dispose() => _app.Dispose();
 
-    Task<bool> Press(string spec, bool textFocused = false) => _shell.HandleKeyAsync(KeyChord.Of(spec), textFocused);
+    Task<bool> Press(string spec, bool textFocused = false) =>
+        _shell.HandleKeyAsync(KeyChord.Of(spec), textFocused);
 
     async Task<Guid> AddPastAsync(string title, int daysAgo)
     {
@@ -59,7 +60,12 @@ public sealed class ShellTests : IDisposable
     [Fact]
     public async Task Cmd_number_switches_workspaces_and_badges_count_decisions_not_open_items()
     {
-        var other = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
+        var other = await _app.Services.Workspaces.CreateAsync(
+            "Home",
+            "home",
+            BuiltInPresets.Zen,
+            1
+        );
         await _app.AddAsync("planned today", AppFixture.Today);
         await AddPastAsync("carried", 2);
         await _shell.InitializeAsync();
@@ -82,7 +88,13 @@ public sealed class ShellTests : IDisposable
     public async Task Badge_goes_quiet_outside_focus_hours()
     {
         await AddPastAsync("carried", 2);
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => ws.FocusHoursJson = Noto.Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0)).ToJson());
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws =>
+                ws.FocusHoursJson = Noto
+                    .Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0))
+                    .ToJson()
+        );
 
         await _shell.InitializeAsync();
 
@@ -112,7 +124,10 @@ public sealed class ShellTests : IDisposable
     public async Task Gentle_pressure_does_not_auto_open_the_review()
     {
         await AddPastAsync("carried", 2);
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => BuiltInPresets.Zen.ApplyTo(ws));
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws => BuiltInPresets.Zen.ApplyTo(ws)
+        );
         await _shell.InitializeAsync();
         _shell.Page.ShouldBe(AppPage.Today);
     }
@@ -121,7 +136,10 @@ public sealed class ShellTests : IDisposable
     public async Task Relentless_pressure_cannot_skip_the_review_as_a_whole()
     {
         await AddPastAsync("carried", 2);
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id, ws => BuiltInPresets.Accountability.ApplyTo(ws));
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws => BuiltInPresets.Accountability.ApplyTo(ws)
+        );
         await _shell.InitializeAsync();
 
         await Press("Escape");
@@ -200,16 +218,19 @@ public sealed class ShellTests : IDisposable
     {
         await _shell.InitializeAsync();
 
-        await Press("g"); await Press("b");
+        await Press("g");
+        await Press("b");
         _shell.Page.ShouldBe(AppPage.Backlog);
         _shell.Content.ShouldBeOfType<BacklogViewModel>();
         _shell.HeaderTitle.ShouldBe("Backlog");
 
-        await Press("g"); await Press("t");
+        await Press("g");
+        await Press("t");
         _shell.Page.ShouldBe(AppPage.Today);
 
-        await Press("g"); await Press("q"); // unknown second key cancels the prefix
-        await Press("b");                   // so this is "break down", not "go to backlog"
+        await Press("g");
+        await Press("q"); // unknown second key cancels the prefix
+        await Press("b"); // so this is "break down", not "go to backlog"
         _shell.Page.ShouldBe(AppPage.Today);
     }
 
@@ -229,7 +250,10 @@ public sealed class ShellTests : IDisposable
         _shell.Page.ShouldBe(AppPage.DayLog);
         _shell.ViewDay.ShouldBe(AppFixture.Today.AddDays(-1));
         _shell.DayLog!.IsFuture.ShouldBeFalse();
-        _shell.DayLog.Sections.Single(s => s.Title == "Done").Entries.Single().Title.ShouldBe("Past item");
+        _shell
+            .DayLog.Sections.Single(s => s.Title == "Done")
+            .Entries.Single()
+            .Title.ShouldBe("Past item");
         _shell.DayLog.Summary.ShouldBe("1 of 2 done · 1 left over");
 
         await Press("]"); // back to today
@@ -293,9 +317,15 @@ public sealed class ShellTests : IDisposable
         await _shell.GoAsync(AppPage.Today);
 
         _shell.Inspector.Item!.Title.ShouldBe("Deploy");
-        (_shell.Inspector.AgeText, _shell.Inspector.CarryText, _shell.Inspector.DefersText).ShouldBe(("4d", "4", "0"));
+        (
+            _shell.Inspector.AgeText,
+            _shell.Inspector.CarryText,
+            _shell.Inspector.DefersText
+        ).ShouldBe(("4d", "4", "0"));
         _shell.Inspector.ShowStuckPrompt.ShouldBeTrue();
-        _shell.Inspector.StuckPromptText.ShouldBe("This has been carried 4 times. What's in the way?");
+        _shell.Inspector.StuckPromptText.ShouldBe(
+            "This has been carried 4 times. What's in the way?"
+        );
         _shell.Inspector.Life.Select(l => l.Text).ShouldBe(["created", "carried ×4"]);
     }
 
@@ -360,12 +390,16 @@ public sealed class ShellTests : IDisposable
         settings.SelectedPreset = BuiltInPresets.Accountability;
         await Task.Delay(150);
         var ws = (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!;
-        (ws.Layout, ws.SortOrderMode, ws.Pressure).ShouldBe((Layout.List, SortOrderMode.CarryDesc, Pressure.Relentless));
+        (ws.Layout, ws.SortOrderMode, ws.Pressure).ShouldBe(
+            (Layout.List, SortOrderMode.CarryDesc, Pressure.Relentless)
+        );
         ws.Preset.ShouldBe("accountability");
 
         settings.Pressure = Pressure.Gentle;
         await Task.Delay(150);
-        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Preset.ShouldBe("accountability (custom)");
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Preset.ShouldBe(
+            "accountability (custom)"
+        );
         settings.PresetLabel.ShouldBe("accountability (custom)");
     }
 
@@ -382,14 +416,18 @@ public sealed class ShellTests : IDisposable
 
         settings.DayBoundary = "04:00";
         await settings.ApplyDayBoundaryAsync();
-        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.DayBoundary.ShouldBe(new TimeOnly(4, 0));
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.DayBoundary.ShouldBe(
+            new TimeOnly(4, 0)
+        );
 
         settings.TimeZone = "Mars/Olympus";
         await settings.ApplyTimeZoneAsync();
         settings.Error.ShouldContain("Unknown time zone");
         settings.TimeZone = "Asia/Tokyo";
         await settings.ApplyTimeZoneAsync();
-        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.TimeZone.ShouldBe("Asia/Tokyo");
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.TimeZone.ShouldBe(
+            "Asia/Tokyo"
+        );
     }
 
     [Fact]
@@ -407,7 +445,12 @@ public sealed class ShellTests : IDisposable
     public void Appearance_persists_and_clamps()
     {
         var state = new InMemoryUiState();
-        var appearance = new AppearanceViewModel(state) { Theme = ThemeChoice.Dark, Density = Density.Compact, BodySize = 40 };
+        var appearance = new AppearanceViewModel(state)
+        {
+            Theme = ThemeChoice.Dark,
+            Density = Density.Compact,
+            BodySize = 40,
+        };
 
         state.Get("theme").ShouldBe("Dark");
         state.Get("body-size").ShouldBe("18");
@@ -518,39 +561,57 @@ sealed class AppFixtureNoWorkspace : IDisposable
         var clock = new Noto.Core.Tests.FakeClock(DateTimeOffset.Parse("2026-10-07T10:00:00Z"));
         var bus = new CommandBus(_db, clock, Guid.CreateVersion7());
         var platform = new Noto.Platform.Abstractions.PlatformServices(
-            new Noto.Platform.Abstractions.UnsupportedHotkey("test"), new Noto.Platform.Abstractions.InMemoryKeyring(),
-            new Noto.Platform.Abstractions.UnsupportedCaptureContext("test"), new Noto.Platform.Abstractions.UnsupportedNotifications("test"),
-            new Noto.Platform.Abstractions.StaticReduceMotion());
+            new Noto.Platform.Abstractions.UnsupportedHotkey("test"),
+            new Noto.Platform.Abstractions.InMemoryKeyring(),
+            new Noto.Platform.Abstractions.UnsupportedCaptureContext("test"),
+            new Noto.Platform.Abstractions.UnsupportedNotifications("test"),
+            new Noto.Platform.Abstractions.StaticReduceMotion()
+        );
         Services = new AppServices(_db, bus, clock, _db, platform);
     }
 
     public AppServices Services { get; }
+
     public void Dispose() => _db.Dispose();
 }
 
 public sealed class FocusHoursBadgeTests : IDisposable
 {
     readonly AppFixture _app = new();
+
     public void Dispose() => _app.Dispose();
 
     [Fact]
     public async Task Day_notes_persist_in_the_database()
     {
-        await _app.Services.DayNotes.SetAsync(_app.Workspace.Id, AppFixture.Today, "Call the plumber");
-        (await _app.Services.DayNotes.GetAsync(_app.Workspace.Id, AppFixture.Today)).ShouldBe("Call the plumber");
-        (await _app.Services.DayNotes.GetAsync(_app.Workspace.Id, AppFixture.Today.AddDays(1))).ShouldBeNull();
+        await _app.Services.DayNotes.SetAsync(
+            _app.Workspace.Id,
+            AppFixture.Today,
+            "Call the plumber"
+        );
+        (await _app.Services.DayNotes.GetAsync(_app.Workspace.Id, AppFixture.Today)).ShouldBe(
+            "Call the plumber"
+        );
+        (
+            await _app.Services.DayNotes.GetAsync(_app.Workspace.Id, AppFixture.Today.AddDays(1))
+        ).ShouldBeNull();
     }
 }
 
 public sealed class CaptureTests : IDisposable
 {
     readonly AppFixture _app = new();
+
     public void Dispose() => _app.Dispose();
 
-    sealed class FakeContext(Noto.Platform.Abstractions.CaptureContext? context) : Noto.Platform.Abstractions.ICaptureContext
+    sealed class FakeContext(Noto.Platform.Abstractions.CaptureContext? context)
+        : Noto.Platform.Abstractions.ICaptureContext
     {
-        public Noto.Platform.Abstractions.Capability Capability => Noto.Platform.Abstractions.Capability.Supported;
-        public Task<Noto.Platform.Abstractions.CaptureContext?> GetAsync() => Task.FromResult(context);
+        public Noto.Platform.Abstractions.Capability Capability =>
+            Noto.Platform.Abstractions.Capability.Supported;
+
+        public Task<Noto.Platform.Abstractions.CaptureContext?> GetAsync() =>
+            Task.FromResult(context);
     }
 
     CaptureViewModel Create(Noto.Platform.Abstractions.CaptureContext? context = null)
@@ -573,16 +634,28 @@ public sealed class CaptureTests : IDisposable
 
         closed.ShouldBeTrue();
         var item = (await _app.Db.RunAsync(s => s.Items.ListAsync(_app.Workspace.Id))).Single();
-        (item.Title, item.EstimateMinutes, item.PlannedFor).ShouldBe(("Call dentist", 10, new DateOnly(2026, 10, 8)));
+        (item.Title, item.EstimateMinutes, item.PlannedFor).ShouldBe(
+            ("Call dentist", 10, new DateOnly(2026, 10, 8))
+        );
     }
 
     [Fact]
     public async Task Defaults_to_a_workspace_inside_its_focus_hours()
     {
-        var evening = await _app.Services.Workspaces.CreateAsync("Home", "home", BuiltInPresets.Zen, 1);
+        var evening = await _app.Services.Workspaces.CreateAsync(
+            "Home",
+            "home",
+            BuiltInPresets.Zen,
+            1
+        );
         // Work only runs 18:00–22:00 on weekdays; the fake clock says Wednesday 10:00.
-        await _app.Services.Workspaces.UpdateAsync(_app.Workspace.Id,
-            ws => ws.FocusHoursJson = Noto.Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0)).ToJson());
+        await _app.Services.Workspaces.UpdateAsync(
+            _app.Workspace.Id,
+            ws =>
+                ws.FocusHoursJson = Noto
+                    .Core.Workspaces.FocusHours.Weekdays(new TimeOnly(18, 0), new TimeOnly(22, 0))
+                    .ToJson()
+        );
 
         var vm = Create();
         await vm.PrepareAsync();
@@ -608,7 +681,13 @@ public sealed class CaptureTests : IDisposable
     [Fact]
     public async Task Offers_to_attach_the_current_page_and_links_it_on_save()
     {
-        var vm = Create(new Noto.Platform.Abstractions.CaptureContext("Safari", "https://example.com/rfc-12", "RFC 12"));
+        var vm = Create(
+            new Noto.Platform.Abstractions.CaptureContext(
+                "Safari",
+                "https://example.com/rfc-12",
+                "RFC 12"
+            )
+        );
         await vm.PrepareAsync();
         vm.HasAttachOffer.ShouldBeTrue();
         vm.AttachText.ShouldContain("RFC 12");

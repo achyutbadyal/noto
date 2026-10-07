@@ -20,7 +20,9 @@ public class LogicalDateTests
     {
         // 20:00Z is already the next morning in Tokyo.
         var tokyo = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
-        LogicalDate.Of(Utc("2026-10-07T20:00:00"), tokyo, TimeOnly.MinValue).ShouldBe(new DateOnly(2026, 10, 8));
+        LogicalDate
+            .Of(Utc("2026-10-07T20:00:00"), tokyo, TimeOnly.MinValue)
+            .ShouldBe(new DateOnly(2026, 10, 8));
     }
 
     [Fact]
@@ -50,8 +52,12 @@ public class LogicalDateTests
     {
         var instant = Utc("2026-10-07T20:00:00");
 
-        LogicalDate.Of(instant, "America/Los_Angeles", TimeOnly.MinValue).ShouldBe(new DateOnly(2026, 10, 7));
-        LogicalDate.Of(instant, "Asia/Tokyo", TimeOnly.MinValue).ShouldBe(new DateOnly(2026, 10, 8));
+        LogicalDate
+            .Of(instant, "America/Los_Angeles", TimeOnly.MinValue)
+            .ShouldBe(new DateOnly(2026, 10, 7));
+        LogicalDate
+            .Of(instant, "Asia/Tokyo", TimeOnly.MinValue)
+            .ShouldBe(new DateOnly(2026, 10, 8));
     }
 
     [Fact]

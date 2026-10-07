@@ -30,9 +30,14 @@ public sealed class CredentialStore(IKeyring keyring)
             : null;
 
     public Task SaveAsync(Guid connectionId, Credential credential) =>
-        keyring.SetAsync(Service, connectionId.ToString(), JsonSerializer.Serialize(credential, AuthJson.Default.Credential));
+        keyring.SetAsync(
+            Service,
+            connectionId.ToString(),
+            JsonSerializer.Serialize(credential, AuthJson.Default.Credential)
+        );
 
-    public Task DeleteAsync(Guid connectionId) => keyring.DeleteAsync(Service, connectionId.ToString());
+    public Task DeleteAsync(Guid connectionId) =>
+        keyring.DeleteAsync(Service, connectionId.ToString());
 }
 
 public sealed class InMemoryKeyring : IKeyring
