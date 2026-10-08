@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Noto.App.Logic;
@@ -57,13 +58,12 @@ public partial class TodayView : UserControl
         _vm.Add.Dismiss(keepTitle: true);
     }
 
-    static bool IsWithin(Visual? node, Visual ancestor)
-    {
-        for (var current = node; current is not null; current = current.GetVisualParent())
-            if (ReferenceEquals(current, ancestor))
-                return true;
-        return false;
-    }
+    // Dropdown lists are hosted in an overlay, outside the visual tree of the control that opened them,
+    // but they stay in its logical tree. So a press on one of their items still counts as inside.
+    static bool IsWithin(Visual node, Visual ancestor) =>
+        ReferenceEquals(node, ancestor)
+        || node.GetVisualAncestors().Contains(ancestor)
+        || node.GetLogicalAncestors().Contains(ancestor);
 
     // Enter adds; Backspace at the end of a recognized token removes the whole token; Escape leaves the box.
     async void OnAddKeyDown(object? sender, KeyEventArgs e)
