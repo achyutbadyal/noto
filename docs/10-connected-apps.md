@@ -200,13 +200,13 @@ Title / notes changed ─► URL scanner ─► normalize ─► todo_link rows 
 
 **Native:** each connection's secret material (`access_token`, `refresh_token`, `expires_at`, or API key) is stored as one keyring item:
 
-| Platform | Store                                                                                                                    |
-| -------- | ------------------------------------------------------------------------------------------------------------------------ |
-| macOS    | Keychain (`kSecClassGenericPassword`, service `app.noto.connections`, account `<connection id>`)                         |
-| Windows  | Credential Manager (DPAPI-protected), target `app.noto.connections/<connection id>`                                      |
-| Linux    | Secret Service (libsecret). If no Secret Service is running, Noto refuses to store tokens and explains how to enable it. |
-| iOS      | Keychain, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`                                                             |
-| Android  | AndroidKeyStore-wrapped key encrypting an app-private file                                                               |
+| Platform | Store                                                                                                                                  |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| macOS    | Login Keychain via SecItem (`kSecClassGenericPassword`, service `app.noto.connections`, account `<connection id>`), not synchronizable |
+| Windows  | Credential Manager (DPAPI-protected), target `app.noto.connections/<connection id>`                                                    |
+| Linux    | Secret Service (libsecret). If no Secret Service is running, Noto refuses to store tokens and explains how to enable it.               |
+| iOS      | Keychain, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`                                                                           |
+| Android  | AndroidKeyStore-wrapped key encrypting an app-private file                                                                             |
 
 The keyring is the encryption. There's no separate `credentials.enc` file or Noto-managed key. Non-secret metadata lives in the local-only `app_connection` table ([04](04-domain-model.md#6-links)).
 

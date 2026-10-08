@@ -6,54 +6,10 @@ namespace Noto.Platform.MacOS;
 [SupportedOSPlatform("macos")]
 static class Native
 {
-    const string Security = "/System/Library/Frameworks/Security.framework/Security";
     const string Carbon = "/System/Library/Frameworks/Carbon.framework/Carbon";
     const string CoreFoundation =
         "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
     const string ObjC = "/usr/lib/libobjc.dylib";
-
-    public const int ErrSecItemNotFound = -25300;
-
-    [DllImport(Security)]
-    public static extern int SecKeychainAddGenericPassword(
-        IntPtr keychain,
-        uint serviceLen,
-        byte[] service,
-        uint accountLen,
-        byte[] account,
-        uint passwordLen,
-        byte[] password,
-        IntPtr itemRef
-    );
-
-    [DllImport(Security)]
-    public static extern int SecKeychainFindGenericPassword(
-        IntPtr keychain,
-        uint serviceLen,
-        byte[] service,
-        uint accountLen,
-        byte[] account,
-        out uint passwordLen,
-        out IntPtr password,
-        out IntPtr itemRef
-    );
-
-    [DllImport(Security)]
-    public static extern int SecKeychainItemModifyAttributesAndData(
-        IntPtr itemRef,
-        IntPtr attrList,
-        uint length,
-        byte[] data
-    );
-
-    [DllImport(Security)]
-    public static extern int SecKeychainItemDelete(IntPtr itemRef);
-
-    [DllImport(Security)]
-    public static extern int SecKeychainItemFreeContent(IntPtr attrList, IntPtr data);
-
-    [DllImport(CoreFoundation)]
-    public static extern void CFRelease(IntPtr cf);
 
     // Carbon hot keys
     [StructLayout(LayoutKind.Sequential)]
