@@ -1,4 +1,5 @@
 using Noto.Core.Interfaces;
+using Noto.Core.Links;
 using Noto.Core.Models;
 using Noto.Core.Sync;
 using Noto.Core.Time;
@@ -58,6 +59,7 @@ public sealed class CommandBus : ICommandBus
             await ValidateAsync(store, item);
 
             await WriteAsync(store, before, item, ws.SyncEnabled);
+            await ReindexLinksAsync(store, before, item);
             var evt = NewEvent(item, change.Type, change.Data, ctx);
             await AppendEventAsync(store, evt, ws.SyncEnabled);
             await InvalidateAsync(store, item, evt, ctx);
@@ -102,6 +104,19 @@ public sealed class CommandBus : ICommandBus
         return new CommandResult(result.Id, token);
     }
 
+    // Keeps todo_link in step with the text in the same transaction, so pasting or deleting a URL is never stale.
+    // Hand-added links are left alone (the repository only replaces links detected in text).
+    async Task ReindexLinksAsync(IStore store, TodoItem? before, TodoItem after)
+    {
+        if (before is not null && before.Title == after.Title && before.Notes == after.Notes)
+            return;
+        await store.Links.ReplaceTextLinksAsync(
+            after.Id,
+            LinkUrl.Scan(after.Title, after.Notes),
+            clock.UtcNow
+        );
+    }
+
     public async Task UndoAsync(Guid undoToken)
     {
         if (!_undo.Remove(undoToken, out var entry))
@@ -121,6 +136,7 @@ public sealed class CommandBus : ICommandBus
                 ? Tombstone(current, ctx)
                 : RevertFields(current, entry.Before, entry.After);
             await WriteAsync(store, current, restored, ws!.SyncEnabled);
+            await ReindexLinksAsync(store, current, restored);
             var evt = NewEvent(restored, entry.Change.UndoType, entry.Change.UndoData, ctx);
             await AppendEventAsync(store, evt, ws.SyncEnabled);
             await InvalidateAsync(store, restored, evt, ctx);

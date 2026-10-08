@@ -22,7 +22,8 @@ public sealed class AppServices
         ISearchIndex search,
         PlatformServices platform,
         IUiState? uiState = null,
-        IDayNotes? dayNotes = null
+        IDayNotes? dayNotes = null,
+        LinkPreviews? previews = null
     )
     {
         Uow = uow;
@@ -41,6 +42,7 @@ public sealed class AppServices
         Workspaces = new WorkspaceActions(uow, bus, clock);
         Focus = new FocusSession(bus, Workspaces, clock);
         Links = new LinkIndexer(uow, clock);
+        Previews = previews;
         Recurrence = new RecurrenceService(uow, clock);
         Export = new ExportService(uow, clock);
         Import = new ImportService(bus, uow, clock);
@@ -61,6 +63,9 @@ public sealed class AppServices
     public WorkspaceActions Workspaces { get; }
     public FocusSession Focus { get; }
     public LinkIndexer Links { get; }
+
+    // Null when no providers are wired (tests, offline builds): links then show as plain text only.
+    public LinkPreviews? Previews { get; }
     public RecurrenceService Recurrence { get; }
     public DayNoteService DayNoteService { get; }
     public ExportService Export { get; }

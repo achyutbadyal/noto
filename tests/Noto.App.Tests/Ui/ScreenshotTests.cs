@@ -129,6 +129,34 @@ public sealed class ScreenshotTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Item_with_linked_previews_renders_in_list_and_inspector()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        Dispatcher.UIThread.RunJobs();
+
+        var row = shell.TodayPage!.FlatRows.First();
+        row.Links =
+        [
+            new LinkLine(
+                "https://github.com/acme/app/pull/482",
+                "Add rich preview support (#482)",
+                "2 approvals · CI passing · ready"
+            ),
+            new LinkLine(
+                "https://acme.atlassian.net/browse/PROJ-88",
+                "Login fails on Safari",
+                "In Review"
+            ),
+        ];
+        shell.Inspector.Links = row.Links;
+        Dispatcher.UIThread.RunJobs();
+        await SnapAsync(window, "links-dark");
+    }
+
+    [AvaloniaFact]
     public async Task Settings_account_section_renders_for_a_configured_server()
     {
         await SeedAsync();

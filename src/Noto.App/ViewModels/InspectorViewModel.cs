@@ -38,6 +38,12 @@ public sealed partial class InspectorViewModel : ObservableObject
     public ObservableCollection<LifeLine> Life { get; } = [];
     public ObservableCollection<ItemRowViewModel> Subtasks { get; } = [];
 
+    // Links on the item shown, with the status of each one's preview.
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasLinks))]
+    IReadOnlyList<LinkLine> _links = [];
+
+    public bool HasLinks => Links.Count > 0;
+
     // Every attribute the domain supports, editable in place. Each change runs a real command, so it
     // lands in the activity log below and stays undoable (docs/07 §10.2).
     public IReadOnlyList<DurationOption> Estimates => FieldOptions.Durations;

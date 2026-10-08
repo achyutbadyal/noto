@@ -599,6 +599,59 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
             await Inspector.LoadAsync(list.FocusedRow?.Id, snap);
         else if (TodayPage?.Snapshot is { } todaySnap)
             await Inspector.LoadAsync(null, todaySnap);
+        await DecorateLinksAsync();
+    }
+
+    // Puts link summaries on the rows on screen and on the inspector's item. Previews that are not cached
+    // are fetched in the background and then shown; a failure only leaves the links as plain titles.
+    async Task DecorateLinksAsync()
+    {
+        if (_services.Previews is not { } previews)
+            return;
+        var rows = Content is ItemListViewModel list ? list.FlatRows : [];
+        var focused = Inspector.Item?.Id;
+        var ids = rows.Select(r => r.Id).Concat(focused is { } f ? [f] : []).Distinct().ToList();
+        try
+        {
+            await ApplyLinkSummariesAsync(previews, rows, focused);
+            var missing = await previews.MissingAsync(ids);
+            if (missing.Count > 0)
+                _ = FetchLinkPreviewsAsync(previews, missing);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // Enrichment is optional: navigation must not fail because a link could not be read.
+            Toast.Show($"Links unavailable: {e.Message}", canUndo: false);
+        }
+    }
+
+    async Task ApplyLinkSummariesAsync(
+        LinkPreviews previews,
+        IReadOnlyList<ItemRowViewModel> rows,
+        Guid? focused
+    )
+    {
+        var ids = rows.Select(r => r.Id).Concat(focused is { } f ? [f] : []).Distinct().ToList();
+        var summaries = await previews.ForItemsAsync(ids);
+        foreach (var row in rows)
+            row.Links = summaries.GetValueOrDefault(row.Id, []);
+        Inspector.Links = focused is { } id ? summaries.GetValueOrDefault(id, []) : [];
+    }
+
+    async Task FetchLinkPreviewsAsync(LinkPreviews previews, IReadOnlyList<string> urls)
+    {
+        try
+        {
+            await previews.FetchAsync(urls, CancellationToken.None);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            Toast.Show($"Couldn't fetch link previews: {e.Message}", canUndo: false);
+            return;
+        }
+        var rows = Content is ItemListViewModel list ? list.FlatRows : [];
+        var focused = Inspector.Item?.Id;
+        await ApplyLinkSummariesAsync(previews, rows, focused);
     }
 
     void UpdateHeader() =>

@@ -66,6 +66,13 @@
           IsVisible="{Binding !IsEditing}"
           TextDecorations="{Binding IsDone, Converter={x:Static v:RowConverters.Strike}}"
         />
+        <TextBlock
+          Text="{Binding LinkText}"
+          IsVisible="{Binding HasLinks}"
+          Classes="hint"
+          FontSize="12"
+          TextTrimming="CharacterEllipsis"
+        />
         <TextBox
           x:Name="EditBox"
           Text="{Binding Owner.EditText, Mode=TwoWay}"

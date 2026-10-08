@@ -30,6 +30,20 @@ public sealed partial class ItemRowViewModel : ObservableObject
     public bool HasWorkspaceAccent => WorkspaceAccent is not null;
     public string? ProgressText { get; init; }
 
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(LinkText), nameof(HasLinks))]
+    IReadOnlyList<LinkLine> _links = [];
+
+    public bool HasLinks => Links.Count > 0;
+
+    // The first link's title, and how many more there are.
+    public string LinkText =>
+        Links.Count switch
+        {
+            0 => "",
+            1 => Links[0].Title,
+            _ => $"{Links[0].Title} +{Links.Count - 1} more",
+        };
+
     public Guid Id => Item.Id;
     public string Title => Item.Title;
     public bool HasCarry => CarryText.Length > 0;

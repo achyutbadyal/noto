@@ -3,6 +3,7 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:Noto.App.ViewModels"
   xmlns:l="using:Noto.App.Logic"
+  xmlns:s="using:Noto.App.Services"
   xmlns:v="using:Noto.App.Views"
   x:Class="Noto.App.Views.InspectorView"
   x:DataType="vm:InspectorViewModel"
@@ -242,6 +243,20 @@
           </StackPanel>
         </Border>
         <v:PromptBar DataContext="{Binding Decisions}" />
+
+        <StackPanel Spacing="4" IsVisible="{Binding HasLinks}">
+          <TextBlock Text="LINKS" Classes="section" />
+          <ItemsControl ItemsSource="{Binding Links}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="s:LinkLine">
+                <StackPanel Margin="0,2" Spacing="1">
+                  <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
+                  <TextBlock Text="{Binding Status}" Classes="hint" TextWrapping="Wrap" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
 
         <StackPanel Spacing="4">
           <TextBlock Text="NOTES" Classes="section" />
