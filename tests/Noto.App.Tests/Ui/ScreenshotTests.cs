@@ -172,8 +172,31 @@ public sealed class ScreenshotTests : IDisposable
             ),
         ];
         shell.Inspector.Links = row.Links;
+        // Tall enough that the whole link list is in view without scrolling the inspector.
+        window.Height = 1100;
         Dispatcher.UIThread.RunJobs();
         await SnapAsync(window, "links-dark");
+    }
+
+    [AvaloniaFact]
+    public async Task New_task_panel_with_a_dropdown_open_renders()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        Dispatcher.UIThread.RunJobs();
+
+        var today = shell.TodayPage!;
+        today.Add.OpenDetailedCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        var priority = window
+            .GetVisualDescendants()
+            .OfType<ComboBox>()
+            .First(c => ReferenceEquals(c.ItemsSource, today.Add.Priorities));
+        priority.IsDropDownOpen = true;
+        Dispatcher.UIThread.RunJobs();
+        await SnapAsync(window, "new-task-panel-dropdown-dark");
     }
 
     [AvaloniaFact]
