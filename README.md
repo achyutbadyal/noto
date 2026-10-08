@@ -4,6 +4,48 @@ A cross-platform, accountability-driven todo app where the day is the unit of wo
 
 Design docs are in [`docs/`](docs/); start with [`01-vision.md`](docs/01-vision.md). Current status is in [`docs/11-whats-done.md`](docs/11-whats-done.md).
 
+## Screenshots
+
+|                    Today View (Dark)                    |                    Today View (Light)                     |
+| :-----------------------------------------------------: | :-------------------------------------------------------: |
+| ![Today View (Dark)](assets/screenshots/today-dark.png) | ![Today View (Light)](assets/screenshots/today-light.png) |
+
+<details>
+<summary><strong>More Views & Features (Morning Review, Kanban, Timeline, Command Bar, Quick Capture)</strong></summary>
+<br/>
+
+### Morning Review & Decision Prompts
+
+When tasks roll over, morning review prompts you to make an active decision (do today, defer, break down, or drop):
+
+|                    Morning Review Card                     |                        Review Decision Prompt                        |
+| :--------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![Morning Review Card](assets/screenshots/review-dark.png) | ![Review Decision Prompt](assets/screenshots/review-prompt-dark.png) |
+
+### Workspace Layouts & Presets
+
+Each workspace can choose its own view mode (Kanban board, deadline timeline, or daily habit tracker):
+
+|                    Kanban Board                    |                     Timeline / Deadlines                      |                    Habits                     |
+| :------------------------------------------------: | :-----------------------------------------------------------: | :-------------------------------------------: |
+| ![Kanban Board](assets/screenshots/board-dark.png) | ![Timeline / Deadlines](assets/screenshots/timeline-dark.png) | ![Habits](assets/screenshots/habits-dark.png) |
+
+### Quick Capture & Command Palette
+
+Quickly create tasks with estimates or open the command palette (`⌘K`) to jump anywhere:
+
+|                   Command Bar (`⌘K`)                   |                         Detailed Quick Capture                          |
+| :----------------------------------------------------: | :---------------------------------------------------------------------: |
+| ![Command Bar](assets/screenshots/commandbar-dark.png) | ![Detailed Quick Capture](assets/screenshots/capture-detailed-dark.png) |
+
+### Guide & Insights
+
+|                In-App Documentation                |                Insights & Velocity                |
+| :------------------------------------------------: | :-----------------------------------------------: |
+| ![In-App Guide](assets/screenshots/guide-dark.png) | ![Insights](assets/screenshots/insights-dark.png) |
+
+</details>
+
 ## Prerequisites
 
 Everything is managed by [mise](https://mise.jdx.dev). You don't install .NET yourself.
@@ -25,6 +67,7 @@ Docker is only needed for the server container. Targets: the desktop app is deve
 mise run build             # dotnet build Noto.sln
 mise run test              # dotnet test Noto.sln (about 850 tests, ~30 s)
 mise run test:release      # -c Release; the timing budgets are written for Release
+mise run screenshots       # render headless UI screenshots to dist/ui-preview
 mise run desktop           # run the desktop app
 ```
 

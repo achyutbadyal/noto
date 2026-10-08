@@ -61,8 +61,7 @@ run = "dotnet test tests/${PROJECT:?set PROJECT, e.g. PROJECT=Noto.Core.Tests} $
 
 [tasks.screenshots]
 description = "Render every screen to dist/ui-preview (light + dark, layouts, overlays, narrow window)"
-env = { NOTO_SCREENSHOTS = "dist/ui-preview" }
-run = "dotnet test tests/Noto.App.Tests"
+run = "NOTO_SCREENSHOTS=\"$PWD/dist/ui-preview\" dotnet test tests/Noto.App.Tests"
 
 # ---------------------------------------------------------------------------
 # Format / lint
