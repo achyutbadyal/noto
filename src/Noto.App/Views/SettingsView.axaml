@@ -5,11 +5,186 @@
   xmlns:m="using:Noto.Core.Models"
   xmlns:p="using:Noto.Core.Presets"
   xmlns:v="using:Noto.App.Views"
+  xmlns:svc="using:Noto.App.Services"
   x:Class="Noto.App.Views.SettingsView"
   x:DataType="vm:SettingsViewModel"
 >
   <ScrollViewer>
     <StackPanel MaxWidth="640" Margin="24" Spacing="14" HorizontalAlignment="Stretch">
+      <StackPanel IsVisible="{Binding HasAccount}" Margin="0,0,0,28" Spacing="28">
+        <StackPanel DataContext="{Binding Account}" x:DataType="vm:AccountViewModel" Spacing="12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Account and sync" Classes="section" />
+            <TextBlock
+              Text="Connect this device to a Noto sync server. Syncing workspace data isn't turned on yet."
+              Classes="hint"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+
+          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Server" VerticalAlignment="Center" Classes="secondary" />
+            <TextBox
+              Grid.Column="1"
+              Text="{Binding ServerText, Mode=TwoWay}"
+              Watermark="https://noto.example.com"
+              AutomationProperties.Name="Server address"
+            />
+            <Button Grid.Column="2" Content="Save" Command="{Binding SaveServerCommand}" />
+          </Grid>
+
+          <Grid IsVisible="{Binding IsSignedIn}" ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Signed in" VerticalAlignment="Center" Classes="secondary" />
+            <TextBlock Grid.Column="1" Text="{Binding SignedInText}" VerticalAlignment="Center" />
+            <Button Grid.Column="2" Content="Sign out" Command="{Binding SignOutCommand}" />
+          </Grid>
+
+          <Grid
+            IsVisible="{Binding !IsSignedIn}"
+            ColumnDefinitions="140,*"
+            RowDefinitions="Auto,Auto,Auto,Auto"
+            ColumnSpacing="8"
+            RowSpacing="8"
+          >
+            <TextBlock Text="Email" VerticalAlignment="Center" Classes="secondary" />
+            <TextBox
+              Grid.Column="1"
+              Text="{Binding Email, Mode=TwoWay}"
+              AutomationProperties.Name="Email"
+            />
+            <TextBlock
+              Grid.Row="1"
+              Text="Password"
+              VerticalAlignment="Center"
+              Classes="secondary"
+            />
+            <TextBox
+              Grid.Row="1"
+              Grid.Column="1"
+              Text="{Binding Password, Mode=TwoWay}"
+              PasswordChar="•"
+              AutomationProperties.Name="Password"
+            />
+            <TextBlock
+              Grid.Row="2"
+              Text="Invite code"
+              VerticalAlignment="Center"
+              Classes="secondary"
+            />
+            <TextBox
+              Grid.Row="2"
+              Grid.Column="1"
+              Text="{Binding InviteCode, Mode=TwoWay}"
+              Watermark="Only if the server asks for one"
+              AutomationProperties.Name="Invite code"
+            />
+            <StackPanel
+              Grid.Row="3"
+              Grid.Column="1"
+              Orientation="Horizontal"
+              Spacing="8"
+              Margin="0,4,0,0"
+            >
+              <Button Classes="accent" Content="Sign in" Command="{Binding SignInCommand}" />
+              <Button Content="Create account" Command="{Binding SignUpCommand}" />
+            </StackPanel>
+          </Grid>
+
+          <TextBlock
+            Text="{Binding AccountStatus}"
+            IsVisible="{Binding HasAccountStatus}"
+            Classes="hint"
+            Classes.error="{Binding AccountStatusIsError}"
+            TextWrapping="Wrap"
+          />
+        </StackPanel>
+
+        <StackPanel DataContext="{Binding Account}" x:DataType="vm:AccountViewModel" Spacing="12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="Connected apps" Classes="section" />
+            <TextBlock
+              Text="Paste a personal access token. Noto checks it with the provider, then keeps it in your keychain."
+              Classes="hint"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+
+          <TextBlock
+            Text="No apps connected yet."
+            IsVisible="{Binding !HasConnections}"
+            Classes="hint"
+          />
+          <ItemsControl ItemsSource="{Binding Connections}" IsVisible="{Binding HasConnections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ConnectionRow">
+                <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8" Margin="0,3">
+                  <TextBlock Text="{Binding Provider}" VerticalAlignment="Center" />
+                  <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding Label}"
+                    VerticalAlignment="Center"
+                    Classes="hint"
+                  />
+                  <Button
+                    Grid.Column="2"
+                    Content="Disconnect"
+                    Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).DisconnectCommand}"
+                    CommandParameter="{Binding}"
+                  />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Grid
+            ColumnDefinitions="140,*,Auto"
+            RowDefinitions="Auto,Auto,Auto"
+            ColumnSpacing="8"
+            RowSpacing="8"
+          >
+            <TextBlock Text="Provider" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox
+              Grid.Column="1"
+              ItemsSource="{Binding TokenProviders}"
+              SelectedItem="{Binding SelectedTokenProvider, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Provider"
+            >
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="svc:TokenProvider">
+                  <TextBlock Text="{Binding Name}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Row="1" Text="Token" VerticalAlignment="Center" Classes="secondary" />
+            <TextBox
+              Grid.Row="1"
+              Grid.Column="1"
+              Text="{Binding Token, Mode=TwoWay}"
+              PasswordChar="•"
+              Watermark="Paste a personal access token"
+              AutomationProperties.Name="Access token"
+            />
+            <Button
+              Grid.Row="1"
+              Grid.Column="2"
+              Classes="accent"
+              Content="Connect"
+              Command="{Binding ConnectCommand}"
+            />
+            <TextBlock
+              Grid.Row="2"
+              Grid.Column="1"
+              Text="{Binding ConnectionStatus}"
+              IsVisible="{Binding HasConnectionStatus}"
+              Classes="hint"
+              Classes.error="{Binding ConnectionStatusIsError}"
+              TextWrapping="Wrap"
+            />
+          </Grid>
+        </StackPanel>
+      </StackPanel>
+
       <TextBlock Text="Workspace" Classes="section" />
       <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
         <TextBlock Text="Name" VerticalAlignment="Center" Classes="secondary" />

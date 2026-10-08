@@ -9,6 +9,8 @@
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <ProjectReference Include="..\Noto.Core\Noto.Core.csproj" />
     <ProjectReference Include="..\Noto.Platform\Noto.Platform.csproj" />
+    <ProjectReference Include="..\Noto.Providers\Noto.Providers.csproj" />
+    <ProjectReference Include="..\Noto.Sync\Noto.Sync.csproj" />
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />

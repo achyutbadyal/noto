@@ -29,11 +29,17 @@ public sealed partial class SettingsViewModel : ObservableObject
     readonly Guid _workspaceId;
     bool _loading;
 
-    public SettingsViewModel(AppServices services, Guid workspaceId, AppearanceViewModel appearance)
+    public SettingsViewModel(
+        AppServices services,
+        Guid workspaceId,
+        AppearanceViewModel appearance,
+        AccountViewModel? account = null
+    )
     {
         _services = services;
         _workspaceId = workspaceId;
         Appearance = appearance;
+        Account = account;
         Capabilities =
         [
             new(
@@ -60,6 +66,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     public AppearanceViewModel Appearance { get; }
+
+    // Null when the host has no sync server or account service (tests, offline-only builds).
+    public AccountViewModel? Account { get; }
+    public bool HasAccount => Account is not null;
     public IReadOnlyList<Noto.Core.Import.ImportFormat> ImportFormats { get; } =
         Enum.GetValues<Noto.Core.Import.ImportFormat>();
 

@@ -1,10 +1,17 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using Noto.App.Services;
 using Noto.App.ViewModels;
 using Noto.Core.Commands;
+using Noto.Core.Links;
 using Noto.Core.Time;
 using Noto.Data;
 using Noto.Platform;
 using Noto.Platform.Abstractions;
+using Noto.Providers;
+using Noto.Providers.Auth;
+using Noto.Providers.Providers;
+using Noto.Providers.Transport;
+using Noto.Sync;
 
 namespace Noto.Desktop;
 
@@ -20,23 +27,72 @@ sealed class Composition : IDisposable
 
         _db = new SqliteUnitOfWork($"Data Source={Path.Combine(dir, "noto.db")}");
         var clock = new SystemClock();
-        var bus = new CommandBus(_db, clock, DeviceId(dir));
+        var deviceId = DeviceId(dir);
+        var bus = new CommandBus(_db, clock, deviceId);
 
         Platform = PlatformFactory.Create();
-        Services = new AppServices(
-            _db,
-            bus,
-            clock,
-            _db,
-            Platform,
-            new FileUiState(Path.Combine(dir, "ui-state.json"))
-        );
+        var ui = new FileUiState(Path.Combine(dir, "ui-state.json"));
+        Services = new AppServices(_db, bus, clock, _db, Platform, ui);
+        Account = BuildAccount(deviceId, ui);
     }
 
     public AppServices Services { get; }
     public PlatformServices Platform { get; }
+    public AccountService Account { get; }
 
-    public ShellViewModel CreateShell() => new(Services);
+    public ShellViewModel CreateShell()
+    {
+        // Restores a saved session in the background; the settings page shows the result.
+        _ = Account.RestoreAsync(CancellationToken.None);
+        return new ShellViewModel(Services, Account);
+    }
+
+    AccountService BuildAccount(Guid deviceId, FileUiState ui)
+    {
+        var http = new HttpClient();
+        var keyring = new KeyringAdapter(Platform.Keyring);
+        var registry = new ProviderRegistry([
+            new FigmaProvider(),
+            new GitHubProvider(),
+            new GitLabProvider(),
+            new JiraProvider(),
+            new ConfluenceProvider(),
+            new LinearProvider(),
+            new NotionProvider(),
+            new SlackProvider(),
+            new OpenGraphProvider(),
+        ]);
+        var connections = new ConnectionService(
+            _db,
+            new CredentialStore(keyring),
+            registry,
+            new DirectTransportFactory(http, NullLogger<DirectTransport>.Instance),
+            new SystemClock(),
+            http,
+            new Dictionary<string, OAuthClient>()
+        );
+        var tokenProviders = registry
+            .Providers.Where(p => p.SupportedAuthMethods.Contains(AuthMethod.PersonalToken))
+            .Select(p => new TokenProvider(p.ProviderId, p.DisplayName))
+            .ToList();
+        var device = new ServerDevice(
+            deviceId,
+            Environment.MachineName,
+            OperatingSystem.IsMacOS() ? "macos"
+                : OperatingSystem.IsWindows() ? "windows"
+                : "linux"
+        );
+        return new AccountService(
+            new ServerAuthClient(http),
+            Platform.Keyring,
+            ui,
+            device,
+            _db,
+            connections,
+            tokenProviders,
+            TimeProvider.System
+        );
+    }
 
     public static string DefaultDataDirectory()
     {

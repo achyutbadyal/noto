@@ -6,11 +6,14 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Noto.App.Logic;
+using Noto.App.Services;
 using Noto.App.ViewModels;
 using Noto.App.Views;
 using Noto.Core.Commands;
 using Noto.Core.Models;
 using Noto.Core.Presets;
+using Noto.Platform.Abstractions;
+using Noto.Sync;
 
 namespace Noto.App.Tests.Ui;
 
@@ -49,9 +52,12 @@ public sealed class ScreenshotTests : IDisposable
         await _app.Services.Workspaces.CreateAsync("Personal", "home", BuiltInPresets.Zen, 1);
     }
 
-    (MainWindow Window, ShellViewModel Shell) Open(ThemeVariant? variant = null)
+    (MainWindow Window, ShellViewModel Shell) Open(
+        ThemeVariant? variant = null,
+        AccountService? account = null
+    )
     {
-        var shell = new ShellViewModel(_app.Services);
+        var shell = new ShellViewModel(_app.Services, account);
         var window = new MainWindow
         {
             DataContext = shell,
@@ -119,6 +125,60 @@ public sealed class ScreenshotTests : IDisposable
         await shell.HandleKeyAsync(KeyChord.Of("d"));
         Dispatcher.UIThread.RunJobs();
         await SnapAsync(window, "review-prompt-dark");
+    }
+
+    [AvaloniaFact]
+    public async Task Settings_account_section_renders_for_a_configured_server()
+    {
+        await SeedAsync();
+        _app.Services.UiState.Set("server.url", "https://noto.example.com/");
+        var account = new AccountService(
+            new UnusedServerAuth(),
+            new InMemoryKeyring(),
+            _app.Services.UiState,
+            new ServerDevice(Guid.NewGuid(), "Screenshot", "macos"),
+            _app.Services.Uow,
+            null!,
+            [new TokenProvider("github", "GitHub"), new TokenProvider("linear", "Linear")],
+            TimeProvider.System
+        );
+        var (window, shell) = Open(ThemeVariant.Dark, account);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Settings);
+        Dispatcher.UIThread.RunJobs();
+
+        shell.Settings!.Account!.ServerText.ShouldBe("https://noto.example.com/");
+        window
+            .GetVisualDescendants()
+            .OfType<TextBox>()
+            .ShouldContain(t => t.Watermark == "https://noto.example.com");
+        await SnapAsync(window, "settings-account-dark");
+    }
+
+    sealed class UnusedServerAuth : IServerAuth
+    {
+        public Task<ServerSession> SignUpAsync(
+            Uri s,
+            string e,
+            string p,
+            string? i,
+            ServerDevice d,
+            CancellationToken ct
+        ) => throw new NotSupportedException();
+
+        public Task<ServerSession> SignInAsync(
+            Uri s,
+            string e,
+            string p,
+            ServerDevice d,
+            CancellationToken ct
+        ) => throw new NotSupportedException();
+
+        public Task<ServerSession> RefreshAsync(Uri s, string r, CancellationToken ct) =>
+            throw new NotSupportedException();
+
+        public Task SignOutAsync(Uri s, string a, CancellationToken ct) =>
+            throw new NotSupportedException();
     }
 
     [AvaloniaFact]

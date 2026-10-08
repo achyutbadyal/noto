@@ -19,12 +19,14 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     readonly Dictionary<Guid, BacklogViewModel> _backlogs = [];
     readonly Dictionary<Guid, ItemListViewModel> _layoutPages = [];
     readonly SemaphoreSlim _refreshGate = new(1, 1);
+    readonly AccountService? _account;
     DateOnly _todayDate;
     bool _pendingG;
 
-    public ShellViewModel(AppServices services)
+    public ShellViewModel(AppServices services, AccountService? account = null)
     {
         _services = services;
+        _account = account;
         Appearance = new AppearanceViewModel(services.UiState);
         Toast = new UndoToastViewModel(services.Undo);
         CommandBar = new CommandBarViewModel(services, this);
@@ -410,8 +412,15 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
                 Content = WeeklyReview;
                 break;
             case AppPage.Settings:
-                Settings = new SettingsViewModel(_services, ws.Id, Appearance);
+                Settings = new SettingsViewModel(
+                    _services,
+                    ws.Id,
+                    Appearance,
+                    _account is null ? null : new AccountViewModel(_account)
+                );
                 await Settings.LoadAsync();
+                if (Settings.Account is { } accountVm)
+                    await accountVm.LoadAsync();
                 Content = Settings;
                 break;
             case AppPage.Help:
