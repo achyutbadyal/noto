@@ -15,4 +15,5 @@ node_modules/
 
 # Local tooling state (never commit)
 .workbuddy-ai/
+
 .env

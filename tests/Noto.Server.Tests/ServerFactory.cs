@@ -51,6 +51,9 @@ public sealed class FakeUpstream : HttpMessageHandler
 
 public sealed class ServerFactory : WebApplicationFactory<Program>
 {
+    // WebApplicationFactory runs the entry point's top-level code, which loads .env unless opted out.
+    static ServerFactory() => Environment.SetEnvironmentVariable(Config.DotEnv.OptOutVariable, "1");
+
     readonly Dictionary<string, string?> _settings;
     readonly string _dataDir = Path.Combine(
         Path.GetTempPath(),

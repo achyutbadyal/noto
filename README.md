@@ -146,7 +146,7 @@ The native app works fully offline and needs no server. The server adds sync acr
 
 Secrets are required and have no defaults; the server refuses to start without them.
 
-Copy `.env.sample` to `.env` in the directory you start the server from (the repo root for the command below) and fill it in. Real environment variables override the file, and `.env` is git-ignored.
+Copy `.env.sample` to `.env` at the repo root and fill it in. The server reads the first `.env` it finds in its working directory, then in the parent folders of the binary, so the command below picks up the repo-root file. Real environment variables override the file, and `.env` is git-ignored.
 
 ```sh
 cp .env.sample .env
@@ -169,6 +169,8 @@ With no `DATABASE_URL` it uses SQLite under `DATA_DIR` (default `./noto-data`).
 | `<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` | Enable the gateway OAuth for GitHub, Slack, Atlassian, ...           |
 
 More options (rate limits, Argon2 cost, `GATEWAY_ALLOW_PRIVATE_HOSTS`) are in `src/Noto.Server/Config/ServerConfig.cs`.
+
+To get the `<PROVIDER>_CLIENT_ID` and secret for each connected app, see [`docs/12-connected-apps-setup.md`](docs/12-connected-apps-setup.md).
 
 ### Docker
 

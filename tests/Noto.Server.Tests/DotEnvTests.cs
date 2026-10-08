@@ -56,4 +56,31 @@ public class DotEnvTests
     {
         Should.NotThrow(() => DotEnv.Load(Path.Combine(Path.GetTempPath(), "does-not-exist.env")));
     }
+
+    [Fact]
+    public void Locate_prefers_the_working_directory_then_walks_up_from_the_binary()
+    {
+        var root = Directory.CreateTempSubdirectory("dotenv-locate").FullName;
+        try
+        {
+            var deep = Path.Combine(root, "src", "Noto.Server", "bin", "Debug");
+            Directory.CreateDirectory(deep);
+            Directory.CreateDirectory(Path.Combine(root, "elsewhere"));
+            File.WriteAllText(Path.Combine(root, ".env"), "A=1\n");
+
+            DotEnv
+                .Locate(Path.Combine(root, "elsewhere"), deep)
+                .ShouldBe(Path.Combine(root, ".env"));
+
+            File.WriteAllText(Path.Combine(deep, ".env"), "A=2\n");
+            DotEnv.Locate(deep, deep).ShouldBe(Path.Combine(deep, ".env"));
+            DotEnv
+                .Locate(Path.Combine(root, "elsewhere"), deep)
+                .ShouldBe(Path.Combine(deep, ".env"));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
 }

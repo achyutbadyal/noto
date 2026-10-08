@@ -23,6 +23,38 @@ public static class DotEnv
         return values;
     }
 
+    const string FileName = ".env";
+    const int MaxParentLevels = 6;
+
+    // `dotnet run --project` starts the app in the project folder, so the working directory alone would miss
+    // the repo-root .env. Fall back to the nearest parent of the binary (bin/… sits below the repo root).
+    public static string? Locate(string workingDirectory, string baseDirectory)
+    {
+        var inWorkingDirectory = Path.Combine(workingDirectory, FileName);
+        if (File.Exists(inWorkingDirectory))
+            return inWorkingDirectory;
+
+        var dir = new DirectoryInfo(baseDirectory);
+        for (var level = 0; dir is not null && level <= MaxParentLevels; level++, dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, FileName);
+            if (File.Exists(candidate))
+                return candidate;
+        }
+        return null;
+    }
+
+    // Set by the test host so a developer's .env never leaks secrets into tests.
+    public const string OptOutVariable = "NOTO_NO_DOTENV";
+
+    public static void LoadNearest(string workingDirectory, string baseDirectory)
+    {
+        if (Environment.GetEnvironmentVariable(OptOutVariable) is not null)
+            return;
+        if (Locate(workingDirectory, baseDirectory) is { } path)
+            Load(path);
+    }
+
     public static void Load(string path)
     {
         if (!File.Exists(path))

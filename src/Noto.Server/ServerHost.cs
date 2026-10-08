@@ -25,8 +25,6 @@ public static class ServerHost
 
     public static WebApplication Build(string[] args)
     {
-        // Before CreateBuilder, which snapshots the process environment.
-        DotEnv.Load(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
         var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.AddCommandLine(args, SwitchMappings);
         ConfigureServices(builder.Services);
