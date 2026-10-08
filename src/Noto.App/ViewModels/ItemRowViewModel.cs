@@ -35,13 +35,13 @@ public sealed partial class ItemRowViewModel : ObservableObject
 
     public bool HasLinks => Links.Count > 0;
 
-    // The first link's title, and how many more there are.
+    // The first link's summary, and how many more there are.
     public string LinkText =>
         Links.Count switch
         {
             0 => "",
-            1 => Links[0].Title,
-            _ => $"{Links[0].Title} +{Links.Count - 1} more",
+            1 => Links[0].RowText,
+            _ => $"{Links[0].RowText} +{Links.Count - 1} more",
         };
 
     public Guid Id => Item.Id;

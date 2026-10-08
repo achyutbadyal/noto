@@ -142,13 +142,33 @@ public sealed class ScreenshotTests : IDisposable
         [
             new LinkLine(
                 "https://github.com/acme/app/pull/482",
-                "Add rich preview support (#482)",
-                "2 approvals · CI passing · ready"
+                "Add rich preview support",
+                "GitHub",
+                "acme/app #482",
+                ["Open", "2 approved", "CI passing"],
+                "Fetches link summaries in one GraphQL request per 50 objects.",
+                "priya",
+                ""
             ),
             new LinkLine(
                 "https://acme.atlassian.net/browse/PROJ-88",
                 "Login fails on Safari",
-                "In Review"
+                "Jira",
+                "PROJ-88",
+                ["In Review", "@sam", "Priority High"],
+                null,
+                "sam",
+                ""
+            ),
+            new LinkLine(
+                "https://www.figma.com/file/abc123",
+                "Onboarding flow",
+                "Figma",
+                null,
+                [],
+                null,
+                null,
+                "Connect Figma in Settings to see this"
             ),
         ];
         shell.Inspector.Links = row.Links;

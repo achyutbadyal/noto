@@ -244,15 +244,72 @@
         </Border>
         <v:PromptBar DataContext="{Binding Decisions}" />
 
-        <StackPanel Spacing="4" IsVisible="{Binding HasLinks}">
+        <StackPanel Spacing="8" IsVisible="{Binding HasLinks}">
           <TextBlock Text="LINKS" Classes="section" />
           <ItemsControl ItemsSource="{Binding Links}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="8" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="s:LinkLine">
-                <StackPanel Margin="0,2" Spacing="1">
-                  <TextBlock Text="{Binding Title}" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding Status}" Classes="hint" TextWrapping="Wrap" />
-                </StackPanel>
+                <Border Classes="raised" Padding="10,8">
+                  <StackPanel Spacing="5">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                      <TextBlock Text="{Binding Provider}" Classes="hint" FontSize="11" />
+                      <Button
+                        Grid.Column="1"
+                        Content="Open"
+                        Padding="8,2"
+                        FontSize="12"
+                        Tag="{Binding Url}"
+                        Click="OnOpenLinkClick"
+                        AutomationProperties.Name="Open link"
+                      />
+                    </Grid>
+                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock
+                      Text="{Binding Subtitle}"
+                      Classes="secondary"
+                      IsVisible="{Binding HasSubtitle}"
+                      TextTrimming="CharacterEllipsis"
+                    />
+                    <ItemsControl ItemsSource="{Binding Facts}" IsVisible="{Binding HasFacts}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel ItemSpacing="4" LineSpacing="4" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <Border Classes="chip">
+                            <TextBlock Text="{Binding}" FontSize="11" />
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock
+                      Text="{Binding Snippet}"
+                      Classes="secondary"
+                      FontSize="12"
+                      TextWrapping="Wrap"
+                      IsVisible="{Binding HasSnippet}"
+                    />
+                    <TextBlock
+                      Text="{Binding Author, StringFormat='by {0}'}"
+                      Classes="hint"
+                      FontSize="11"
+                      IsVisible="{Binding HasAuthor}"
+                    />
+                    <TextBlock
+                      Text="{Binding Status}"
+                      Classes="hint"
+                      TextWrapping="Wrap"
+                      IsVisible="{Binding HasStatus}"
+                    />
+                  </StackPanel>
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>

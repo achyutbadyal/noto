@@ -602,7 +602,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         await DecorateLinksAsync();
     }
 
-    // Puts link summaries on the rows on screen and on the inspector's item. Previews that are not cached
+    // Puts link summaries on the rows on screen and on the inspector's item. Previews that are missing or expired
     // are fetched in the background and then shown; a failure only leaves the links as plain titles.
     async Task DecorateLinksAsync()
     {
@@ -614,9 +614,9 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         try
         {
             await ApplyLinkSummariesAsync(previews, rows, focused);
-            var missing = await previews.MissingAsync(ids);
-            if (missing.Count > 0)
-                _ = FetchLinkPreviewsAsync(previews, missing);
+            var due = await previews.DueAsync(ids);
+            if (due.Count > 0)
+                _ = FetchLinkPreviewsAsync(previews, due);
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {

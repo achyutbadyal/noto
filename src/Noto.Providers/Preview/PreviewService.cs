@@ -277,9 +277,9 @@ public sealed class PreviewService(
     )
     {
         preview.ConnectionId ??= connectionId;
+        preview.FetchedAt = clock.UtcNow;
         if (preview.Status == PreviewStatus.Loaded)
         {
-            preview.FetchedAt = clock.UtcNow;
             var ttl = Uri.TryCreate(preview.Url, UriKind.Absolute, out var u)
                 ? registry.Get(preview.ProviderId)?.CacheTtl(u)
                 : null;
