@@ -7,6 +7,9 @@ public sealed class ConfluenceProvider : ProviderBase
     public override string ProviderId => "confluence";
     public override string DisplayName => "Confluence";
     public override bool IsInstanceBased => true;
+    public override bool RequiresInstanceUrl => true;
+
+    public override bool UsesUsername(AuthMethod method) => method == AuthMethod.ApiKey;
 
     // Atlassian API token (email + token). OAuth 3LO needs cloud-id routing and is not implemented.
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods => [AuthMethod.ApiKey];

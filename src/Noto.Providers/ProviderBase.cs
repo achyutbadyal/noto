@@ -15,6 +15,10 @@ public abstract class ProviderBase : IAppProvider
     public abstract IReadOnlyList<AuthMethod> SupportedAuthMethods { get; }
     public abstract AuthConfig GetAuthConfig();
     public virtual bool IsInstanceBased => false;
+    public virtual bool RequiresInstanceUrl => false;
+    public virtual bool AcceptsSiteAddress => RequiresInstanceUrl;
+
+    public virtual bool UsesUsername(AuthMethod method) => false;
 
     public virtual bool CanHandle(Uri url, AppConnection? connection)
     {

@@ -31,14 +31,39 @@ public sealed class ConnectionService(
             ?? throw new ArgumentException("Unknown provider", nameof(providerId));
         if (!provider.SupportedAuthMethods.Contains(method))
             throw new ArgumentException($"{provider.DisplayName} does not support {method}");
+
+        // Checked here, before any request, so a missing field is an error message rather than a crash.
+        var site =
+            provider.AcceptsSiteAddress && !string.IsNullOrWhiteSpace(instanceUrl)
+                ? AbsoluteHttpUrl(instanceUrl)
+                : null;
+        if (provider.RequiresInstanceUrl && site is null)
+            throw new ArgumentException(
+                $"Enter the site address for {provider.DisplayName}, such as https://acme.atlassian.net"
+            );
+        if (provider.UsesUsername(method) && string.IsNullOrWhiteSpace(username))
+            throw new ArgumentException(
+                $"Enter the email address on your {provider.DisplayName} account"
+            );
+
         return await FinishAsync(
             provider,
-            new Credential(token.Trim(), Username: username),
+            new Credential(token.Trim(), Username: username?.Trim()),
             method,
-            instanceUrl,
+            site,
             [],
             ct
         );
+    }
+
+    static string AbsoluteHttpUrl(string text)
+    {
+        if (
+            !Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri)
+            || uri.Scheme is not ("http" or "https")
+        )
+            throw new ArgumentException("The site address must start with https://");
+        return uri.GetLeftPart(UriPartial.Authority);
     }
 
     // Opens `openBrowser` with the authorize URL and waits for the loopback redirect.

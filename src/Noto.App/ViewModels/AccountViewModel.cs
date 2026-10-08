@@ -17,12 +17,12 @@ public sealed partial class AccountViewModel : ObservableObject
     {
         _account = account;
         ServerText = account.ServerText ?? "";
-        TokenProviders = account.TokenProviders;
-        SelectedTokenProvider = TokenProviders.FirstOrDefault();
+        TokenOptions = account.TokenOptions;
+        SelectedTokenOption = TokenOptions.FirstOrDefault();
         RefreshSignedIn();
     }
 
-    public IReadOnlyList<TokenProvider> TokenProviders { get; }
+    public IReadOnlyList<TokenOption> TokenOptions { get; }
     public ObservableCollection<ConnectionRow> Connections { get; } = [];
 
     [ObservableProperty]
@@ -55,9 +55,24 @@ public sealed partial class AccountViewModel : ObservableObject
     bool _accountStatusIsError;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(
+        nameof(ShowSite),
+        nameof(ShowSiteRequired),
+        nameof(ShowEmail),
+        nameof(CanConnect)
+    )]
+    [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    TokenOption? _selectedTokenOption;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConnect))]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
-    TokenProvider? _selectedTokenProvider;
+    string _connectSite = "";
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanConnect))]
+    [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
+    string _connectEmail = "";
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanConnect))]
@@ -80,8 +95,18 @@ public sealed partial class AccountViewModel : ObservableObject
     // Sign-in and sign-up both need an email and a password; nothing is sent until the form is complete.
     public bool CanSignIn => !string.IsNullOrWhiteSpace(Email) && Password.Length > 0;
 
+    public bool ShowSite => SelectedTokenOption?.Site is not null and not SiteField.None;
+
+    public bool ShowSiteRequired => SelectedTokenOption?.Site == SiteField.Required;
+
+    public bool ShowEmail => SelectedTokenOption?.NeedsEmail == true;
+
+    // Each field the chosen option needs must be filled before Connect is enabled.
     public bool CanConnect =>
-        SelectedTokenProvider is not null && !string.IsNullOrWhiteSpace(Token);
+        SelectedTokenOption is { } o
+        && !string.IsNullOrWhiteSpace(Token)
+        && (o.Site != SiteField.Required || !string.IsNullOrWhiteSpace(ConnectSite))
+        && (!o.NeedsEmail || !string.IsNullOrWhiteSpace(ConnectEmail));
 
     // Loads the connected-apps list. Called when Settings opens.
     public async Task LoadAsync() => await ReloadConnectionsAsync();
@@ -123,7 +148,13 @@ public sealed partial class AccountViewModel : ObservableObject
             "Connected.",
             async ct =>
             {
-                await _account.ConnectTokenAsync(SelectedTokenProvider!.Id, Token, ct);
+                await _account.ConnectTokenAsync(
+                    SelectedTokenOption!,
+                    Token,
+                    NullIfBlank(ConnectSite),
+                    NullIfBlank(ConnectEmail),
+                    ct
+                );
                 Token = "";
             }
         );
@@ -142,7 +173,7 @@ public sealed partial class AccountViewModel : ObservableObject
             AccountStatus = success;
             AccountStatusIsError = false;
         }
-        catch (Exception e) when (IsUserFacing(e))
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             AccountStatus = Message(e);
             AccountStatusIsError = true;
@@ -151,6 +182,7 @@ public sealed partial class AccountViewModel : ObservableObject
         await ReloadConnectionsAsync();
     }
 
+    // Catches everything: an unhandled exception in an async command takes the whole app down.
     async Task RunConnectionAsync(string success, Func<CancellationToken, Task> work)
     {
         try
@@ -159,12 +191,20 @@ public sealed partial class AccountViewModel : ObservableObject
             ConnectionStatus = success;
             ConnectionStatusIsError = false;
         }
-        catch (Exception e) when (IsUserFacing(e))
+        catch (Exception e) when (e is not OperationCanceledException)
         {
             ConnectionStatus = Message(e);
             ConnectionStatusIsError = true;
         }
-        await ReloadConnectionsAsync();
+        try
+        {
+            await ReloadConnectionsAsync();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            ConnectionStatus = Message(e);
+            ConnectionStatusIsError = true;
+        }
     }
 
     void RefreshSignedIn()
@@ -175,7 +215,9 @@ public sealed partial class AccountViewModel : ObservableObject
 
     async Task ReloadConnectionsAsync()
     {
-        var names = TokenProviders.ToDictionary(p => p.Id, p => p.Name);
+        var names = TokenOptions
+            .GroupBy(o => o.ProviderId)
+            .ToDictionary(g => g.Key, g => g.First().ProviderName);
         var rows = await _account.ListConnectionsAsync();
         Connections.Clear();
         foreach (var c in rows)
@@ -189,14 +231,12 @@ public sealed partial class AccountViewModel : ObservableObject
         HasConnections = Connections.Count > 0;
     }
 
-    static bool IsUserFacing(Exception e) =>
-        e
-            is ServerAuthException
-                or ArgumentException
-                or InvalidOperationException
-                or HttpRequestException;
+    static string? NullIfBlank(string s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    static string Message(Exception e) => e is ServerAuthException s ? Friendly(s) : e.Message;
+    static string Message(Exception e) =>
+        e is ServerAuthException s ? Friendly(s)
+        : string.IsNullOrWhiteSpace(e.Message) ? "Something went wrong. Try again."
+        : e.Message;
 
     // Plain-language messages for the server's error codes; anything else shows the server's title.
     static string Friendly(ServerAuthException e) =>

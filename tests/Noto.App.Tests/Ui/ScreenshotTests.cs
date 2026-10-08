@@ -10,6 +10,7 @@ using Noto.App.Services;
 using Noto.App.ViewModels;
 using Noto.App.Views;
 using Noto.Core.Commands;
+using Noto.Core.Links;
 using Noto.Core.Models;
 using Noto.Core.Presets;
 using Noto.Platform.Abstractions;
@@ -139,7 +140,16 @@ public sealed class ScreenshotTests : IDisposable
             new ServerDevice(Guid.NewGuid(), "Screenshot", "macos"),
             _app.Services.Uow,
             null!,
-            [new TokenProvider("github", "GitHub"), new TokenProvider("linear", "Linear")],
+            [
+                new TokenOption(
+                    "github",
+                    "GitHub",
+                    AuthMethod.PersonalToken,
+                    SiteField.Optional,
+                    false
+                ),
+                new TokenOption("jira", "Jira", AuthMethod.ApiKey, SiteField.Required, true),
+            ],
             TimeProvider.System
         );
         var (window, shell) = Open(ThemeVariant.Dark, account);

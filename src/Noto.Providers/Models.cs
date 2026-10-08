@@ -144,6 +144,15 @@ public interface IAppProvider
     // True when the host is chosen by the connection (self-hosted / per-tenant) rather than fixed.
     bool IsInstanceBased { get; }
 
+    // True when a connection cannot be made without the site address (Jira and Confluence sites).
+    bool RequiresInstanceUrl { get; }
+
+    // True when a site address is used if given (self-hosted GitHub or GitLab); the site is ignored otherwise.
+    bool AcceptsSiteAddress { get; }
+
+    // True when this auth method sends an account name with the token (Basic auth), so a connection needs one.
+    bool UsesUsername(AuthMethod method);
+
     // `connection` resolves instance hosts; null means "match by the provider's fixed hosts only".
     bool CanHandle(Uri url, AppConnection? connection);
 

@@ -103,7 +103,7 @@
           <StackPanel Spacing="4">
             <TextBlock Text="Connected apps" Classes="section" />
             <TextBlock
-              Text="Paste a personal access token. Noto checks it with the provider, then keeps it in your keychain."
+              Text="Paste a token or API key. Noto checks it with the provider, then keeps it in your keychain."
               Classes="hint"
               TextWrapping="Wrap"
             />
@@ -138,42 +138,73 @@
 
           <Grid
             ColumnDefinitions="140,*,Auto"
-            RowDefinitions="Auto,Auto,Auto"
+            RowDefinitions="Auto,Auto,Auto,Auto,Auto"
             ColumnSpacing="8"
             RowSpacing="8"
           >
             <TextBlock Text="Provider" VerticalAlignment="Center" Classes="secondary" />
             <ComboBox
               Grid.Column="1"
-              ItemsSource="{Binding TokenProviders}"
-              SelectedItem="{Binding SelectedTokenProvider, Mode=TwoWay}"
+              ItemsSource="{Binding TokenOptions}"
+              SelectedItem="{Binding SelectedTokenOption, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
               AutomationProperties.Name="Provider"
             >
               <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="svc:TokenProvider">
-                  <TextBlock Text="{Binding Name}" />
+                <DataTemplate x:DataType="svc:TokenOption">
+                  <TextBlock Text="{Binding Label}" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <TextBlock Grid.Row="1" Text="Token" VerticalAlignment="Center" Classes="secondary" />
+
+            <TextBlock
+              Grid.Row="1"
+              Text="Site"
+              VerticalAlignment="Center"
+              Classes="secondary"
+              IsVisible="{Binding ShowSite}"
+            />
             <TextBox
               Grid.Row="1"
               Grid.Column="1"
+              Text="{Binding ConnectSite, Mode=TwoWay}"
+              Watermark="https://your-site.example.com"
+              IsVisible="{Binding ShowSite}"
+              AutomationProperties.Name="Site address"
+            />
+            <TextBlock
+              Grid.Row="2"
+              Text="Email"
+              VerticalAlignment="Center"
+              Classes="secondary"
+              IsVisible="{Binding ShowEmail}"
+            />
+            <TextBox
+              Grid.Row="2"
+              Grid.Column="1"
+              Text="{Binding ConnectEmail, Mode=TwoWay}"
+              Watermark="The email on your account"
+              IsVisible="{Binding ShowEmail}"
+              AutomationProperties.Name="Account email"
+            />
+            <TextBlock Grid.Row="3" Text="Token" VerticalAlignment="Center" Classes="secondary" />
+            <TextBox
+              Grid.Row="3"
+              Grid.Column="1"
               Text="{Binding Token, Mode=TwoWay}"
               PasswordChar="•"
-              Watermark="Paste a personal access token"
+              Watermark="Paste it here"
               AutomationProperties.Name="Access token"
             />
             <Button
-              Grid.Row="1"
+              Grid.Row="3"
               Grid.Column="2"
               Classes="accent"
               Content="Connect"
               Command="{Binding ConnectCommand}"
             />
             <TextBlock
-              Grid.Row="2"
+              Grid.Row="4"
               Grid.Column="1"
               Text="{Binding ConnectionStatus}"
               IsVisible="{Binding HasConnectionStatus}"

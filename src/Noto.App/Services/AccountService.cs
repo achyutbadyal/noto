@@ -10,8 +10,26 @@ namespace Noto.App.Services;
 
 public sealed record SignedInAccount(string Email, Uri Server);
 
-// A provider that accepts a pasted personal token.
-public sealed record TokenProvider(string Id, string Name);
+public enum SiteField
+{
+    None,
+    Optional,
+    Required,
+}
+
+// One way to connect by pasting a secret: a provider with a specific auth method (Jira with an API key, GitHub with a token).
+public sealed record TokenOption(
+    string ProviderId,
+    string ProviderName,
+    AuthMethod Method,
+    SiteField Site,
+    bool NeedsEmail
+)
+{
+    public string MethodLabel => Method == AuthMethod.ApiKey ? "API key" : "personal access token";
+
+    public string Label => $"{ProviderName} · {MethodLabel}";
+}
 
 // Sign-in to a sync server, and the connected-apps list. The refresh token lives in the OS keyring (the
 // server rotates it on every refresh, so the stored copy is replaced each time). The access token stays in memory.
@@ -22,7 +40,7 @@ public sealed class AccountService(
     ServerDevice device,
     IUnitOfWork uow,
     ConnectionService connections,
-    IReadOnlyList<TokenProvider> tokenProviders,
+    IReadOnlyList<TokenOption> tokenOptions,
     TimeProvider time
 )
 {
@@ -35,7 +53,7 @@ public sealed class AccountService(
     DateTimeOffset _expiresAt;
 
     public SignedInAccount? Account { get; private set; }
-    public IReadOnlyList<TokenProvider> TokenProviders => tokenProviders;
+    public IReadOnlyList<TokenOption> TokenOptions => tokenOptions;
 
     public string? ServerText => ui.Get(ServerKey);
 
@@ -126,10 +144,13 @@ public sealed class AccountService(
         uow.RunAsync(s => s.Connections.ListAsync());
 
     public Task<AppConnection> ConnectTokenAsync(
-        string providerId,
+        TokenOption option,
         string token,
+        string? site,
+        string? email,
         CancellationToken ct
-    ) => connections.ConnectWithTokenAsync(providerId, token, AuthMethod.PersonalToken, ct: ct);
+    ) =>
+        connections.ConnectWithTokenAsync(option.ProviderId, token, option.Method, site, email, ct);
 
     public Task DisconnectAsync(Guid connectionId, CancellationToken ct) =>
         connections.DisconnectAsync(connectionId, ct);

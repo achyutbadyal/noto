@@ -9,6 +9,7 @@ public sealed class GitLabProvider : ProviderBase
     public override string DisplayName => "GitLab";
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods =>
         [AuthMethod.PersonalToken, AuthMethod.OAuth2];
+    public override bool AcceptsSiteAddress => true;
 
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
     [

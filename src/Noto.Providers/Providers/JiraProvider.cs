@@ -12,6 +12,9 @@ public sealed partial class JiraProvider : ProviderBase
     public override string ProviderId => "jira";
     public override string DisplayName => "Jira";
     public override bool IsInstanceBased => true;
+    public override bool RequiresInstanceUrl => true;
+
+    public override bool UsesUsername(AuthMethod method) => method == AuthMethod.ApiKey;
 
     // Cloud: API token (email + token, basic). Data Center: PAT (bearer). OAuth 3LO needs cloud-id routing and is not implemented.
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods =>

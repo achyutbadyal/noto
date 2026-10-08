@@ -71,9 +71,24 @@ sealed class Composition : IDisposable
             http,
             new Dictionary<string, OAuthClient>()
         );
-        var tokenProviders = registry
-            .Providers.Where(p => p.SupportedAuthMethods.Contains(AuthMethod.PersonalToken))
-            .Select(p => new TokenProvider(p.ProviderId, p.DisplayName))
+        // Every provider and secret-based method the desktop can connect with (OAuth is not wired in yet).
+        var tokenOptions = registry
+            .Providers.SelectMany(p =>
+                p.SupportedAuthMethods.Where(m =>
+                        m is AuthMethod.PersonalToken or AuthMethod.ApiKey
+                    )
+                    .Select(m => new TokenOption(
+                        p.ProviderId,
+                        p.DisplayName,
+                        m,
+                        p.RequiresInstanceUrl ? SiteField.Required
+                            : p.AcceptsSiteAddress ? SiteField.Optional
+                            : SiteField.None,
+                        p.UsesUsername(m)
+                    ))
+            )
+            .OrderBy(o => o.ProviderName, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(o => o.Method)
             .ToList();
         var device = new ServerDevice(
             deviceId,
@@ -89,7 +104,7 @@ sealed class Composition : IDisposable
             device,
             _db,
             connections,
-            tokenProviders,
+            tokenOptions,
             TimeProvider.System
         );
     }

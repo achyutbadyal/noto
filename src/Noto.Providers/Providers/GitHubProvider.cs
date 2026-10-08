@@ -13,6 +13,7 @@ public sealed partial class GitHubProvider : ProviderBase
     public override string DisplayName => "GitHub";
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods =>
         [AuthMethod.PersonalToken, AuthMethod.OAuth2];
+    public override bool AcceptsSiteAddress => true;
 
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
     [
