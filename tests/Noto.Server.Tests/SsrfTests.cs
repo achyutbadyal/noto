@@ -86,7 +86,9 @@ public class SafeFetcherTests
                 new HashSet<string>(allowPrivate),
                 [],
                 new RateLimits(),
-                new Argon2Settings()
+                new Argon2Settings(),
+                RegistrationMode.Closed,
+                []
             )
         );
 
@@ -271,7 +273,9 @@ public class SafeFetcherTests
                 new HashSet<string>(),
                 [],
                 new RateLimits(),
-                new Argon2Settings()
+                new Argon2Settings(),
+                RegistrationMode.Closed,
+                []
             )
         );
 

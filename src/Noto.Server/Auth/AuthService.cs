@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
+using Noto.Server.Config;
 using Noto.Server.Data;
 using Noto.Server.Middleware;
 
@@ -17,7 +18,8 @@ public sealed record DeviceInfo(
 public sealed record AuthRequest(
     [property: JsonPropertyName("email")] string? Email,
     [property: JsonPropertyName("password")] string? Password,
-    [property: JsonPropertyName("device")] DeviceInfo? Device
+    [property: JsonPropertyName("device")] DeviceInfo? Device,
+    [property: JsonPropertyName("invite_code")] string? InviteCode = null
 );
 
 public sealed record TokenPair(
@@ -37,6 +39,7 @@ public sealed class AuthService(
     ServerDbContext db,
     Argon2PasswordHasher hasher,
     JwtService jwt,
+    ServerConfig config,
     TimeProvider time
 )
 {
@@ -46,6 +49,17 @@ public sealed class AuthService(
     public async Task<RegisterResponse> RegisterAsync(AuthRequest req, CancellationToken ct)
     {
         var (email, password, device) = Validate(req);
+        switch (config.Registration)
+        {
+            case RegistrationMode.Closed:
+                throw new ApiException(
+                    403,
+                    "REGISTRATION_CLOSED",
+                    "Sign-up is disabled on this server"
+                );
+            case RegistrationMode.Invite when !InviteAccepted(req.InviteCode, config.InviteCodes):
+                throw new ApiException(403, "INVALID_INVITE", "A valid invite code is required");
+        }
         if (password.Length < MinPasswordLength)
             throw ApiException.BadRequest(
                 "WEAK_PASSWORD",
@@ -177,6 +191,23 @@ public sealed class AuthService(
         );
         await db.SaveChangesAsync(ct);
         return new TokenPair(access, refresh, expires);
+    }
+
+    // Compares every candidate in constant time so a response does not reveal which code was close.
+    static bool InviteAccepted(string? given, IReadOnlyList<string> codes)
+    {
+        if (string.IsNullOrEmpty(given))
+            return false;
+        var presented = Encoding.UTF8.GetBytes(given);
+        var accepted = false;
+        foreach (var code in codes)
+        {
+            var expected = Encoding.UTF8.GetBytes(code);
+            accepted |=
+                expected.Length == presented.Length
+                && CryptographicOperations.FixedTimeEquals(expected, presented);
+        }
+        return accepted;
     }
 
     static (string Email, string Password, DeviceInfo Device) Validate(AuthRequest req)

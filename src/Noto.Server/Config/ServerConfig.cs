@@ -6,6 +6,14 @@ public enum DbProvider
     Postgres,
 }
 
+// closed: no sign-ups (the default). invite: sign-up needs one of INVITE_CODES. open: anyone can sign up.
+public enum RegistrationMode
+{
+    Closed,
+    Invite,
+    Open,
+}
+
 public sealed record RateLimits(
     int AuthPerMinute = 10,
     int SyncPerMinute = 60,
@@ -30,7 +38,9 @@ public sealed record ServerConfig(
     IReadOnlySet<string> AllowPrivateHosts,
     IReadOnlyList<string> CorsOrigins,
     RateLimits Limits,
-    Argon2Settings Argon2
+    Argon2Settings Argon2,
+    RegistrationMode Registration,
+    IReadOnlyList<string> InviteCodes
 )
 {
     // Secrets are required and have no defaults: the server refuses to start without them (docs/06 › Self-Hosting).
@@ -82,6 +92,21 @@ public sealed record ServerConfig(
         else
             connection = $"Data Source={Path.Combine(dataDir, "noto.db")}";
 
+        var registration = (c["REGISTRATION"] ?? "closed").ToLowerInvariant() switch
+        {
+            "closed" => RegistrationMode.Closed,
+            "invite" => RegistrationMode.Invite,
+            "open" => RegistrationMode.Open,
+            var other => throw new ServerConfigException(
+                $"Unknown REGISTRATION '{other}' (closed | invite | open)"
+            ),
+        };
+        var inviteCodes = Split(c["INVITE_CODES"]).ToList();
+        if (registration == RegistrationMode.Invite && inviteCodes.Count == 0)
+            throw new ServerConfigException("REGISTRATION=invite needs INVITE_CODES");
+        if (inviteCodes.Any(code => code.Length < 16))
+            throw new ServerConfigException("INVITE_CODES entries must be at least 16 characters");
+
         return new ServerConfig(
             key,
             url,
@@ -104,7 +129,9 @@ public sealed record ServerConfig(
                 Int(c, "ARGON2_MEMORY_KB", 65536),
                 Int(c, "ARGON2_ITERATIONS", 3),
                 Int(c, "ARGON2_PARALLELISM", 2)
-            )
+            ),
+            registration,
+            inviteCodes
         );
     }
 

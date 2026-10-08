@@ -70,6 +70,7 @@ public sealed class ServerFactory : WebApplicationFactory<Program>
             ["PUBLIC_URL"] = "https://noto.test",
             ["DB"] = "sqlite",
             ["DATA_DIR"] = _dataDir,
+            ["REGISTRATION"] = "open",
             // Cheap hashing and generous limits; individual tests tighten what they exercise.
             ["ARGON2_MEMORY_KB"] = "64",
             ["ARGON2_ITERATIONS"] = "1",

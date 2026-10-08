@@ -146,9 +146,11 @@ The native app works fully offline and needs no server. The server adds sync acr
 
 Secrets are required and have no defaults; the server refuses to start without them.
 
+Copy `.env.sample` to `.env` in the directory you start the server from (the repo root for the command below) and fill it in. Real environment variables override the file, and `.env` is git-ignored.
+
 ```sh
-export JWT_SIGNING_KEY="$(openssl rand -hex 32)"   # at least 32 characters
-export PUBLIC_URL="http://localhost:8080"          # used for OAuth callback URLs
+cp .env.sample .env
+# set JWT_SIGNING_KEY (openssl rand -hex 32) and PUBLIC_URL in .env
 mise exec -- dotnet run --project src/Noto.Server --urls http://localhost:8080
 ```
 
@@ -160,6 +162,8 @@ With no `DATABASE_URL` it uses SQLite under `DATA_DIR` (default `./noto-data`).
 | `PUBLIC_URL` (required)                   | Absolute http(s) URL of the server                                   |
 | `DATABASE_URL` / `DB`                     | `postgresql://...` for Postgres; `DB=sqlite` (default without a URL) |
 | `DATA_DIR`                                | SQLite location (default `./noto-data`)                              |
+| `REGISTRATION`                            | `closed` (default), `invite` (needs `INVITE_CODES`), or `open`       |
+| `INVITE_CODES`                            | Comma-separated sign-up codes, each at least 16 characters           |
 | `PORT`                                    | Listen port in the container (default 8080)                          |
 | `CORS_ORIGINS`                            | Comma-separated allowed browser origins                              |
 | `<PROVIDER>_CLIENT_ID` / `_CLIENT_SECRET` | Enable the gateway OAuth for GitHub, Slack, Atlassian, ...           |
