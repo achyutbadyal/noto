@@ -36,3 +36,58 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet tool restore && dotnet csharpier check .
+
+  # Installers. Each runner packages its own platform natively — a macOS .app can only be assembled on
+  # macOS — and uploads the result as a downloadable artifact. Runs on main only: a pull request runs the
+  # tests above and stops there, so it never publishes an installer.
+  package:
+    name: package (${{ matrix.os }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: noto-macos-arm64
+            file: dist/noto-macos-arm64.zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: noto-linux-x64
+            file: dist/noto-linux-x64.tar.gz
+          - os: windows-latest
+            rid: win-x64
+            artifact: noto-windows-win-x64
+            file: dist/noto-windows-win-x64.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      # Mirrors `mise run publish:*` (see mise.toml), so the artifact you download is the same file those
+      # tasks produce locally.
+      - name: Publish self-contained
+        run: dotnet publish src/Noto.Desktop -c Release -r ${{ matrix.rid }} --self-contained -o dist/noto-desktop
+      - name: Package macOS app bundle
+        if: runner.os == 'macOS'
+        # `ditto` preserves the bundle's permissions and metadata; plain `zip` would not.
+        run: |
+          ./scripts/package_mac.sh
+          ditto -c -k --keepParent dist/Noto.app dist/noto-macos-arm64.zip
+      - name: Package Linux tarball
+        if: runner.os == 'Linux'
+        env:
+          TARGET_RID: ${{ matrix.rid }}
+        run: ./scripts/package_linux.sh
+      - name: Package Windows zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/noto-desktop/* -DestinationPath dist/noto-windows-win-x64.zip -Force
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error
+          retention-days: 14
