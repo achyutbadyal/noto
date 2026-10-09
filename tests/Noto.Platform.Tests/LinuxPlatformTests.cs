@@ -123,6 +123,24 @@ public class LinuxPlatformTests
     }
 
     [Fact]
+    public async Task A_helper_that_never_reads_stdin_is_not_a_runner_failure()
+    {
+        if (OperatingSystem.IsWindows())
+            return; // the stand-in below is a shell script
+
+        using var tool = new FakeSecretTool();
+        // Exits without reading stdin, so its end of the pipe closes while the secret is still being
+        // written. A payload bigger than the pipe buffer guarantees the write outlives the child.
+        File.WriteAllText(tool.Path, "#!/bin/sh\nexit 2\n");
+        var keyring = new SecretToolKeyring(tool.Path);
+
+        var e = await Should.ThrowAsync<InvalidOperationException>(() =>
+            keyring.SetAsync("svc", "acct", new string('x', 1 << 20))
+        );
+        e.Message.ShouldContain("secret-tool store failed");
+    }
+
+    [Fact]
     public async Task Secret_tool_keyring_surfaces_helper_failures()
     {
         if (OperatingSystem.IsWindows())

@@ -399,7 +399,9 @@ public class ConfigTests
         );
 
         cfg.Db.ShouldBe(DbProvider.Sqlite);
-        cfg.ConnectionString.ShouldBe("Data Source=/data/noto.db");
+        // The data dir and file name are joined with the platform separator, so build the expectation
+        // the same way rather than hardcoding a Unix path.
+        cfg.ConnectionString.ShouldBe($"Data Source={Path.Combine("/data", "noto.db")}");
         cfg.AllowPrivateHosts.ShouldBe(
             ["jira.acme.internal", "wiki.acme.internal"],
             ignoreOrder: true

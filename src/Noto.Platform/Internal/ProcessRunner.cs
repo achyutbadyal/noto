@@ -54,8 +54,15 @@ internal static class ProcessRunner
         {
             if (stdin is not null)
             {
-                await process.StandardInput.WriteAsync(stdin);
-                process.StandardInput.Close();
+                // A helper that fails early can exit without ever reading stdin, closing its end of the
+                // pipe before we finish writing. That is not a runner failure: the exit code and stderr
+                // carry the real error, so a broken pipe is ignored rather than surfaced as an IOException.
+                try
+                {
+                    await process.StandardInput.WriteAsync(stdin);
+                    process.StandardInput.Close();
+                }
+                catch (IOException) { }
             }
             var output = process.StandardOutput.ReadToEndAsync();
             var error = process.StandardError.ReadToEndAsync();

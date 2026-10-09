@@ -178,6 +178,10 @@ public class TokenIsolationTests : IDisposable
     public void Dispose()
     {
         _h.Dispose();
+        // Microsoft.Data.Sqlite pools connections by default, so disposing the unit of work returns the
+        // handle to the pool instead of closing the file. Unix deletes it anyway; Windows refuses until
+        // the pool lets go. Drop the pooled handles before cleaning the temp database up.
+        SqliteConnection.ClearAllPools();
         foreach (var f in Directory.GetFiles(AppContext.BaseDirectory, Path.GetFileName(_db) + "*"))
             File.Delete(f);
     }
