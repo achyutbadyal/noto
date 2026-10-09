@@ -1,4 +1,4 @@
-namespace Noto.App.Logic;
+namespace Noto.Core.Text;
 
 public static class FuzzyMatch
 {

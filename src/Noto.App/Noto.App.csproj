@@ -14,5 +14,6 @@
   </ItemGroup>
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
+    <EmbeddedResource Include="Help\topics.json" LogicalName="Noto.App.Help.topics.json" />
   </ItemGroup>
 </Project>

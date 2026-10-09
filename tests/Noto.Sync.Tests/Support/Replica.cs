@@ -33,7 +33,7 @@ public sealed class Replica : IDisposable
         Db = SqliteUnitOfWork.InMemory(Hlc); // records ops for every synced write, whoever makes it
         Bus = new CommandBus(Db, clock, DeviceId, Hlc);
         Transport = new InProcessTransport(server, userId, DeviceId);
-        var merger = new Merger(EntityCodecs.Default, Hlc, server.Time);
+        var merger = new Merger(SyncEntities.Codecs, Hlc, server.Time);
         Workspaces = new WorkspaceSyncService(Db, Transport, merger, DeviceId, options);
         Client = new SyncClient(Db, Transport, merger, Workspaces, Hlc, DeviceId, options);
     }

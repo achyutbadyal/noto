@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
+using Noto.Core.Sync;
 
-namespace Noto.Core.Sync;
+namespace Noto.Sync;
 
 public sealed record FieldOutcome(string Field, JsonNode? Previous, bool Applied);
 

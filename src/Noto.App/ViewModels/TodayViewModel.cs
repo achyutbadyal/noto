@@ -16,7 +16,7 @@ public sealed partial class TodayViewModel : ItemListViewModel
     readonly SectionViewModel _done = new("Done today") { IsCollapsed = true };
 
     public TodayViewModel(
-        AppServices services,
+        ListServices services,
         Guid workspaceId,
         Func<string, Guid?>? resolveWorkspace = null
     )
@@ -24,7 +24,7 @@ public sealed partial class TodayViewModel : ItemListViewModel
     {
         Sections = [_now, _planned, _waiting, _done];
         Add = new AddItemViewModel(
-            services,
+            services.Runner,
             workspaceId,
             plannedForToday: true,
             resolveWorkspace,

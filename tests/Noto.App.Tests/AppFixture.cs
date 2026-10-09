@@ -1,4 +1,5 @@
 using Noto.App.Services;
+using Noto.App.ViewModels;
 using Noto.Core.Commands;
 using Noto.Core.Models;
 using Noto.Core.Presets;
@@ -16,6 +17,7 @@ public sealed class AppFixture : IDisposable
     public SqliteUnitOfWork Db { get; } = SqliteUnitOfWork.InMemory();
     public FakeClock Clock { get; } = new(DateTimeOffset.Parse("2026-10-07T10:00:00Z"));
     public AppServices Services { get; }
+    public ViewModelFactory Vms { get; }
     public Workspace Workspace { get; private set; } = null!;
 
     public AppFixture(Preset? preset = null)
@@ -29,6 +31,7 @@ public sealed class AppFixture : IDisposable
             new StaticReduceMotion()
         );
         Services = new AppServices(Db, bus, Clock, Db, platform);
+        Vms = new ViewModelFactory(Services);
         Workspace = Services
             .Workspaces.CreateAsync("Work", "work", preset ?? BuiltInPresets.Sprint, 0)
             .GetAwaiter()

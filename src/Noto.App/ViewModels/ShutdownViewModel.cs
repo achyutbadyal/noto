@@ -16,15 +16,23 @@ public enum ShutdownStep
 // Evening shutdown in three steps: acknowledge what got done, decide the rest, leave a note (docs/07 §4.3).
 public sealed partial class ShutdownViewModel : ObservableObject
 {
-    readonly AppServices _services;
+    readonly WorkspaceReader _reader;
+    readonly IDayNotes _dayNotes;
     readonly Guid _workspaceId;
     DateOnly _today;
 
-    public ShutdownViewModel(AppServices services, Guid workspaceId)
+    // `review` is the shutdown-mode review (step 2); the factory builds it.
+    public ShutdownViewModel(
+        WorkspaceReader reader,
+        IDayNotes dayNotes,
+        ReviewViewModel review,
+        Guid workspaceId
+    )
     {
-        _services = services;
+        _reader = reader;
+        _dayNotes = dayNotes;
         _workspaceId = workspaceId;
-        Review = new ReviewViewModel(services, workspaceId, ReviewMode.Shutdown);
+        Review = review;
         Review.Closed += () => Step = ShutdownStep.Note;
     }
 
@@ -51,7 +59,7 @@ public sealed partial class ShutdownViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
-        var snap = await _services.Reader.LoadAsync(_workspaceId);
+        var snap = await _reader.LoadAsync(_workspaceId);
         _today = snap.Today;
         var byId = snap.Items.ToDictionary(i => i.Id);
 
@@ -59,7 +67,7 @@ public sealed partial class ShutdownViewModel : ObservableObject
         foreach (var item in snap.Today_.DoneToday)
             DoneRows.Add(ItemRowFactory.Create(item, snap, false, byId));
         await Review.LoadAsync();
-        Note = await _services.DayNotes.GetAsync(_workspaceId, _today) ?? "";
+        Note = await _dayNotes.GetAsync(_workspaceId, _today) ?? "";
         Step = ShutdownStep.Done;
         OnPropertyChanged(nameof(StepTitle));
     }
@@ -86,7 +94,7 @@ public sealed partial class ShutdownViewModel : ObservableObject
     public async Task FinishAsync()
     {
         if (Note.Trim().Length > 0)
-            await _services.DayNotes.SetAsync(_workspaceId, _today, Note.Trim());
+            await _dayNotes.SetAsync(_workspaceId, _today, Note.Trim());
         Finished?.Invoke();
     }
 

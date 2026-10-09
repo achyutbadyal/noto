@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
 using Noto.Core.Commands;
+using Noto.Core.Text;
 
 namespace Noto.App.ViewModels;
 
@@ -13,7 +14,7 @@ namespace Noto.App.ViewModels;
 // Tokens like ~30m or tomorrow still work in the title, but nothing depends on knowing them: the old
 // watermark was the only explanation, which is exactly what made the input feel opaque.
 public sealed partial class AddItemViewModel(
-    AppServices services,
+    ActionRunner runner,
     Guid workspaceId,
     bool plannedForToday,
     Func<string, Guid?>? resolveWorkspace,
@@ -142,7 +143,7 @@ public sealed partial class AddItemViewModel(
         if (parsed.WaitingOn is { } on)
             commands.Add(new StartWaiting(id, on));
 
-        await services.Runner.RunAllAsync(commands, $"Added “{parsed.Title}”");
+        await runner.RunAllAsync(commands, $"Added “{parsed.Title}”");
         LastCreatedId = id;
         Text = "";
         Estimate = FieldOptions.Durations[0];
@@ -207,7 +208,7 @@ public sealed partial class AddItemViewModel(
         if (DetailNotes.Trim() is { Length: > 0 } notes)
             commands.Add(new SetNotes(id, notes));
 
-        await services.Runner.RunAllAsync(commands, $"Added “{title}”");
+        await runner.RunAllAsync(commands, $"Added “{title}”");
         LastCreatedId = id;
         ResetDetailed();
         IsDetailedOpen = false;

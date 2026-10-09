@@ -15,27 +15,34 @@ namespace Noto.App.ViewModels;
 public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
 {
     readonly AppServices _services;
+    readonly ViewModelFactory _vms;
+    readonly LinkDecorator _links;
     readonly Dictionary<Guid, TodayViewModel> _today = [];
     readonly Dictionary<Guid, BacklogViewModel> _backlogs = [];
     readonly Dictionary<Guid, ItemListViewModel> _layoutPages = [];
     readonly SemaphoreSlim _refreshGate = new(1, 1);
     readonly AccountService? _account;
     DateOnly _todayDate;
-    bool _pendingG;
 
     public ShellViewModel(AppServices services, AccountService? account = null)
     {
         _services = services;
         _account = account;
-        Appearance = new AppearanceViewModel(services.UiState);
-        Toast = new UndoToastViewModel(services.Undo);
-        CommandBar = new CommandBarViewModel(services, this);
-        Inspector = new InspectorViewModel(services);
+        _vms = new ViewModelFactory(services);
+        Appearance = _vms.Appearance();
+        Toast = _vms.Toast();
+        CommandBar = _vms.CommandBar(this);
+        Inspector = _vms.Inspector();
+        _links = new LinkDecorator(
+            services.Previews,
+            Inspector,
+            () => Content is ItemListViewModel list ? list.FlatRows : [],
+            message => Toast.Show(message, canUndo: false)
+        );
         Inspector.Decisions.PropertyChanged += (_, e) => ForwardMessage(e, Inspector.Decisions);
         services.Runner.Changed += () => _ = RefreshAsync();
     }
 
-    public AppServices Services => _services;
     public AppearanceViewModel Appearance { get; }
     public UndoToastViewModel Toast { get; }
     public CommandBarViewModel CommandBar { get; }
@@ -166,7 +173,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
 
     void ShowOnboarding()
     {
-        Onboarding = new OnboardingViewModel(_services);
+        Onboarding = _vms.Onboarding();
         Onboarding.Completed += () => _ = InitializeAsync();
         Page = AppPage.Onboarding;
         Content = Onboarding;
@@ -237,12 +244,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
 
         if (!_layoutPages.TryGetValue(ws.Id, out var page) || !MatchesLayout(page, ws.Layout))
         {
-            page = ws.Layout switch
-            {
-                Layout.Board => new BoardViewModel(_services, ws.Id),
-                Layout.Timeline => new TimelineViewModel(_services, ws.Id),
-                _ => new HabitGridViewModel(_services, ws.Id),
-            };
+            page = _vms.Home(ws.Layout, ws.Id);
             Attach(page);
             _layoutPages[ws.Id] = page;
         }
@@ -279,7 +281,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     {
         if (_today.TryGetValue(id, out var existing))
             return existing;
-        var vm = new TodayViewModel(_services, id, ResolveWorkspaceName);
+        var vm = _vms.Today(id, ResolveWorkspaceName);
         Attach(vm);
         vm.Add.Added += () => _ = RefreshAsync();
         return _today[id] = vm;
@@ -289,7 +291,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     {
         if (_backlogs.TryGetValue(id, out var existing))
             return existing;
-        var vm = new BacklogViewModel(_services, id, ResolveWorkspaceName);
+        var vm = _vms.Backlog(id, ResolveWorkspaceName);
         Attach(vm);
         return _backlogs[id] = vm;
     }
@@ -389,31 +391,30 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
                 await StartReviewAsync();
                 return;
             case AppPage.Shutdown:
-                Shutdown = new ShutdownViewModel(_services, ws.Id);
+                Shutdown = _vms.Shutdown(ws.Id);
                 Shutdown.Finished += () => _ = GoAsync(AppPage.Today);
                 await Shutdown.LoadAsync();
                 Content = Shutdown;
                 break;
             case AppPage.Insights:
-                Insights = new InsightsViewModel(_services, ws.Id);
+                Insights = _vms.Insights(ws.Id);
                 await Insights.LoadAsync();
                 Content = Insights;
                 break;
             case AppPage.TodayAll:
-                TodayAllPage = new TodayAllViewModel(_services);
+                TodayAllPage = _vms.TodayAll();
                 Attach(TodayAllPage);
                 await TodayAllPage.ReloadAsync();
                 Content = TodayAllPage;
                 break;
             case AppPage.WeeklyReview:
-                WeeklyReview = new WeeklyReviewViewModel(_services, ws.Id);
+                WeeklyReview = _vms.WeeklyReview(ws.Id);
                 WeeklyReview.Finished += () => _ = GoAsync(AppPage.Today);
                 await WeeklyReview.LoadAsync();
                 Content = WeeklyReview;
                 break;
             case AppPage.Settings:
-                Settings = new SettingsViewModel(
-                    _services,
+                Settings = _vms.Settings(
                     ws.Id,
                     Appearance,
                     _account is null ? null : new AccountViewModel(_account)
@@ -440,7 +441,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     {
         if (Selected is not { } ws)
             return;
-        var review = new ReviewViewModel(_services, ws.Id, ReviewMode.Morning);
+        var review = _vms.Review(ws.Id, ReviewMode.Morning);
         await review.LoadAsync();
         if (review.Entries.Count == 0)
         {
@@ -468,7 +469,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         }
 
         ViewDay = day;
-        DayLog = new DayLogViewModel(_services, ws.Id);
+        DayLog = _vms.DayLog(ws.Id);
         await DayLog.LoadAsync(day);
         Page = AppPage.DayLog;
         Content = DayLog;
@@ -599,59 +600,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
             await Inspector.LoadAsync(list.FocusedRow?.Id, snap);
         else if (TodayPage?.Snapshot is { } todaySnap)
             await Inspector.LoadAsync(null, todaySnap);
-        await DecorateLinksAsync();
-    }
-
-    // Puts link summaries on the rows on screen and on the inspector's item. Previews that are missing or expired
-    // are fetched in the background and then shown; a failure only leaves the links as plain titles.
-    async Task DecorateLinksAsync()
-    {
-        if (_services.Previews is not { } previews)
-            return;
-        var rows = Content is ItemListViewModel list ? list.FlatRows : [];
-        var focused = Inspector.Item?.Id;
-        var ids = rows.Select(r => r.Id).Concat(focused is { } f ? [f] : []).Distinct().ToList();
-        try
-        {
-            await ApplyLinkSummariesAsync(previews, rows, focused);
-            var due = await previews.DueAsync(ids);
-            if (due.Count > 0)
-                _ = FetchLinkPreviewsAsync(previews, due);
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            // Enrichment is optional: navigation must not fail because a link could not be read.
-            Toast.Show($"Links unavailable: {e.Message}", canUndo: false);
-        }
-    }
-
-    async Task ApplyLinkSummariesAsync(
-        LinkPreviews previews,
-        IReadOnlyList<ItemRowViewModel> rows,
-        Guid? focused
-    )
-    {
-        var ids = rows.Select(r => r.Id).Concat(focused is { } f ? [f] : []).Distinct().ToList();
-        var summaries = await previews.ForItemsAsync(ids);
-        foreach (var row in rows)
-            row.Links = summaries.GetValueOrDefault(row.Id, []);
-        Inspector.Links = focused is { } id ? summaries.GetValueOrDefault(id, []) : [];
-    }
-
-    async Task FetchLinkPreviewsAsync(LinkPreviews previews, IReadOnlyList<string> urls)
-    {
-        try
-        {
-            await previews.FetchAsync(urls, CancellationToken.None);
-        }
-        catch (Exception e) when (e is not OperationCanceledException)
-        {
-            Toast.Show($"Couldn't fetch link previews: {e.Message}", canUndo: false);
-            return;
-        }
-        var rows = Content is ItemListViewModel list ? list.FlatRows : [];
-        var focused = Inspector.Item?.Id;
-        await ApplyLinkSummariesAsync(previews, rows, focused);
+        await _links.DecorateAsync();
     }
 
     void UpdateHeader() =>
@@ -693,162 +642,5 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
                 : "It's a new day.",
             canUndo: false
         );
-    }
-
-    // ---- keyboard ----
-
-    // Returns true when the key was consumed. `textInputFocused` lets single-key shortcuts stay out of text boxes.
-    public async Task<bool> HandleKeyAsync(KeyChord chord, bool textInputFocused = false)
-    {
-        if (CommandBar.IsOpen)
-            return await CommandBar.HandleKeyAsync(chord);
-        if (IsHelpOpen)
-        {
-            if (chord.Key is "Escape" or "?")
-                IsHelpOpen = false;
-            return true;
-        }
-
-        // The detailed create panel is modal, so Escape must close it wherever focus happens to be
-        // (a dropdown inside it swallows the key otherwise).
-        if (
-            chord.Key == "Escape"
-            && Content is TodayViewModel { Add.IsDetailedOpen: true } detailed
-        )
-        {
-            detailed.Add.Dismiss(keepTitle: true);
-            return true;
-        }
-
-        if (Page == AppPage.Onboarding)
-            return false;
-
-        if (chord.Command && KeyMap.Resolve(KeyScope.Global, chord) is { } global)
-        {
-            // Inside a text box ⌘Z/⌘A belong to the box.
-            if (!(textInputFocused && global.Action is AppAction.Undo or AppAction.SelectAll))
-            {
-                await ExecuteGlobalAsync(global);
-                return true;
-            }
-        }
-
-        if (await RoutePromptKeyAsync(chord))
-            return true;
-        if (textInputFocused)
-            return false;
-
-        // `g` then `b` / `t`: go to Backlog / Today.
-        if (_pendingG)
-        {
-            _pendingG = false;
-            if (chord.Key == "b")
-            {
-                await GoAsync(AppPage.Backlog);
-                return true;
-            }
-            if (chord.Key == "t")
-            {
-                await GoAsync(AppPage.Today);
-                return true;
-            }
-        }
-        if (
-            chord is { Key: "g", Command: false, Shift: false }
-            && Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll
-        )
-        {
-            _pendingG = true;
-            return true;
-        }
-
-        if (Page is AppPage.Today or AppPage.Backlog or AppPage.DayLog or AppPage.TodayAll)
-        {
-            switch (KeyMap.Resolve(KeyScope.List, chord)?.Action)
-            {
-                case AppAction.PrevDay:
-                    await ShiftDayAsync(-1);
-                    return true;
-                case AppAction.NextDay:
-                    await ShiftDayAsync(1);
-                    return true;
-                case AppAction.Help:
-                    IsHelpOpen = true;
-                    return true;
-                case AppAction.Search:
-                    await CommandBar.OpenAsync();
-                    return true;
-            }
-        }
-
-        return Content switch
-        {
-            ReviewViewModel review => await review.HandleKeyAsync(chord),
-            ShutdownViewModel shutdown => await shutdown.HandleKeyAsync(chord),
-            WeeklyReviewViewModel weekly => await weekly.HandleKeyAsync(chord),
-            ItemListViewModel list => await list.HandleKeyAsync(chord),
-            _ => false,
-        };
-    }
-
-    // An open prompt or title editor receives Enter/Escape (and drop-reason digits) even while a text box has focus.
-    async Task<bool> RoutePromptKeyAsync(KeyChord chord)
-    {
-        if (Inspector.Decisions.Prompt is not null)
-            return await Inspector.Decisions.HandlePromptKeyAsync(chord);
-        return Content switch
-        {
-            ItemListViewModel { Decisions.Prompt: not null }
-            or ItemListViewModel { IsEditingTitle: true } => await (
-                (ItemListViewModel)Content
-            ).HandleKeyAsync(chord),
-            ReviewViewModel { Decisions.Prompt: not null } review => await review.HandleKeyAsync(
-                chord
-            ),
-            ShutdownViewModel { Review.Decisions.Prompt: not null } shutdown =>
-                await shutdown.HandleKeyAsync(chord),
-            _ => false,
-        };
-    }
-
-    async Task ExecuteGlobalAsync(Binding binding)
-    {
-        switch (binding.Action)
-        {
-            case AppAction.CommandBar:
-                await CommandBar.OpenAsync();
-                break;
-            case AppAction.ToggleInspector:
-                ToggleInspector();
-                break;
-            case AppAction.ToggleSidebar:
-                ToggleSidebar();
-                break;
-            case AppAction.JumpToday:
-                await GoAsync(AppPage.Today);
-                break;
-            case AppAction.WorkspaceN:
-                if (binding.Arg - 1 < Workspaces.Count)
-                    await SelectWorkspaceAsync(Workspaces[binding.Arg - 1].Id);
-                break;
-            case AppAction.TodayAll:
-                await GoAsync(AppPage.TodayAll);
-                break;
-            case AppAction.ModeSwitcher:
-                await GoAsync(AppPage.Settings);
-                break;
-            case AppAction.StartReview:
-                await StartReviewAsync();
-                break;
-            case AppAction.Shutdown:
-                await GoAsync(AppPage.Shutdown);
-                break;
-            case AppAction.Undo:
-                await UndoAsync();
-                break;
-            case AppAction.SelectAll when Content is ItemListViewModel list:
-                list.SelectAll();
-                break;
-        }
     }
 }

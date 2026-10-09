@@ -28,17 +28,31 @@ public sealed partial class ReviewEntry(ItemRowViewModel row) : ObservableObject
 // One item at a time, one keystroke each (docs/07 §4.1). Shutdown step 2 reuses it with "tomorrow" semantics.
 public sealed partial class ReviewViewModel : ObservableObject
 {
-    readonly AppServices _services;
+    readonly WorkspaceReader _reader;
+    readonly UndoService _undo;
+    readonly IUiState _uiState;
+    readonly IDayNotes _dayNotes;
     readonly Guid _workspaceId;
     readonly List<ReviewEntry> _decided = [];
     ReviewEntry? _pending;
 
-    public ReviewViewModel(AppServices services, Guid workspaceId, ReviewMode mode)
+    public ReviewViewModel(
+        WorkspaceReader reader,
+        UndoService undo,
+        IUiState uiState,
+        IDayNotes dayNotes,
+        DecisionController decisions,
+        Guid workspaceId,
+        ReviewMode mode
+    )
     {
-        _services = services;
+        _reader = reader;
+        _undo = undo;
+        _uiState = uiState;
+        _dayNotes = dayNotes;
         _workspaceId = workspaceId;
         Mode = mode;
-        Decisions = new DecisionController(services);
+        Decisions = decisions;
         Decisions.Decided += OnDecided;
     }
 
@@ -111,7 +125,7 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
-        Snapshot = await _services.Reader.LoadAsync(_workspaceId);
+        Snapshot = await _reader.LoadAsync(_workspaceId);
         var snap = Snapshot;
         var byId = snap.Items.ToDictionary(i => i.Id);
 
@@ -147,7 +161,7 @@ public sealed partial class ReviewViewModel : ObservableObject
         {
             var n = Entries.Count;
             Greeting = $"Good morning. {n} item{(n == 1 ? "" : "s")} carried over from yesterday.";
-            DayNote = await _services.DayNotes.GetAsync(_workspaceId, snap.Today.AddDays(-1));
+            DayNote = await _dayNotes.GetAsync(_workspaceId, snap.Today.AddDays(-1));
         }
         else
             Greeting = $"{Entries.Count} item{(Entries.Count == 1 ? "" : "s")} not done today.";
@@ -242,7 +256,7 @@ public sealed partial class ReviewViewModel : ObservableObject
         if (_decided.Count == 0)
             return false;
         var entry = _decided[^1];
-        if (await _services.Undo.UndoLastAsync() is null)
+        if (await _undo.UndoLastAsync() is null)
             return false;
 
         _decided.RemoveAt(_decided.Count - 1);
@@ -267,7 +281,7 @@ public sealed partial class ReviewViewModel : ObservableObject
         }
         // Dismissing keeps the banner on Today; the morning review won't reopen until tomorrow.
         if (!IsShutdown)
-            _services.UiState.Set(DismissKey(_workspaceId), Snapshot?.Today.ToString("yyyy-MM-dd"));
+            _uiState.Set(DismissKey(_workspaceId), Snapshot?.Today.ToString("yyyy-MM-dd"));
         Closed?.Invoke();
     }
 
@@ -321,7 +335,7 @@ public sealed partial class ReviewViewModel : ObservableObject
         Refresh();
     }
 
-    async Task RefreshSnapshotAsync() => Snapshot = await _services.Reader.LoadAsync(_workspaceId);
+    async Task RefreshSnapshotAsync() => Snapshot = await _reader.LoadAsync(_workspaceId);
 
     partial void OnSuggestionChanged(ReviewSuggestion? value)
     {

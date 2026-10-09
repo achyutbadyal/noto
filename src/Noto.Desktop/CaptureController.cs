@@ -13,7 +13,7 @@ sealed class CaptureController(AppServices services)
 
     public void WarmUp()
     {
-        _vm = new CaptureViewModel(services);
+        _vm = new ViewModelFactory(services).Capture();
         _vm.CloseRequested += () => _window?.Hide();
         _window = new CaptureWindow { DataContext = _vm };
     }

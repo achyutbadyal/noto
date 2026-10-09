@@ -15,7 +15,7 @@ public sealed class TodayTests : IDisposable
 
     async Task<TodayViewModel> LoadAsync()
     {
-        var vm = new TodayViewModel(_app.Services, _app.Workspace.Id);
+        var vm = _app.Vms.Today(_app.Workspace.Id);
         await vm.ReloadAsync();
         return vm;
     }
@@ -358,7 +358,7 @@ public sealed class TodayTests : IDisposable
             new Noto.Core.Commands.CreateItem(someday, _app.Workspace.Id, "Maybe", IsSomeday: true)
         );
 
-        var backlog = new BacklogViewModel(_app.Services, _app.Workspace.Id);
+        var backlog = _app.Vms.Backlog(_app.Workspace.Id);
         await backlog.ReloadAsync();
 
         backlog.Sections[0].Rows.Single().Title.ShouldBe("Unscheduled");

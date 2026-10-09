@@ -1,6 +1,6 @@
 using Noto.Core.Commands;
 
-namespace Noto.App.Logic;
+namespace Noto.Core.Text;
 
 public enum TokenKind
 {

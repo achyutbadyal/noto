@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.Core.Export;
+using Noto.Core.Import;
 using Noto.Core.Models;
 using Noto.Core.Presets;
 using Noto.Platform.Abstractions;
@@ -25,18 +27,28 @@ public sealed record EnumOption<T>(T Value, string Label)
 // Per-workspace controls (preset, layout × order × pressure, capacity, day) plus device-level appearance.
 public sealed partial class SettingsViewModel : ObservableObject
 {
-    readonly AppServices _services;
+    readonly ImportService _import;
+    readonly ExportService _export;
+    readonly ActionRunner _runner;
+    readonly WorkspaceActions _workspaces;
     readonly Guid _workspaceId;
     bool _loading;
 
     public SettingsViewModel(
-        AppServices services,
+        PlatformServices platform,
+        ImportService import,
+        ExportService export,
+        ActionRunner runner,
+        WorkspaceActions workspaces,
         Guid workspaceId,
         AppearanceViewModel appearance,
         AccountViewModel? account = null
     )
     {
-        _services = services;
+        _import = import;
+        _export = export;
+        _runner = runner;
+        _workspaces = workspaces;
         _workspaceId = workspaceId;
         Appearance = appearance;
         Account = account;
@@ -44,23 +56,23 @@ public sealed partial class SettingsViewModel : ObservableObject
         [
             new(
                 "Global quick-capture hotkey",
-                services.Platform.Hotkey.Capability.IsSupported,
-                services.Platform.Hotkey.Capability.Reason
+                platform.Hotkey.Capability.IsSupported,
+                platform.Hotkey.Capability.Reason
             ),
             new(
                 "Secure credential storage",
-                services.Platform.Keyring.Capability.IsSupported,
-                services.Platform.Keyring.Capability.Reason
+                platform.Keyring.Capability.IsSupported,
+                platform.Keyring.Capability.Reason
             ),
             new(
                 "Capture with context",
-                services.Platform.CaptureContext.Capability.IsSupported,
-                services.Platform.CaptureContext.Capability.Reason
+                platform.CaptureContext.Capability.IsSupported,
+                platform.CaptureContext.Capability.Reason
             ),
             new(
                 "Notifications",
-                services.Platform.Notifications.Capability.IsSupported,
-                services.Platform.Notifications.Capability.Reason
+                platform.Notifications.Capability.IsSupported,
+                platform.Notifications.Capability.Reason
             ),
         ];
     }
@@ -85,11 +97,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         try
         {
             var items = Noto.Core.Import.Importers.Parse(ImportFormat, content);
-            var result = await _services.Import.ImportAsync(_workspaceId, items);
+            var result = await _import.ImportAsync(_workspaceId, items);
             DataStatus =
                 $"Imported {result.Created} items ({result.Completed} completed)"
                 + (result.Errors.Count > 0 ? $", {result.Errors.Count} skipped" : "");
-            _services.Runner.NotifyChanged();
+            _runner.NotifyChanged();
         }
         // Parsers surface malformed files as format, JSON or CSV exceptions; the user just needs to know it failed.
         catch (Exception e)
@@ -105,9 +117,9 @@ public sealed partial class SettingsViewModel : ObservableObject
         }
     }
 
-    public Task<string> ExportJsonAsync() => _services.Export.ExportJsonAsync(_workspaceId);
+    public Task<string> ExportJsonAsync() => _export.ExportJsonAsync(_workspaceId);
 
-    public Task<string> ExportCsvAsync() => _services.Export.ExportItemsCsvAsync(_workspaceId);
+    public Task<string> ExportCsvAsync() => _export.ExportItemsCsvAsync(_workspaceId);
 
     public IReadOnlyList<CapabilityRow> Capabilities { get; }
     public IReadOnlyList<Preset> Presets => BuiltInPresets.All;
@@ -176,7 +188,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public async Task LoadAsync()
     {
         var ws =
-            await _services.Workspaces.GetAsync(_workspaceId)
+            await _workspaces.GetAsync(_workspaceId)
             ?? throw new InvalidOperationException("Workspace not found");
         _loading = true;
         Name = ws.Name;
@@ -269,9 +281,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     async Task SaveAsync(Action<Workspace> edit)
     {
         Error = null;
-        await _services.Workspaces.UpdateAsync(_workspaceId, edit);
+        await _workspaces.UpdateAsync(_workspaceId, edit);
         await LoadAsync();
-        _services.Runner.NotifyChanged();
+        _runner.NotifyChanged();
     }
 
     // The one-line "what changes" preview shown in the mode switcher (docs/07 §9).

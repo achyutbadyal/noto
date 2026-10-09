@@ -17,7 +17,7 @@ public sealed class ReviewFlowTests : IDisposable
         var past = AppFixture.Today.AddDays(-3);
         for (var n = 1; n <= 5; n++)
             ids.Add(await _app.AddAsync($"Task {n}", past));
-        var review = new ReviewViewModel(_app.Services, _app.Workspace.Id, mode);
+        var review = _app.Vms.Review(_app.Workspace.Id, mode);
         await review.LoadAsync();
         return (ids.ToArray(), review);
     }
@@ -154,7 +154,7 @@ public sealed class ReviewFlowTests : IDisposable
         var past = AppFixture.Today.AddDays(-2);
         await _app.AddAsync("A", past, estimate: 120);
         await _app.AddAsync("B", past, estimate: 120);
-        var review = new ReviewViewModel(_app.Services, _app.Workspace.Id, ReviewMode.Morning);
+        var review = _app.Vms.Review(_app.Workspace.Id, ReviewMode.Morning);
         await review.LoadAsync();
 
         review.Capacity!.Summary.Committed.ShouldBe(0);
@@ -181,7 +181,7 @@ public sealed class ReviewFlowTests : IDisposable
     public async Task Shutdown_mode_moves_leftovers_to_tomorrow_as_a_defer()
     {
         var id = await _app.AddAsync("Unfinished", AppFixture.Today);
-        var review = new ReviewViewModel(_app.Services, _app.Workspace.Id, ReviewMode.Shutdown);
+        var review = _app.Vms.Review(_app.Workspace.Id, ReviewMode.Shutdown);
         await review.LoadAsync();
 
         review.Entries.Count.ShouldBe(1);
@@ -217,7 +217,7 @@ public sealed class ReviewFlowTests : IDisposable
         _app.Clock.Advance(TimeSpan.FromDays(-4));
         await _app.AddAsync("Migrate auth", AppFixture.Today.AddDays(-4), estimate: 180);
         _app.Clock.Advance(TimeSpan.FromDays(4));
-        var review = new ReviewViewModel(_app.Services, _app.Workspace.Id, ReviewMode.Morning);
+        var review = _app.Vms.Review(_app.Workspace.Id, ReviewMode.Morning);
         await review.LoadAsync();
 
         review.Suggestion!.Key.ShouldBe("B");

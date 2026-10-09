@@ -3,6 +3,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.Core.Links;
+using Noto.Core.Time;
 using Noto.Core.Workspaces;
 using Noto.Platform.Abstractions;
 
@@ -14,18 +16,32 @@ public sealed record WorkspaceChoice(Guid Id, string Name, string Icon);
 // and an "attach current page" toggle when the frontmost app is a browser.
 public sealed partial class CaptureViewModel : ObservableObject
 {
-    readonly AppServices _services;
+    readonly IClock _clock;
+    readonly PlatformServices _platform;
+    readonly WorkspaceActions _workspaces;
+    readonly LinkIndexer _links;
+    readonly ActionRunner _runner;
     IReadOnlyList<WorkspaceChoice> _all = [];
 
-    public CaptureViewModel(AppServices services)
+    public CaptureViewModel(
+        IClock clock,
+        PlatformServices platform,
+        WorkspaceActions workspaces,
+        LinkIndexer links,
+        ActionRunner runner
+    )
     {
-        _services = services;
+        _clock = clock;
+        _platform = platform;
+        _workspaces = workspaces;
+        _links = links;
+        _runner = runner;
         Add = new AddItemViewModel(
-            services,
+            runner,
             Guid.Empty,
             plannedForToday: true,
             null,
-            () => DateOnly.FromDateTime(services.Clock.UtcNow.UtcDateTime)
+            () => DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime)
         );
     }
 
@@ -54,7 +70,7 @@ public sealed partial class CaptureViewModel : ObservableObject
     // Called each time the panel is shown.
     public async Task PrepareAsync()
     {
-        var workspaces = await _services.Workspaces.ListAsync();
+        var workspaces = await _workspaces.ListAsync();
         _all = workspaces.Select(w => new WorkspaceChoice(w.Id, w.Name, w.Icon)).ToList();
         Workspaces.Clear();
         foreach (var w in _all)
@@ -62,14 +78,14 @@ public sealed partial class CaptureViewModel : ObservableObject
 
         // Default to a workspace that is inside its focus hours, so Work stays quiet in the evening.
         var active =
-            workspaces.FirstOrDefault(w => FocusHours.IsActive(w, _services.Clock))
+            workspaces.FirstOrDefault(w => FocusHours.IsActive(w, _clock))
             ?? workspaces.FirstOrDefault();
         Select(active is null ? null : Workspaces.First(w => w.Id == active.Id));
 
         Status = null;
         AttachPage = false;
-        Context = _services.Platform.CaptureContext.Capability.IsSupported
-            ? await _services.Platform.CaptureContext.GetAsync()
+        Context = _platform.CaptureContext.Capability.IsSupported
+            ? await _platform.CaptureContext.GetAsync()
             : null;
     }
 
@@ -78,7 +94,7 @@ public sealed partial class CaptureViewModel : ObservableObject
         Selected = choice;
         var text = Add.Text;
         Add = new AddItemViewModel(
-            _services,
+            _runner,
             choice?.Id ?? Guid.Empty,
             plannedForToday: true,
             name =>
@@ -86,7 +102,7 @@ public sealed partial class CaptureViewModel : ObservableObject
                     is { } w
                     ? w.Id
                     : null,
-            () => DateOnly.FromDateTime(_services.Clock.UtcNow.UtcDateTime)
+            () => DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime)
         )
         {
             Text = text,
@@ -118,7 +134,7 @@ public sealed partial class CaptureViewModel : ObservableObject
         {
             try
             {
-                await _services.Links.AddExplicitAsync(id, url);
+                await _links.AddExplicitAsync(id, url);
             }
             catch (ArgumentException)
             { /* non-http pages are simply not attached */

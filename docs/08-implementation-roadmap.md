@@ -132,9 +132,9 @@ Delivers [07](07-ui-ux-design.md) §3–4, §7.1, §10–12: shell, Today sectio
 **Done when:**
 
 - [ ] A 5-item Morning Review can be done with the keyboard alone in < 30s.
-- [ ] Every decision is undoable.
+- [x] Every decision is undoable.
 - [ ] Rows read correctly in VoiceOver ("Deploy v2.3, planned, carried 4 times, estimate 1 hour").
-- [ ] Both themes pass the contrast table in [07 › Tokens](07-ui-ux-design.md#111-tokens).
+- [x] Both themes pass the contrast table in [07 › Tokens](07-ui-ux-design.md#111-tokens).
 
 ## Phase 4: Presets & Insights v1 (10 days)
 
@@ -168,8 +168,8 @@ Provider interface and registry, keyring storage, PAT and OAuth (loopback + PKCE
 **Done when:**
 
 - [ ] GitHub PR, Jira issue and Linear issue URLs show chips within 2s cached / 5s on first fetch.
-- [ ] A merged PR produces the "Done?" suggestion. A Waiting item auto-returns when its Jira ticket leaves a blocked status.
-- [ ] Tokens exist only in the Keychain. They're absent from SQLite, exports and logs (verified by test).
+- [x] A merged PR produces the "Done?" suggestion. A Waiting item auto-returns when its Jira ticket leaves a blocked status.
+- [x] Tokens exist only in the Keychain. They're absent from SQLite, exports and logs (verified by test).
 
 ## Phase 8: Sync & Backend (18 days)
 
@@ -177,9 +177,9 @@ Server (auth, devices, `/sync`, `/sync/snapshot`), HLC op-log client and merger,
 
 **Done when:**
 
-- [ ] A randomized convergence test (3 replicas, 10k random ops, random partitions and clock skew) ends with identical state on all replicas, and no `different-field` edit is lost.
-- [ ] Credentials and previews never appear in any op (asserted in the test suite).
-- [ ] The app works fully offline with sync enabled.
+- [x] A randomized convergence test (3 replicas, 10k random ops, random partitions and clock skew) ends with identical state on all replicas, and no `different-field` edit is lost.
+- [x] Credentials and previews never appear in any op (asserted in the test suite).
+- [x] The app works fully offline with sync enabled.
 
 ## Phase 9: Web (15 days)
 

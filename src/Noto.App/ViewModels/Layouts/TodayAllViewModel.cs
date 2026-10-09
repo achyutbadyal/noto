@@ -3,6 +3,8 @@ using Noto.App.Logic;
 using Noto.App.Services;
 using Noto.Core.Insights;
 using Noto.Core.Models;
+using Noto.Core.Text;
+using Noto.Core.Workspaces;
 
 namespace Noto.App.ViewModels;
 
@@ -13,8 +15,10 @@ public sealed partial class TodayAllViewModel : ItemListViewModel
     List<SectionViewModel> _sections = [];
     readonly Dictionary<Guid, WorkspaceSnapshot> _snapshots = [];
 
-    public TodayAllViewModel(AppServices services)
-        : base(services, Guid.Empty) { }
+    readonly TodayAllService _todayAll;
+
+    public TodayAllViewModel(ListServices services, TodayAllService todayAll)
+        : base(services, Guid.Empty) => _todayAll = todayAll;
 
     public override IReadOnlyList<SectionViewModel> Sections => _sections;
     public override WorkspaceSnapshot? FocusedSnapshot =>
@@ -34,7 +38,7 @@ public sealed partial class TodayAllViewModel : ItemListViewModel
     public override async Task ReloadAsync()
     {
         var keep = FocusedRow?.Id;
-        var view = await Services.TodayAll.GetAsync();
+        var view = await _todayAll.GetAsync();
         _snapshots.Clear();
 
         var sections = new List<SectionViewModel>();

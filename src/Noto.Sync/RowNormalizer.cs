@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using Noto.Core.Models;
 
-namespace Noto.Core.Sync;
+namespace Noto.Sync;
 
 // Per-field LWW can merge two valid edits into a state that breaks I1–I6 (e.g. Done on one device,
 // Dropped on another). This deterministic repair runs on every replica after a merge, so all of them

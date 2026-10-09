@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace Noto.App.Logic;
+namespace Noto.Core.Text;
 
 // Forgiving date input for defers and capture: "fri", "next week", "+3", "tomorrow", "oct 12", "2026-10-12".
 public static class NaturalDate

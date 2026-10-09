@@ -559,7 +559,7 @@ public sealed class ShellTests : IDisposable
 
         // The next morning's review shows yesterday's note.
         _app.NextDay();
-        var review = new ReviewViewModel(_app.Services, _app.Workspace.Id, ReviewMode.Morning);
+        var review = _app.Vms.Review(_app.Workspace.Id, ReviewMode.Morning);
         await review.LoadAsync();
         review.DayNote.ShouldBe("Call the plumber");
     }
@@ -692,7 +692,7 @@ public sealed class CaptureTests : IDisposable
     {
         var platform = _app.Services.Platform with { CaptureContext = new FakeContext(context) };
         var services = new AppServices(_app.Db, _app.Services.Bus, _app.Clock, _app.Db, platform);
-        return new CaptureViewModel(services);
+        return new ViewModelFactory(services).Capture();
     }
 
     [Fact]

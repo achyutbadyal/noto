@@ -10,7 +10,7 @@ public sealed class BacklogViewModel : ItemListViewModel
     readonly SectionViewModel _someday = new("Someday");
 
     public BacklogViewModel(
-        AppServices services,
+        ListServices services,
         Guid workspaceId,
         Func<string, Guid?>? resolveWorkspace = null
     )
@@ -18,7 +18,7 @@ public sealed class BacklogViewModel : ItemListViewModel
     {
         Sections = [_unscheduled, _someday];
         Add = new AddItemViewModel(
-            services,
+            services.Runner,
             workspaceId,
             plannedForToday: false,
             resolveWorkspace,

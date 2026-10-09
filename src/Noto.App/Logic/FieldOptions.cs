@@ -1,5 +1,6 @@
 using Noto.Core.Commands;
 using Noto.Core.Models;
+using Noto.Core.Text;
 
 namespace Noto.App.Logic;
 

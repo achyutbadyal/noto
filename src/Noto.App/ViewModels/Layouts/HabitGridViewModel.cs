@@ -5,6 +5,7 @@ using Noto.App.Logic;
 using Noto.App.Services;
 using Noto.Core.Commands;
 using Noto.Core.Habits;
+using Noto.Core.Interfaces;
 using Noto.Core.Models;
 using Noto.Core.Recurrence;
 
@@ -51,8 +52,20 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
     readonly SectionViewModel _notHabits = new("Not habits") { IsCollapsed = true };
     int _focusedHabit;
 
-    public HabitGridViewModel(AppServices services, Guid workspaceId)
-        : base(services, workspaceId) { }
+    readonly IUnitOfWork _uow;
+    readonly RecurrenceService _recurrence;
+
+    public HabitGridViewModel(
+        ListServices services,
+        IUnitOfWork uow,
+        RecurrenceService recurrence,
+        Guid workspaceId
+    )
+        : base(services, workspaceId)
+    {
+        _uow = uow;
+        _recurrence = recurrence;
+    }
 
     public override IReadOnlyList<SectionViewModel> Sections => [_notHabits];
     public ObservableCollection<HabitRowViewModel> Habits { get; } = [];
@@ -64,7 +77,7 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
     public override async Task ReloadAsync()
     {
         var keep = FocusedRow?.Id;
-        await Services.Recurrence.GenerateDueAsync(WorkspaceId);
+        await _recurrence.GenerateDueAsync(WorkspaceId);
         var snap = await Services.Reader.LoadAsync(WorkspaceId);
         Snapshot = snap;
         var byId = snap.Items.ToDictionary(i => i.Id);
@@ -78,7 +91,7 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
             )
             .ToList();
 
-        var rules = (await Services.Uow.RunAsync(s => s.Rules.ListAsync(WorkspaceId)))
+        var rules = (await _uow.RunAsync(s => s.Rules.ListAsync(WorkspaceId)))
             .Where(r => r.DeletedAt is null && r.MissedBehavior == MissedBehavior.Skip)
             .OrderBy(r => r.Template.Title)
             .ToList();

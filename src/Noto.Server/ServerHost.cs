@@ -42,7 +42,6 @@ public static class ServerHost
     {
         services.AddSingleton(sp => ServerConfig.Load(sp.GetRequiredService<IConfiguration>()));
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IDnsResolver, SystemDnsResolver>();
 
         services.AddDbContext<ServerDbContext>(
             (sp, o) =>
@@ -121,19 +120,12 @@ public static class ServerHost
         services.AddSingleton<JwtService>();
         services.AddSingleton<RateGate>();
         services.AddSingleton<ServerClock>();
-        services.AddSingleton<ProviderAllowlist>();
-        services.AddSingleton(sp => new SafeFetcher(
-            sp.GetRequiredService<IDnsResolver>(),
-            SafeFetcher.CreateHandler(),
-            sp.GetRequiredService<ServerConfig>()
-        ));
-        services.AddSingleton<OAuthBroker>();
-        services.AddSingleton<OpenGraphFetcher>();
-        services.AddSingleton<FetchProxy>();
         services.AddScoped<AuthService>();
         services.AddScoped<SyncService>();
         services.AddScoped<TombstoneGc>();
         services.AddHostedService<TombstoneGcService>();
+
+        services.AddGateway();
     }
 
     public static void Configure(WebApplication app)
@@ -215,28 +207,11 @@ public static class ServerHost
         );
         Policy(
             o,
-            "gateway-fetch",
-            l.GatewayFetchPerMinute,
-            http => "user:" + http.User.FindFirst("sub")?.Value
-        );
-        Policy(
-            o,
-            "gateway-opengraph",
-            l.OpenGraphPerMinute,
-            http => "user:" + http.User.FindFirst("sub")?.Value
-        );
-        Policy(
-            o,
-            "gateway-oauth",
-            l.GatewayOAuthPerMinute,
-            http => "ip:" + http.Connection.RemoteIpAddress
-        );
-        Policy(
-            o,
             "account",
             l.AccountPerMinute,
             http => "user:" + http.User.FindFirst("sub")?.Value
         );
+        o.AddGatewayRateLimits(cfg, Policy);
     }
 
     static void Policy(

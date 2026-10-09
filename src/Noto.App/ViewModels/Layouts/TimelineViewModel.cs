@@ -4,7 +4,7 @@ using Noto.Core.Layouts;
 namespace Noto.App.ViewModels;
 
 // Deadline layout: overdue pinned on top, then dated lanes, "Later", and a No date lane. Nothing needs a date.
-public sealed class TimelineViewModel(AppServices services, Guid workspaceId)
+public sealed class TimelineViewModel(ListServices services, Guid workspaceId)
     : ItemListViewModel(services, workspaceId)
 {
     List<SectionViewModel> _sections = [];

@@ -32,7 +32,7 @@ public sealed class WorkspaceSyncService(
 
             foreach (var type in EntityTypes.All)
             {
-                var codec = EntityCodecs.Default[type];
+                var codec = SyncEntities.Codecs[type];
                 foreach (var row in await codec.ListAsync(store, workspaceId))
                 foreach (var op in await OpsForRowAsync(store, type, workspaceId, row))
                     await store.Sync.AddPendingAsync(op);

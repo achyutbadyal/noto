@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Noto.App.Services;
 using Noto.Core.Derivations;
 using Noto.Core.Models;
+using Noto.Core.Text;
 
 namespace Noto.App.ViewModels;
 
@@ -16,7 +17,7 @@ public sealed class DayLogSection(string title, IReadOnlyList<DayLogEntry> entri
 }
 
 // Time travel (docs/07 §8.3): past days are a read-only log rebuilt from history; future days list what's scheduled.
-public sealed partial class DayLogViewModel(AppServices services, Guid workspaceId)
+public sealed partial class DayLogViewModel(WorkspaceReader reader, Guid workspaceId)
     : ObservableObject
 {
     public ObservableCollection<DayLogSection> Sections { get; } = [];
@@ -35,7 +36,7 @@ public sealed partial class DayLogViewModel(AppServices services, Guid workspace
 
     public async Task LoadAsync(DateOnly day)
     {
-        var snap = await services.Reader.LoadAsync(workspaceId);
+        var snap = await reader.LoadAsync(workspaceId);
         Day = day;
         IsFuture = day > snap.Today;
         Title =
@@ -59,7 +60,7 @@ public sealed partial class DayLogViewModel(AppServices services, Guid workspace
             return;
         }
 
-        var sets = await services.Reader.DaySetsAsync(workspaceId, day);
+        var sets = await reader.DaySetsAsync(workspaceId, day);
         Sections.Add(Section("Carried in", sets.CarriedIn, byId));
         Sections.Add(Section("Planned", sets.PlannedIn.Concat(sets.Added), byId));
         Sections.Add(Section("Done", sets.Done, byId));
@@ -85,7 +86,7 @@ public sealed partial class DayLogViewModel(AppServices services, Guid workspace
                 .Select(id => byId[id])
                 .Select(i => new DayLogEntry(
                     i.Title,
-                    i.EstimateMinutes is { } m ? $"~{Noto.App.Logic.Duration.Short(m)}" : ""
+                    i.EstimateMinutes is { } m ? $"~{Noto.Core.Text.Duration.Short(m)}" : ""
                 ))
                 .ToList()
         );

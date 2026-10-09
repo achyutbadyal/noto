@@ -3,10 +3,9 @@ using System.Security.Cryptography;
 using System.Text;
 using Noto.Server.Auth;
 using Noto.Server.Config;
-using Noto.Server.Gateway;
 using Noto.Server.Middleware;
 
-namespace Noto.Server.Endpoints;
+namespace Noto.Server.Gateway;
 
 public static class GatewayEndpoints
 {

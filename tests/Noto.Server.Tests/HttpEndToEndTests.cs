@@ -80,7 +80,7 @@ public sealed class HttpEndToEndTests : IDisposable
                 return true;
             }
         );
-        var merger = new Merger(EntityCodecs.Default, hlc, _f.Time);
+        var merger = new Merger(SyncEntities.Codecs, hlc, _f.Time);
         var workspaces = new WorkspaceSyncService(db, transport, merger, id);
         return new Device
         {

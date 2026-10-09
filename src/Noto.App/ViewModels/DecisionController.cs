@@ -4,6 +4,7 @@ using Noto.App.Logic;
 using Noto.App.Services;
 using Noto.Core.Commands;
 using Noto.Core.Models;
+using Noto.Core.Text;
 
 namespace Noto.App.ViewModels;
 
@@ -55,7 +56,7 @@ public sealed partial class DecisionPrompt : ObservableObject
 
 // Turns a decision (Today, Defer, Someday, …) into commands, asking for a date / person / subtasks / reason first when needed.
 // Shared by lists, the morning review and shutdown so the keys behave the same everywhere.
-public sealed partial class DecisionController(AppServices services) : ObservableObject
+public sealed partial class DecisionController(ActionRunner runner) : ObservableObject
 {
     static readonly (DropReason Reason, string Label)[] DropReasons =
     [
@@ -336,7 +337,7 @@ public sealed partial class DecisionController(AppServices services) : Observabl
         Prompt = null;
         try
         {
-            await services.Runner.RunAllAsync(commands, label);
+            await runner.RunAllAsync(commands, label);
             Decided?.Invoke(label);
         }
         catch (CommandException e)

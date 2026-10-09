@@ -2,9 +2,10 @@ using System.Globalization;
 using System.Text.Json;
 using Noto.Core.Derivations;
 using Noto.Core.Models;
+using Noto.Core.Text;
 using Noto.Core.Time;
 
-namespace Noto.App.Logic;
+namespace Noto.Core.Derivations;
 
 public sealed record LifeLine(DateOnly Day, string Text)
 {

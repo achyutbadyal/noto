@@ -114,18 +114,7 @@ public static class SyncRows
     ];
 
     public static IReadOnlyList<string>? FieldsOf(string entityType) =>
-        entityType switch
-        {
-            EntityTypes.RecurrenceRule => RuleFields,
-            EntityTypes.Tag => TagFields,
-            EntityTypes.TodoTag => TodoTagFields,
-            EntityTypes.DayNote => DayNoteFields,
-            EntityTypes.TodoLink => LinkFields,
-            EntityTypes.TodoItem => ItemFields,
-            EntityTypes.Workspace => WorkspaceFields,
-            EntityTypes.ItemEvent => EventFields,
-            _ => null,
-        };
+        SyncEntities.ByType.TryGetValue(entityType, out var e) ? e.Fields : null;
 
     public static JsonObject ToRow(TodoItem i) =>
         new()

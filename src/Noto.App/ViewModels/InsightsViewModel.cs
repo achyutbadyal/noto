@@ -16,7 +16,7 @@ public sealed record InsightCard(
 );
 
 // Narrative first, charts second: each card is a sentence backed by a few bars (docs/07 §8.2).
-public sealed partial class InsightsViewModel(AppServices services, Guid workspaceId)
+public sealed partial class InsightsViewModel(WorkspaceReader reader, Guid workspaceId)
     : ObservableObject
 {
     public const int WindowDays = 56;
@@ -35,10 +35,10 @@ public sealed partial class InsightsViewModel(AppServices services, Guid workspa
 
     public async Task LoadAsync()
     {
-        var snap = await services.Reader.LoadAsync(workspaceId);
+        var snap = await reader.LoadAsync(workspaceId);
         var from = snap.Today.AddDays(-WindowDays);
-        var records = await services.Reader.RecordsAsync(workspaceId);
-        var stats = await services.Reader.DayStatsAsync(workspaceId, from, snap.Today.AddDays(-1));
+        var records = await reader.RecordsAsync(workspaceId);
+        var stats = await reader.DayStatsAsync(workspaceId, from, snap.Today.AddDays(-1));
         var report = InsightsEngine.Compute(
             snap.Workspace,
             records,

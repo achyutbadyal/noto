@@ -10,14 +10,14 @@ namespace Noto.App.ViewModels;
 // Shared behavior of every flat item screen: focus, multi-select, and the single-key decisions.
 public abstract partial class ItemListViewModel : ObservableObject
 {
-    protected ItemListViewModel(AppServices services, Guid workspaceId)
+    protected ItemListViewModel(ListServices services, Guid workspaceId)
     {
         Services = services;
         WorkspaceId = workspaceId;
-        Decisions = new DecisionController(services);
+        Decisions = new DecisionController(services.Runner);
     }
 
-    protected AppServices Services { get; }
+    protected ListServices Services { get; }
     public Guid WorkspaceId { get; }
     public DecisionController Decisions { get; }
     public WorkspaceSnapshot? Snapshot { get; protected set; }

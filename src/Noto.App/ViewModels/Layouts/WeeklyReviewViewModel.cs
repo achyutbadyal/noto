@@ -8,6 +8,7 @@ using Noto.Core.Insights;
 using Noto.Core.Layouts;
 using Noto.Core.Models;
 using Noto.Core.Recurrence;
+using Noto.Core.Workspaces;
 
 namespace Noto.App.ViewModels;
 
@@ -52,8 +53,12 @@ public enum WeeklyStep
 }
 
 // Guided ~5 minute reflection (docs/07 §8.1): wins, someday sweep, stuck patterns, estimate check, next week.
-public sealed partial class WeeklyReviewViewModel(AppServices services, Guid workspaceId)
-    : ObservableObject
+public sealed partial class WeeklyReviewViewModel(
+    WorkspaceReader reader,
+    DayNoteService dayNotes,
+    ActionRunner runner,
+    Guid workspaceId
+) : ObservableObject
 {
     DateOnly _weekStart;
 
@@ -105,13 +110,10 @@ public sealed partial class WeeklyReviewViewModel(AppServices services, Guid wor
 
     public async Task LoadAsync()
     {
-        var snap = await services.Reader.LoadAsync(workspaceId);
-        var records = await services.Reader.RecordsAsync(workspaceId);
+        var snap = await reader.LoadAsync(workspaceId);
+        var records = await reader.RecordsAsync(workspaceId);
         _weekStart = RRule.MondayOf(snap.Today);
-        var outcomes = await services.DayNoteService.GetOutcomesAsync(
-            workspaceId,
-            _weekStart.AddDays(7)
-        );
+        var outcomes = await dayNotes.GetOutcomesAsync(workspaceId, _weekStart.AddDays(7));
         var data = WeeklyReviewBuilder.Build(
             snap.Workspace,
             records,
@@ -197,9 +199,9 @@ public sealed partial class WeeklyReviewViewModel(AppServices services, Guid wor
                 commands.Add(new DropItem(s.Entry.Item.Id, DropReason.NotWorthIt));
         }
         if (commands.Count > 0)
-            await services.Runner.RunAllAsync(commands, "Weekly review");
+            await runner.RunAllAsync(commands, "Weekly review");
 
-        await services.DayNoteService.SetOutcomesAsync(
+        await dayNotes.SetOutcomesAsync(
             workspaceId,
             _weekStart.AddDays(7),
             [Outcome1, Outcome2, Outcome3]

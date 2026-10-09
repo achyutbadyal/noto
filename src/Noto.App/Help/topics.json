@@ -1,0 +1,744 @@
+[
+  {
+    "id": "start",
+    "title": "Start here",
+    "summary": "What the pieces are and how a day flows through Noto.",
+    "icon": "today",
+    "sections": [
+      {
+        "heading": "The three things you need to know",
+        "body": "Noto keeps you honest about what you actually finish. Everything else is detail.",
+        "points": [
+          {
+            "label": "Workspace",
+            "text": "A container for one area of your life. Each has its own items, mode and stats."
+          },
+          {
+            "label": "Mode",
+            "text": "How a workspace looks and pushes you. It never changes what is stored."
+          },
+          {
+            "label": "Today",
+            "text": "One logical day per workspace. It can start at 04:00 if your nights run late."
+          }
+        ]
+      },
+      {
+        "heading": "The loop",
+        "body": "Noto is built around a small daily rhythm rather than an endless list.",
+        "points": [
+          {
+            "label": "Capture",
+            "text": "⌘K or the field at the bottom of Today. Type a sentence; tokens like ~30m or !2 are understood."
+          },
+          {
+            "label": "Morning review",
+            "text": "Decide what today holds. Carried items are put in front of you, one at a time."
+          },
+          {
+            "label": "Work",
+            "text": "Pick a Now item with f. Only one at a time, so the day has a focus."
+          },
+          {
+            "label": "Shutdown",
+            "text": "Close the day: say what got done and what carries."
+          },
+          {
+            "label": "Weekly review",
+            "text": "Once a week, sweep what has gone stale."
+          }
+        ]
+      },
+      {
+        "heading": "Where to go next",
+        "body": "Press ⌘K and type a word — the guide itself is searchable, as is every screen.",
+        "points": [
+          {
+            "label": "Confused by a control",
+            "text": "Most controls have a small ⓘ next to them that opens the matching page here."
+          },
+          {
+            "label": "Confused by a number",
+            "text": "Open an item and read its Age, Carry and Defers — explained under \"Age, carry, defers\"."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "workspaces",
+    "title": "Workspaces",
+    "summary": "One container per area of your life.",
+    "icon": "folder",
+    "sections": [
+      {
+        "heading": "What a workspace isolates",
+        "body": "Items, history and tags; the mode (layout, order, pressure); stats; sync; time zone, day boundary, focus hours and daily capacity.",
+        "points": [
+          {
+            "label": "New workspace",
+            "text": "Sidebar → New workspace. The templates (Work, Personal, Health, Side Projects) are one-click starting points."
+          },
+          {
+            "label": "Switch",
+            "text": "Click it, or press ⌘1…⌘9."
+          },
+          {
+            "label": "Rename / delete",
+            "text": "Settings → Workspace."
+          }
+        ]
+      },
+      {
+        "heading": "Focus hours",
+        "body": "Focus hours separate contexts in time as well as in data.",
+        "points": [
+          {
+            "label": "Outside focus hours",
+            "text": "The workspace drops out of Today (all) and its badge goes quiet. Nothing is hidden if you open it directly."
+          },
+          {
+            "label": "Quick capture",
+            "text": "Defaults to the workspace whose focus hours are active."
+          }
+        ]
+      },
+      {
+        "heading": "Capacity and the day",
+        "body": "Two settings that quietly shape what Today shows.",
+        "points": [
+          {
+            "label": "Daily capacity",
+            "text": "How much you can realistically take on. Today's capacity bar compares your planned work against it."
+          },
+          {
+            "label": "Day boundary",
+            "text": "When a new day begins, e.g. 04:00. Work done at 01:00 still counts for yesterday."
+          },
+          {
+            "label": "Time zone",
+            "text": "Follow the device, or pin the workspace to a zone so a trip does not reshuffle your days."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "modes",
+    "title": "Modes, presets, layout, order, pressure",
+    "summary": "A mode is three independent controls. The named modes are just bundles of them.",
+    "icon": "settings",
+    "sections": [
+      {
+        "heading": "A mode is three controls, not one",
+        "body": "Earlier versions had six monolithic modes, which contradicted each other. A mode is now three independent controls, and the six named modes are presets over them.",
+        "points": [
+          {
+            "label": "Layout",
+            "text": "How items are arranged: list, board, timeline or habit grid."
+          },
+          {
+            "label": "Order",
+            "text": "How items are sorted inside their section."
+          },
+          {
+            "label": "Pressure",
+            "text": "How loudly Noto reminds you: gentle, honest or relentless."
+          },
+          {
+            "label": "Preset",
+            "text": "A named bundle of the three. Picking one just sets all three at once."
+          }
+        ]
+      },
+      {
+        "heading": "Changing a mode never edits your items",
+        "body": "Switching layout, order or pressure is presentation only. It writes nothing to items, so you can experiment freely and switch back.",
+        "points": [
+          {
+            "label": "Items without the layout's field",
+            "text": "They are never dropped. A timeline item with no date sits in a \"No date\" lane; a board item with no column sits in Someday."
+          },
+          {
+            "label": "Rollover",
+            "text": "Identical in every mode, because rollover is a query over the same data."
+          },
+          {
+            "label": "Custom",
+            "text": "Change any one control and the preset reads \"sprint (custom)\". Change it back and the label follows."
+          }
+        ]
+      },
+      {
+        "heading": "The six presets",
+        "body": "Each is a starting point, not a commitment.",
+        "points": [
+          {
+            "label": "Sprint",
+            "text": "list · priority + carry · honest — work and daily throughput."
+          },
+          {
+            "label": "Zen",
+            "text": "list (spacious) · manual · gentle — personal, low pressure."
+          },
+          {
+            "label": "Deadline",
+            "text": "timeline · due date · honest — exams, launches, time-boxed projects."
+          },
+          {
+            "label": "Habit",
+            "text": "habit grid · time of day · gentle — health and routines."
+          },
+          {
+            "label": "Kanban",
+            "text": "board · manual · gentle — side projects and multi-phase work."
+          },
+          {
+            "label": "Accountability",
+            "text": "list · carry · relentless — any workspace where you want the truth."
+          }
+        ]
+      },
+      {
+        "heading": "How to change it",
+        "body": "Sidebar → Settings → Mode, or press ⌘K and type \"Switch preset\"."
+      }
+    ]
+  },
+  {
+    "id": "layouts",
+    "title": "Layouts",
+    "summary": "List, board, timeline or habit grid.",
+    "icon": "kanban",
+    "sections": [
+      {
+        "heading": "What each layout does",
+        "body": "The layout decides the shape of the home screen. The items are the same in all four.",
+        "points": [
+          {
+            "label": "List",
+            "text": "Sections Now / Planned / Waiting on / Done today, plus a Backlog for Unscheduled and Someday."
+          },
+          {
+            "label": "Board",
+            "text": "Columns Someday · Backlog · Today · Waiting · Done. Dragging sets status and planned date — no hidden extra state."
+          },
+          {
+            "label": "Timeline",
+            "text": "Items with a due date or a future plan are placed on a line; overdue items are pinned on top; the rest wait in \"No date\"."
+          },
+          {
+            "label": "Habit grid",
+            "text": "Shows repeating rules with missed days skipped. Everything else is one click away under \"Not habits\"."
+          }
+        ]
+      },
+      {
+        "heading": "Each layout remembers its own setup",
+        "body": "Board columns, timeline range and the grid's window are stored per layout, so switching away and back restores them."
+      }
+    ]
+  },
+  {
+    "id": "order",
+    "title": "Order",
+    "summary": "How items are sorted inside a section.",
+    "icon": "sprint",
+    "sections": [
+      {
+        "heading": "The five strategies",
+        "body": "Sections (Now, Planned, Waiting, Done) are always applied first; order sorts within a section.",
+        "points": [
+          {
+            "label": "Manual",
+            "text": "Keeps the order you dragged things into."
+          },
+          {
+            "label": "Priority + carry",
+            "text": "Priority first, then how long it has been carried."
+          },
+          {
+            "label": "Due date",
+            "text": "Overdue first, then nearest due date; undated items last."
+          },
+          {
+            "label": "Carry",
+            "text": "Most-carried and oldest first — the honest view."
+          },
+          {
+            "label": "Time of day",
+            "text": "Morning → Midday → Afternoon → Evening, then your manual order."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pressure",
+    "title": "Pressure",
+    "summary": "How loudly Noto reminds you — and how much it does on its own.",
+    "icon": "accountability",
+    "sections": [
+      {
+        "heading": "Carry, not age",
+        "body": "Every threshold is measured in carry: the number of planned days that passed with the item undone. An item added today is fresh however old its due date is.",
+        "points": [
+          {
+            "label": "Gentle",
+            "text": "No left bar, review is optional. Fresh 0–4, warm 5–9, hot 10–13, stale 14+. Stuck at carry 14 or 5 defers."
+          },
+          {
+            "label": "Honest",
+            "text": "Review is on. Fresh 0, warm 1–2, hot 3–5, stale 6+. Stuck at carry 3 or 3 defers."
+          },
+          {
+            "label": "Relentless",
+            "text": "Review cannot be skipped and your 3 most-carried items are pinned on top. Stuck at carry 2 or 2 defers."
+          }
+        ]
+      },
+      {
+        "heading": "What pressure never does",
+        "body": "It does not change what is stored and it does not shame you. A missed day is an empty square, never a red cross."
+      }
+    ]
+  },
+  {
+    "id": "carry",
+    "title": "Age, carry, defers",
+    "summary": "The three numbers in the inspector, and what the colours mean.",
+    "icon": "carry",
+    "sections": [
+      {
+        "heading": "The three numbers",
+        "body": "Select an item and they appear on the right. They are the honest core of Noto.",
+        "points": [
+          {
+            "label": "Age",
+            "text": "Days since the item was created. A plain fact; nothing escalates on age alone."
+          },
+          {
+            "label": "Carry",
+            "text": "Days the item was planned for and left undone. This is what pressure reacts to."
+          },
+          {
+            "label": "Defers",
+            "text": "Times you explicitly pushed it to a later day."
+          }
+        ]
+      },
+      {
+        "heading": "The states",
+        "body": "The same item can be warm in one workspace and stale in another, because the thresholds are the workspace's pressure setting.",
+        "points": [
+          {
+            "label": "Fresh",
+            "text": "Ordinary text colour. Nothing to see."
+          },
+          {
+            "label": "Warm",
+            "text": "A gentle amber tint on the carry mark."
+          },
+          {
+            "label": "Hot",
+            "text": "Amber bar on the left edge of the row."
+          },
+          {
+            "label": "Stale",
+            "text": "Red bar, and the row says \"stuck?\"."
+          }
+        ]
+      },
+      {
+        "heading": "\"Stuck?\" is a question, not a verdict",
+        "body": "When an item crosses the stuck threshold, Noto asks why instead of nagging: too big, blocked, waiting, not important, or forgotten.",
+        "points": [
+          {
+            "label": "Break it down",
+            "text": "Splits it into steps so the next action is obvious."
+          },
+          {
+            "label": "Make it Now",
+            "text": "Commits the next 25 minutes to it."
+          },
+          {
+            "label": "First thing tomorrow",
+            "text": "A deliberate one-day defer — it will not be counted as carry twice."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "editing",
+    "title": "Editing, deleting, restoring",
+    "summary": "Change any field of a task, and get anything back.",
+    "icon": "planned",
+    "sections": [
+      {
+        "heading": "Everything is editable",
+        "body": "Select a task and the inspector on the right lists its fields. Changing one runs the same action the keyboard does — nothing is a special case.",
+        "points": [
+          {
+            "label": "Title",
+            "text": "Type a new one and press Enter, or click away."
+          },
+          {
+            "label": "Time",
+            "text": "An estimate: 15 min, 30 min, 1 hr, 1.5 hr… It counts against today's capacity."
+          },
+          {
+            "label": "Priority",
+            "text": "1 is highest. It decides the order when the workspace sorts by priority."
+          },
+          {
+            "label": "When",
+            "text": "Today, tomorrow, in a week, Someday, or Unscheduled."
+          },
+          {
+            "label": "Due",
+            "text": "A deadline. Overdue items are pinned on top in the Deadline layout."
+          },
+          {
+            "label": "Day part",
+            "text": "Morning, midday, afternoon or evening — used by the habit grid's order."
+          },
+          {
+            "label": "Waiting on",
+            "text": "Name who or what is blocking it; the task moves to Waiting on."
+          },
+          {
+            "label": "Notes",
+            "text": "Free markdown."
+          }
+        ]
+      },
+      {
+        "heading": "Every change is recorded",
+        "body": "Each edit is written to the item's history, which is what \"Life of this item\" at the bottom of the inspector shows — with the values, not just that something changed:",
+        "points": [
+          {
+            "label": "Example",
+            "text": "estimate 30m → 1h · priority none → P2 · due Oct 12 → no date"
+          },
+          {
+            "label": "Why keep it",
+            "text": "It is how Noto answers \"why is this still here?\" without guessing."
+          },
+          {
+            "label": "Undo",
+            "text": "Every change is one ⌘Z. Nothing here needs a confirmation dialog."
+          }
+        ]
+      },
+      {
+        "heading": "Deleting",
+        "body": "Nothing is ever destroyed outright.",
+        "points": [
+          {
+            "label": "Delete a task",
+            "text": "Inspector → Delete task. The row leaves your lists, and ⌘Z brings it straight back."
+          },
+          {
+            "label": "Drop is different",
+            "text": "Dropping (⌫) keeps the task and records why you let it go; deleting hides it entirely."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "review",
+    "title": "Morning review",
+    "summary": "The one-at-a-time decision pass that starts your day.",
+    "icon": "review",
+    "sections": [
+      {
+        "heading": "What it is",
+        "body": "Noto puts every carried item in front of you, one at a time, and asks for a decision. It exists because a list you never decide on is just a wish.",
+        "points": [
+          {
+            "label": "When it opens",
+            "text": "Once a day, unless the workspace is on gentle pressure or you dismissed it. ⌘⇧R opens it any time."
+          },
+          {
+            "label": "Nothing to review",
+            "text": "It tells you so and gets out of the way."
+          },
+          {
+            "label": "Undo",
+            "text": "Every decision is undoable — ⌘Z."
+          }
+        ]
+      },
+      {
+        "heading": "The decisions",
+        "body": "Each has a single key, so the whole review is one hand on the keyboard.",
+        "points": [
+          {
+            "label": "T — Today",
+            "text": "Commit it to today."
+          },
+          {
+            "label": "D — Defer",
+            "text": "Push it to a specific day."
+          },
+          {
+            "label": "S — Someday",
+            "text": "Off today's plate, still alive."
+          },
+          {
+            "label": "B — Break down",
+            "text": "Turn it into smaller steps."
+          },
+          {
+            "label": "W — Waiting on",
+            "text": "Blocked on someone; asks who."
+          },
+          {
+            "label": "X — Drop",
+            "text": "Let it go. It is not a failure."
+          },
+          {
+            "label": "A — Already done",
+            "text": "It happened; record it without carrying it."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "shutdown",
+    "title": "Shutdown",
+    "summary": "The three-step end of the day.",
+    "icon": "moon",
+    "sections": [
+      {
+        "heading": "Why it exists",
+        "body": "The day ends deliberately rather than by running out of attention. Shutdown records what happened and what carries, then closes.",
+        "points": [
+          {
+            "label": "Step 1",
+            "text": "What got done today."
+          },
+          {
+            "label": "Step 2",
+            "text": "What is still open, and where it goes."
+          },
+          {
+            "label": "Step 3",
+            "text": "One line about the day, kept for the weekly review."
+          },
+          {
+            "label": "Later",
+            "text": "Press ⌘⇧D to run it whenever you are stopping."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "weekly",
+    "title": "Weekly review",
+    "summary": "The once-a-week sweep for things that have gone quiet.",
+    "icon": "weekly",
+    "sections": [
+      {
+        "heading": "Five steps",
+        "body": "It looks back at the week and forward to the next, and gives you one place to clear the backlog.",
+        "points": [
+          {
+            "label": "Completed",
+            "text": "What you actually finished."
+          },
+          {
+            "label": "Someday",
+            "text": "Promote it, keep it, or drop it. Anything untouched for 60+ days is pre-selected for dropping."
+          },
+          {
+            "label": "Stuck",
+            "text": "Grouped by why it stalled, so you can fix the cause rather than each item."
+          },
+          {
+            "label": "Estimate vs focus",
+            "text": "How well your time estimates held up."
+          },
+          {
+            "label": "Outcomes",
+            "text": "Up to three outcomes for next week. They are pinned to the header all week."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "today-all",
+    "title": "Today (all)",
+    "summary": "Every workspace's today in one list, and why some disappear.",
+    "icon": "todayall",
+    "sections": [
+      {
+        "heading": "The cross-workspace lens",
+        "body": "⌘0 shows today across all workspaces at once. Rows carry their workspace's colour so you can tell them apart.",
+        "points": [
+          {
+            "label": "Why a workspace is missing",
+            "text": "It is outside its focus hours, so it is quiet. Open it directly and everything is still there."
+          },
+          {
+            "label": "Capacity",
+            "text": "Committed time against capacity, summed across the workspaces that are in focus."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "capture",
+    "title": "Capture",
+    "summary": "Get it out of your head in one line.",
+    "icon": "plus",
+    "sections": [
+      {
+        "heading": "Where to capture",
+        "body": "⌘K from anywhere, or the field at the bottom of Today. The same tokens work in both.",
+        "points": [
+          {
+            "label": "~30m",
+            "text": "An estimate in minutes (also ~2h)."
+          },
+          {
+            "label": "!2",
+            "text": "Priority 1–4."
+          },
+          {
+            "label": "tomorrow / fri / 12 Oct",
+            "text": "A planned or due day."
+          },
+          {
+            "label": "@waiting:name",
+            "text": "Mark it as waiting on someone."
+          },
+          {
+            "label": "in Personal",
+            "text": "File it in another workspace by name."
+          },
+          {
+            "label": "#tag",
+            "text": "A tag."
+          }
+        ]
+      },
+      {
+        "heading": "Attach what you are looking at",
+        "body": "When a browser is in front, quick capture offers to attach the current page to the item."
+      }
+    ]
+  },
+  {
+    "id": "shortcuts",
+    "title": "Keyboard shortcuts",
+    "summary": "The keys worth knowing. Press ? for this list at any time.",
+    "icon": "help",
+    "sections": [
+      {
+        "heading": "Global",
+        "body": "These work from anywhere except while typing in a text field.",
+        "points": [
+          {
+            "label": "⌘K",
+            "text": "Ask or jump — search items, run commands, or add one."
+          },
+          {
+            "label": "⌘1…⌘9",
+            "text": "Switch workspace."
+          },
+          {
+            "label": "⌘0",
+            "text": "Today across all workspaces."
+          },
+          {
+            "label": "⌘T / ⌘⇧R / ⌘⇧D",
+            "text": "Jump to today / start review / shut down."
+          },
+          {
+            "label": "⌘I / ⌘B",
+            "text": "Toggle the inspector / the sidebar."
+          },
+          {
+            "label": "⌘Z",
+            "text": "Undo the last action."
+          },
+          {
+            "label": "⌘⇧M",
+            "text": "Open the mode settings."
+          }
+        ]
+      },
+      {
+        "heading": "In a list",
+        "body": "Move with j/k or the arrow keys.",
+        "points": [
+          {
+            "label": "x",
+            "text": "Complete."
+          },
+          {
+            "label": "e or Enter",
+            "text": "Edit the title."
+          },
+          {
+            "label": "f",
+            "text": "Make it Now."
+          },
+          {
+            "label": "t / d / s / w",
+            "text": "Today / Defer / Someday / Waiting on."
+          },
+          {
+            "label": "b / ⌫",
+            "text": "Break down / drop."
+          },
+          {
+            "label": "1–4",
+            "text": "Set priority. ~ sets an estimate."
+          },
+          {
+            "label": "[ / ]",
+            "text": "Previous / next day."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "connected",
+    "title": "Connected apps",
+    "summary": "Why a row can show \"2 approved\" or \"CI passing\".",
+    "icon": "side",
+    "sections": [
+      {
+        "heading": "What the chips are",
+        "body": "When an item links to a pull request or issue, Noto shows a few facts from the host as chips on the row. They are read-only — a glance, not a control panel.",
+        "points": [
+          {
+            "label": "Approvals",
+            "text": "How many reviewers have approved."
+          },
+          {
+            "label": "Checks",
+            "text": "The CI result, if the host reports one."
+          },
+          {
+            "label": "State",
+            "text": "Open, ready to merge, or closed."
+          },
+          {
+            "label": "Reconnect",
+            "text": "If a token expires the chip says so; reconnecting is done from Settings."
+          }
+        ]
+      }
+    ]
+  }
+]

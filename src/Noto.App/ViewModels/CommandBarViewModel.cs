@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.Core.Interfaces;
 using Noto.Core.Models;
 using Noto.Core.Presets;
+using Noto.Core.Text;
 
 namespace Noto.App.ViewModels;
 
@@ -72,12 +74,14 @@ public sealed record CommandResult(
 // ⌘K: ask or jump. Commands, items (full-text search) and "add this" in one ranked list (docs/07 §7.1).
 public sealed partial class CommandBarViewModel : ObservableObject
 {
-    readonly AppServices _services;
+    readonly ISearchIndex _search;
+    readonly ActionRunner _runner;
     readonly ICommandBarHost _host;
 
-    public CommandBarViewModel(AppServices services, ICommandBarHost host)
+    public CommandBarViewModel(ISearchIndex search, ActionRunner runner, ICommandBarHost host)
     {
-        _services = services;
+        _search = search;
+        _runner = runner;
         _host = host;
     }
 
@@ -133,7 +137,7 @@ public sealed partial class CommandBarViewModel : ObservableObject
 
         if (query.Length >= 2)
         {
-            var hits = await _services.Search.SearchAsync(query, workspaceId: null, limit: 6);
+            var hits = await _search.SearchAsync(query, workspaceId: null, limit: 6);
             if (version != _version)
                 return; // a newer keystroke superseded this lookup
             results.AddRange(
@@ -327,7 +331,7 @@ public sealed partial class CommandBarViewModel : ObservableObject
     async Task AddAsync(string raw, Guid workspaceId)
     {
         var add = new AddItemViewModel(
-            _services,
+            _runner,
             workspaceId,
             plannedForToday: true,
             name =>

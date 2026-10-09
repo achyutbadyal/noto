@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
 using Noto.Core.Commands;
+using Noto.Core.Derivations;
 using Noto.Core.Insights;
 using Noto.Core.Models;
 
@@ -23,15 +24,24 @@ public sealed partial class InspectorViewModel : ObservableObject
         new(StuckReason.NotNeeded, "Not needed"),
     ];
 
-    readonly AppServices _services;
+    readonly WorkspaceReader _reader;
+    readonly ActionRunner _runner;
+    readonly FocusSession _focus;
     Guid _workspaceId;
     WorkspaceSnapshot? _snapshot;
     bool _loading;
 
-    public InspectorViewModel(AppServices services)
+    public InspectorViewModel(
+        WorkspaceReader reader,
+        ActionRunner runner,
+        FocusSession focus,
+        DecisionController decisions
+    )
     {
-        _services = services;
-        Decisions = new DecisionController(services);
+        _reader = reader;
+        _runner = runner;
+        _focus = focus;
+        Decisions = decisions;
     }
 
     public DecisionController Decisions { get; }
@@ -179,7 +189,7 @@ public sealed partial class InspectorViewModel : ObservableObject
                 ? Noto.Core.Insights.ContainerRules.Progress(children).ToString()
                 : null;
 
-        var events = await _services.Reader.EventsAsync(item.Id);
+        var events = await _reader.EventsAsync(item.Id);
         foreach (
             var line in LifeOfItem.Describe(
                 item,
@@ -295,7 +305,7 @@ public sealed partial class InspectorViewModel : ObservableObject
         try
         {
             Error = null;
-            await _services.Runner.RunAsync(command, label);
+            await _runner.RunAsync(command, label);
         }
         // Some transitions are not valid from every state (Someday on a waiting item, say). Say so
         // instead of throwing away a fire-and-forget task, and snap the controls back to reality.
@@ -330,7 +340,7 @@ public sealed partial class InspectorViewModel : ObservableObject
     {
         if (Item is null || (Item.Notes ?? "") == Notes)
             return;
-        await _services.Runner.RunAsync(new SetNotes(Item.Id, Notes), "Edited notes");
+        await _runner.RunAsync(new SetNotes(Item.Id, Notes), "Edited notes");
     }
 
     [RelayCommand]
@@ -342,10 +352,7 @@ public sealed partial class InspectorViewModel : ObservableObject
     {
         if (Item is not { } item || _snapshot is not { } snap)
             return;
-        await _services.Runner.RunAsync(
-            new GiveStuckReason(item.Id, reason),
-            "Recorded why it's stuck"
-        );
+        await _runner.RunAsync(new GiveStuckReason(item.Id, reason), "Recorded why it's stuck");
 
         var fix = StuckPrompt.FixFor(reason);
         FixPrompt = fix.Prompt;
@@ -362,7 +369,7 @@ public sealed partial class InspectorViewModel : ObservableObject
                 await Decisions.BeginAsync(DecisionKind.NextAction, [item], context);
                 break;
             case StuckFixKind.Drop:
-                await _services.Runner.RunAsync(
+                await _runner.RunAsync(
                     new DropItem(item.Id, DropReason.NotNeeded),
                     $"Dropped “{item.Title}”"
                 );
@@ -375,7 +382,7 @@ public sealed partial class InspectorViewModel : ObservableObject
     public async Task MakeNowAsync()
     {
         if (Item is { } item)
-            await _services.Focus.StartAsync(_workspaceId, item);
+            await _focus.StartAsync(_workspaceId, item);
     }
 
     [RelayCommand]
@@ -383,7 +390,7 @@ public sealed partial class InspectorViewModel : ObservableObject
     {
         if (Item is not { } item || _snapshot is not { } snap)
             return;
-        await _services.Runner.RunAsync(
+        await _runner.RunAsync(
             new PlanItem(item.Id, snap.Today.AddDays(1), PlanKind.Defer),
             "Scheduled for tomorrow"
         );

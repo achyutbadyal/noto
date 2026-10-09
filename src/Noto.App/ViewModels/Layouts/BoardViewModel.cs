@@ -16,8 +16,10 @@ public sealed partial class BoardViewModel : ItemListViewModel
     List<BoardColumn> _model = [];
     string? _wipOverrideFor;
 
-    public BoardViewModel(AppServices services, Guid workspaceId)
-        : base(services, workspaceId) { }
+    readonly WorkspaceActions _workspaces;
+
+    public BoardViewModel(ListServices services, WorkspaceActions workspaces, Guid workspaceId)
+        : base(services, workspaceId) => _workspaces = workspaces;
 
     public override IReadOnlyList<SectionViewModel> Sections => _columns;
     public IReadOnlyList<SectionViewModel> Columns => _columns;
@@ -219,7 +221,7 @@ public sealed partial class BoardViewModel : ItemListViewModel
                 new BoardColumnDef(Guid.CreateVersion7().ToString("N")[..8], name, wip)
             )
             .ToList();
-        await Services.Workspaces.UpdateAsync(
+        await _workspaces.UpdateAsync(
             WorkspaceId,
             ws =>
                 ws.LayoutSettingsJson = (settings with { UserColumns = columns }).ToJson(

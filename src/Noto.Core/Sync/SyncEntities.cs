@@ -1,8 +1,7 @@
 using System.Text.Json.Nodes;
 using Noto.Core.Interfaces;
-using Noto.Core.Sync;
 
-namespace Noto.Sync;
+namespace Noto.Core.Sync;
 
 // Bridges a synced entity type to local storage as JSON rows.
 public interface IEntityCodec
@@ -13,20 +12,34 @@ public interface IEntityCodec
     Task<IReadOnlyList<JsonObject>> ListAsync(IStore store, Guid workspaceId);
 }
 
-public static class EntityCodecs
+// One entry per synced entity type: its field list and its storage codec. EntityTypes.All, SyncRows.FieldsOf
+// and the merge/snapshot codecs are all derived from this list, so a type can't be half-registered.
+// (Recording local writes still happens in the repository; SyncEntityTests checks every type has an entry.)
+public sealed record SyncEntity(string Type, IReadOnlyList<string> Fields, IEntityCodec Codec);
+
+public static class SyncEntities
 {
-    public static IReadOnlyDictionary<string, IEntityCodec> Default { get; } =
-        new Dictionary<string, IEntityCodec>
-        {
-            [EntityTypes.Workspace] = new WorkspaceCodec(),
-            [EntityTypes.TodoItem] = new ItemCodec(),
-            [EntityTypes.ItemEvent] = new EventCodec(),
-            [EntityTypes.RecurrenceRule] = new RowStoreCodec(EntityTypes.RecurrenceRule),
-            [EntityTypes.Tag] = new RowStoreCodec(EntityTypes.Tag),
-            [EntityTypes.TodoTag] = new RowStoreCodec(EntityTypes.TodoTag),
-            [EntityTypes.DayNote] = new RowStoreCodec(EntityTypes.DayNote),
-            [EntityTypes.TodoLink] = new RowStoreCodec(EntityTypes.TodoLink),
-        };
+    // Parents before children, so snapshots and first-time pushes read naturally (FKs are deferred anyway).
+    public static IReadOnlyList<SyncEntity> All { get; } =
+    [
+        new(EntityTypes.Workspace, SyncRows.WorkspaceFields, new WorkspaceCodec()),
+        RowStore(EntityTypes.Tag, SyncRows.TagFields),
+        RowStore(EntityTypes.RecurrenceRule, SyncRows.RuleFields),
+        new(EntityTypes.TodoItem, SyncRows.ItemFields, new ItemCodec()),
+        RowStore(EntityTypes.TodoTag, SyncRows.TodoTagFields),
+        RowStore(EntityTypes.TodoLink, SyncRows.LinkFields),
+        RowStore(EntityTypes.DayNote, SyncRows.DayNoteFields),
+        new(EntityTypes.ItemEvent, SyncRows.EventFields, new EventCodec()),
+    ];
+
+    public static IReadOnlyDictionary<string, SyncEntity> ByType { get; } =
+        All.ToDictionary(e => e.Type);
+
+    public static IReadOnlyDictionary<string, IEntityCodec> Codecs { get; } =
+        All.ToDictionary(e => e.Type, e => e.Codec);
+
+    static SyncEntity RowStore(string type, IReadOnlyList<string> fields) =>
+        new(type, fields, new RowStoreCodec(type));
 
     // Rules, tags, tag assignments, day notes and links are plain SQL rows behind ISyncRowStore.
     sealed class RowStoreCodec(string entityType) : IEntityCodec

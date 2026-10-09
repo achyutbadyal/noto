@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Noto.App.Logic;
 using Noto.App.ViewModels;
+using Noto.Core.Text;
 
 namespace Noto.App.Views;
 

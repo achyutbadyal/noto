@@ -5,6 +5,7 @@ using Noto.App.Services;
 using Noto.Core.Derivations;
 using Noto.Core.Models;
 using Noto.Core.Presets;
+using Noto.Core.Text;
 
 namespace Noto.App.ViewModels;
 

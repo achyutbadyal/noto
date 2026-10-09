@@ -13,7 +13,7 @@ public enum OnboardingChoice
 }
 
 // First launch asks one question: "What do you want Noto to keep honest?" (docs/07 §16).
-public sealed partial class OnboardingViewModel(AppServices services) : ObservableObject
+public sealed partial class OnboardingViewModel(WorkspaceActions workspaces) : ObservableObject
 {
     public string Question => "What do you want Noto to keep honest?";
     public IReadOnlyList<OnboardingChoice> Choices { get; } = Enum.GetValues<OnboardingChoice>();
@@ -26,9 +26,9 @@ public sealed partial class OnboardingViewModel(AppServices services) : Observab
     public async Task ChooseAsync(OnboardingChoice choice)
     {
         if (choice is OnboardingChoice.Work or OnboardingChoice.Both)
-            await services.Workspaces.CreateAsync("Work", "work", BuiltInPresets.Sprint, 0);
+            await workspaces.CreateAsync("Work", "work", BuiltInPresets.Sprint, 0);
         if (choice is OnboardingChoice.Personal or OnboardingChoice.Both)
-            await services.Workspaces.CreateAsync("Personal", "personal", BuiltInPresets.Zen, 1);
+            await workspaces.CreateAsync("Personal", "personal", BuiltInPresets.Zen, 1);
         Completed?.Invoke();
     }
 }

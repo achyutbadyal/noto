@@ -72,7 +72,7 @@ public sealed class LayoutTests : IDisposable
         await _app.AddAsync("Planned today", AppFixture.Today);
         var waiting = await _app.AddAsync("Waiting", AppFixture.Today);
         await _app.Services.Bus.SendAsync(new StartWaiting(waiting, "Priya"));
-        var board = new BoardViewModel(_app.Services, _app.Workspace.Id);
+        var board = _app.Vms.Board(_app.Workspace.Id);
         await board.ReloadAsync();
 
         board
@@ -88,7 +88,7 @@ public sealed class LayoutTests : IDisposable
     {
         await Layout(BuiltInPresets.Kanban);
         var id = await _app.AddAsync("Task");
-        var board = new BoardViewModel(_app.Services, _app.Workspace.Id);
+        var board = _app.Vms.Board(_app.Workspace.Id);
         await board.ReloadAsync();
         board.SetFocus(board.Columns[1].Rows[0]);
 
@@ -113,7 +113,7 @@ public sealed class LayoutTests : IDisposable
         await Layout(BuiltInPresets.Kanban);
         await _app.AddAsync("Backlog item");
         await _app.AddAsync("Today item", AppFixture.Today);
-        var board = new BoardViewModel(_app.Services, _app.Workspace.Id);
+        var board = _app.Vms.Board(_app.Workspace.Id);
         await board.ReloadAsync();
         board.FocusedRow!.Title.ShouldBe("Backlog item");
 
@@ -127,7 +127,7 @@ public sealed class LayoutTests : IDisposable
     public async Task User_columns_wip_limits_and_the_override_prompt()
     {
         await Layout(BuiltInPresets.Kanban);
-        var board = new BoardViewModel(_app.Services, _app.Workspace.Id);
+        var board = _app.Vms.Board(_app.Workspace.Id);
         await board.ReloadAsync();
         board.NewColumnName = "In progress";
         board.NewColumnWip = "1";
@@ -165,7 +165,7 @@ public sealed class LayoutTests : IDisposable
         await _app.Services.Bus.SendAsync(new SetDueDate(dated, AppFixture.Today.AddDays(3)));
         await _app.AddAsync("Someday maybe");
 
-        var timeline = new TimelineViewModel(_app.Services, _app.Workspace.Id);
+        var timeline = _app.Vms.Timeline(_app.Workspace.Id);
         await timeline.ReloadAsync();
 
         timeline.Sections[0].Title.ShouldBe("Overdue");
@@ -201,7 +201,7 @@ public sealed class LayoutTests : IDisposable
         _app.Clock.Advance(TimeSpan.FromDays(3));
         await _app.AddAsync("One-off errand");
 
-        var grid = new HabitGridViewModel(_app.Services, _app.Workspace.Id);
+        var grid = _app.Vms.HabitGrid(_app.Workspace.Id);
         await grid.ReloadAsync();
 
         grid.Habits.Count.ShouldBe(1);
@@ -259,7 +259,7 @@ public sealed class LayoutTests : IDisposable
             new CreateItem(Guid.CreateVersion7(), after.Id, "Night thing", AppFixture.Today)
         );
 
-        var all = new TodayAllViewModel(_app.Services);
+        var all = _app.Vms.TodayAll();
         await all.ReloadAsync();
 
         all.Sections.Select(s => s.Title).ShouldBe(["Work", "Home"]);

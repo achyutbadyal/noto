@@ -1,6 +1,7 @@
 using Noto.App.Logic;
 using Noto.Core.Insights;
 using Noto.Core.Models;
+using Noto.Core.Text;
 
 namespace Noto.App.ViewModels;
 

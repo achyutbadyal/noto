@@ -15,18 +15,8 @@ public static class EntityTypes
     public const string DayNote = "day_note";
     public const string TodoLink = "todo_link";
 
-    // Parents before children, so snapshots and first-time pushes read naturally (FKs are deferred anyway).
-    public static readonly IReadOnlyList<string> All =
-    [
-        Workspace,
-        Tag,
-        RecurrenceRule,
-        TodoItem,
-        TodoTag,
-        TodoLink,
-        DayNote,
-        ItemEvent,
-    ];
+    public static IReadOnlyList<string> All { get; } =
+        SyncEntities.All.Select(e => e.Type).ToList();
 
     // Entities stored by SyncRowStore (plain SQL rows) rather than a typed mapper.
     public static bool IsRowStoreType(string type) =>

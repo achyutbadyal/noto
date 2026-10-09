@@ -1,6 +1,6 @@
 # Noto — What's Done
 
-Status as of 2026-10-07. Build is clean (warnings are errors) and **854 tests pass** across 7 test projects. About 15.5k lines of source and 10.8k of tests.
+Status as of 2026-10-07. Build is clean (warnings are errors) and every test project passes. Acceptance criteria that are tested are ticked in [08 › Implementation Roadmap](08-implementation-roadmap.md); this file holds what the checkboxes can't: what is unverified, deviations and gaps.
 
 ```
 mise run build    # dotnet build Noto.sln

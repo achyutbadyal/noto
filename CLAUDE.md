@@ -24,7 +24,7 @@ Projects are added phase by phase per the roadmap; don't scaffold later phases e
 
 Create one `HybridClock` per device and pass it to both `SqliteUnitOfWork(connectionString, hlc)` and `CommandBus(..., hlc)`.
 The unit of work's repositories record ops for every synced write (commands and services alike); without the clock nothing is recorded.
-New synced entity types: add field list to `SyncRows`, a codec in `Noto.Sync/EntityCodecs.cs`, and a recording hook in the repository.
+New synced entity types: add the field list to `SyncRows`, one `SyncEntity` entry (type, fields, codec) in `Noto.Core/Sync/SyncEntities.cs`, and a recording hook in the repository. `SyncEntityTests` fails if an `EntityTypes` constant has no entry.
 
 ## Source generators (read this before debugging "missing member" errors)
 
