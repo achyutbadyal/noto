@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    # branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    name: build + test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Linux native libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsecret-tools libnotify-bin xvfb
+      - run: dotnet build Noto.sln
+      # Linux runs headless under Xvfb so the X11 hotkey and Avalonia headless tests have a display.
+      - if: runner.os == 'Linux'
+        run: xvfb-run -a dotnet test Noto.sln --no-build
+      - if: runner.os != 'Linux'
+        run: dotnet test Noto.sln --no-build
+
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore && dotnet csharpier check .

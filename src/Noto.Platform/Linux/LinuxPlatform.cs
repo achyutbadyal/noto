@@ -1,18 +1,36 @@
+using System.Runtime.Versioning;
 using Noto.Platform.Abstractions;
+using Noto.Platform.Internal;
 
 namespace Noto.Platform.Linux;
 
-// Phase 12: libsecret keyring, X11 hotkey and portal-based hotkeys are not implemented yet.
+[SupportedOSPlatform("linux")]
 public static class LinuxPlatform
 {
     public static PlatformServices Create() =>
         new(
-            new UnsupportedHotkey(
-                "Global hotkeys aren't available yet. Bind a system shortcut to `noto --capture` instead."
+            new X11Hotkey(),
+            SecretToolKeyring.Create(),
+            new UnsupportedCaptureContext(
+                "Capture with context isn't available on Linux: there is no portable way to read the focused app."
             ),
-            new InMemoryKeyring(),
-            new UnsupportedCaptureContext("Capture with context isn't available on Linux."),
-            new UnsupportedNotifications("Desktop notifications aren't available on Linux yet."),
-            new StaticReduceMotion()
+            NotifySendNotifications.Create(),
+            new PolledReduceMotion(AnimationsDisabled, TimeSpan.FromSeconds(30))
         );
+
+    // GNOME's "Animations" switch. Other desktops have no equivalent key, so the setting reads as off.
+    static bool AnimationsDisabled()
+    {
+        if (ProcessRunner.FindOnPath("gsettings") is not { } gsettings)
+            return false;
+        var result = ProcessRunner
+            .RunAsync(
+                gsettings,
+                ["get", "org.gnome.desktop.interface", "enable-animations"],
+                timeout: TimeSpan.FromSeconds(2)
+            )
+            .GetAwaiter()
+            .GetResult();
+        return result.Succeeded && result.Output.Trim() == "false";
+    }
 }

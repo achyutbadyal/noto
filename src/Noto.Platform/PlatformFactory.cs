@@ -17,6 +17,23 @@ public static class PlatformFactory
                 new MacNotifications(),
                 new MacReduceMotion()
             );
-        return OperatingSystem.IsWindows() ? WindowsPlatform.Create() : LinuxPlatform.Create();
+        if (OperatingSystem.IsWindows())
+            return WindowsPlatform.Create();
+        if (OperatingSystem.IsLinux())
+            return LinuxPlatform.Create();
+        return Unsupported();
+    }
+
+    // FreeBSD and anything else Avalonia might run on: every feature explains that it is missing.
+    static PlatformServices Unsupported()
+    {
+        const string reason = "This platform isn't supported yet.";
+        return new PlatformServices(
+            new UnsupportedHotkey(reason),
+            new InMemoryKeyring(),
+            new UnsupportedCaptureContext(reason),
+            new UnsupportedNotifications(reason),
+            new StaticReduceMotion()
+        );
     }
 }

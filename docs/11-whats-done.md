@@ -24,7 +24,7 @@ Everything below was verified by automated tests unless it is listed under [Not 
 | 9 Web                      | Server half done, **client not done** | Gateway, SSRF guard, CSP are in. No WASM host, no SQLite/OPFS spike                                                                            |
 | 10 Layouts and recurrence  | Done                                  | Recurrence, habits, board, timeline, weekly review: logic and Avalonia views                                                                   |
 | 11 More providers          | Done against fixtures                 | Slack, GitLab, Notion, Confluence, Figma                                                                                                       |
-| 12 Platforms               | **Not done**                          | Windows/Linux platform layers are stubs that report unavailability. No iOS/Android hosts                                                       |
+| 12 Platforms               | Windows/Linux written, unverified on real OSes | Windows (Credential Manager, RegisterHotKey, toasts) and Linux (secret-tool, X11 XGrabKey, notify-send) platform layers; zip/tarball packaging; CI matrix. No iOS/Android hosts |
 
 ## What exists
 
@@ -126,8 +126,7 @@ Compiled and unit-tested, but never run for real:
 
 - **Phase 5, dogfooding.** The MVP gate needs two weeks of daily use, and the risk register's premise (the loop sticks) is still untested.
 - **Phase 9 client.** `Noto.Browser` WASM host, the SQLite-in-WASM / OPFS spike with its go/no-go, client-side keyring (Web Crypto + IndexedDB), web CSP polish.
-- **Phase 12.** Windows and Linux platform implementations (hotkey, keyring, notifications), iOS and Android hosts, widgets, share targets.
-- **Per-OS keyrings** other than macOS.
+- **Phase 12.** iOS and Android hosts, widgets, share targets. Windows/Linux native code compiles and its pure logic is tested, but it has only been run on macOS: the CI matrix (windows-latest, ubuntu-latest under Xvfb) is its first real exercise. Not done there: Wayland global hotkey (xdg-desktop-portal GlobalShortcuts), capture-with-context, Windows secrets over 2560 bytes.
 
 ## Known gaps and follow-ups
 
@@ -148,4 +147,4 @@ Compiled and unit-tested, but never run for real:
 1. Run the macOS app and use it daily (Phase 5). That is the cheapest way to find what the tests cannot.
 2. Do the Phase 9 SQLite/OPFS spike in a real browser before investing in the web client.
 3. Run each provider against a real account, starting with GitHub and Linear (PAT-friendly).
-4. Install the Windows/Linux and mobile workloads through mise and bring the remaining hosts up.
+4. Run the app on real Windows and Linux machines (Wayland and X11), then bring the mobile hosts up.

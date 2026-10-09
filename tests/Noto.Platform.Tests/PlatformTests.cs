@@ -42,8 +42,10 @@ public class PlatformTests
     [Fact]
     public void Factory_picks_a_platform_set_for_this_os()
     {
-        using var services = PlatformFactory.Create().Hotkey;
-        services.Capability.IsSupported.ShouldBe(OperatingSystem.IsMacOS());
+        using var platform = PlatformFactory.Create().Hotkey;
+        platform.Capability.IsSupported.ShouldBe(
+            OperatingSystem.IsMacOS() || OperatingSystem.IsWindows() || HasX11Session()
+        );
     }
 
     [Fact]
@@ -90,4 +92,14 @@ public class PlatformTests
             .Register(new HotkeyGesture("NotAKey", HotkeyModifiers.Control), () => { })
             .ShouldBeFalse();
     }
+
+    static bool HasX11Session() =>
+        OperatingSystem.IsLinux()
+        && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY"))
+        && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))
+        && !string.Equals(
+            Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"),
+            "wayland",
+            StringComparison.OrdinalIgnoreCase
+        );
 }

@@ -3,12 +3,13 @@ using System.Collections.Concurrent;
 namespace Noto.Platform.Abstractions;
 
 // Non-persistent keyring for tests and platforms without a secure store; secrets die with the process.
-public sealed class InMemoryKeyring : IKeyring
+public sealed class InMemoryKeyring(
+    string reason = "No OS keyring on this platform: secrets are kept in memory only."
+) : IKeyring
 {
     readonly ConcurrentDictionary<(string, string), string> _secrets = new();
 
-    public Capability Capability =>
-        Capability.Unsupported("No OS keyring on this platform: secrets are kept in memory only.");
+    public Capability Capability { get; } = Capability.Unsupported(reason);
 
     public Task SetAsync(string service, string account, string secret)
     {

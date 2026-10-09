@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Noto
+Comment=Local-first accountability to-do app
+Exec=@PREFIX@/noto/Noto.Desktop
+Icon=@PREFIX@/noto/noto.png
+Terminal=false
+Categories=Office;ProjectManagement;
+StartupWMClass=Noto.Desktop
+Actions=capture;
+
+[Desktop Action capture]
+Name=Quick capture
+Exec=@PREFIX@/noto/Noto.Desktop --capture

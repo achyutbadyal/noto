@@ -116,6 +116,28 @@ cp -a dist/Noto.app /Applications/
 echo "Successfully installed. You can now launch Noto from your Applications folder."
 """
 
+[tasks."publish:linux"]
+description = "Publish and package a Linux tarball (dist/noto-linux-x64.tar.gz); TARGET_RID=linux-arm64 for ARM"
+run = """
+#!/bin/bash
+set -e
+export TARGET_RID="${TARGET_RID:-linux-x64}"
+dotnet publish src/Noto.Desktop -c Release -r "$TARGET_RID" --self-contained -o dist/noto-desktop
+./scripts/package_linux.sh
+"""
+
+[tasks."publish:windows"]
+description = "Publish and zip a Windows build (dist/noto-windows-win-x64.zip); TARGET_RID=win-arm64 for ARM"
+run = """
+#!/bin/bash
+set -e
+export TARGET_RID="${TARGET_RID:-win-x64}"
+dotnet publish src/Noto.Desktop -c Release -r "$TARGET_RID" --self-contained -o dist/noto-desktop
+mkdir -p dist
+(cd dist && rm -f "noto-windows-$TARGET_RID.zip" && cd noto-desktop && zip -qr "../noto-windows-$TARGET_RID.zip" .)
+echo "Created dist/noto-windows-$TARGET_RID.zip"
+"""
+
 # ---------------------------------------------------------------------------
 # CI
 # ---------------------------------------------------------------------------

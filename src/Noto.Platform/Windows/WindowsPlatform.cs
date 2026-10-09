@@ -1,18 +1,25 @@
+using System.Runtime.Versioning;
 using Noto.Platform.Abstractions;
 
 namespace Noto.Platform.Windows;
 
-// Phase 12: RegisterHotKey, Credential Manager (DPAPI) and toast notifications are not implemented yet.
+[SupportedOSPlatform("windows")]
 public static class WindowsPlatform
 {
-    const string Pending = "Not available in this build of Noto for Windows yet.";
+    const string NoContext =
+        "Capture with context isn't available on Windows. Noto can't read the foreground app's page.";
 
     public static PlatformServices Create() =>
         new(
-            new UnsupportedHotkey(Pending),
-            new InMemoryKeyring(),
-            new UnsupportedCaptureContext(Pending),
-            new UnsupportedNotifications(Pending),
-            new StaticReduceMotion()
+            new WinHotkey(),
+            new WinKeyring(),
+            new UnsupportedCaptureContext(NoContext),
+            new WinNotifications(),
+            new PolledReduceMotion(ClientAreaAnimationsOff, TimeSpan.FromSeconds(5))
         );
+
+    // Settings > Accessibility > Visual effects > Animation effects.
+    static bool ClientAreaAnimationsOff() =>
+        WinNative.SystemParametersInfoW(WinNative.SpiGetClientAreaAnimation, 0, out var on, 0)
+        && on == 0;
 }
