@@ -144,21 +144,14 @@ public sealed class ServerAuthClient(HttpClient http) : IServerAuth
         }
     }
 
-    // Problem details carry the code as an extension member: { "code": "EMAIL_TAKEN", "title": "...", ... }.
     static async Task<ServerAuthException> ErrorAsync(HttpResponseMessage response)
     {
-        string code = $"HTTP_{(int)response.StatusCode}";
-        string message = response.ReasonPhrase ?? "Request failed";
-        try
-        {
-            var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
-            if (problem.TryGetProperty("code", out var c) && c.GetString() is { } s)
-                code = s;
-            if (problem.TryGetProperty("title", out var t) && t.GetString() is { } title)
-                message = title;
-        }
-        catch (JsonException) { }
-        return new ServerAuthException(code, message);
+        var body = await response.Content.ReadAsStringAsync();
+        var problem = ProblemDetails.Read(body);
+        return new ServerAuthException(
+            problem.Code ?? $"HTTP_{(int)response.StatusCode}",
+            problem.Title ?? response.ReasonPhrase ?? "Request failed"
+        );
     }
 
     static ServerSession Session(TokensWire w) => new(w.AccessToken, w.RefreshToken, w.ExpiresAt);

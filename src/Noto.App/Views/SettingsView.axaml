@@ -103,7 +103,7 @@
           <StackPanel Spacing="4">
             <TextBlock Text="Connected apps" Classes="section" />
             <TextBlock
-              Text="Paste a token or API key. Noto checks it with the provider, then keeps it in your keychain."
+              Text="Sign in with your browser where the provider allows it, or paste a token. Noto checks the connection with the provider, then keeps the credentials in your keychain."
               Classes="hint"
               TextWrapping="Wrap"
             />
@@ -135,6 +135,72 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+
+          <Grid
+            ColumnDefinitions="140,*,Auto"
+            RowDefinitions="Auto,Auto,Auto"
+            ColumnSpacing="8"
+            RowSpacing="8"
+            IsVisible="{Binding HasOAuthOptions}"
+          >
+            <TextBlock Text="Sign in with" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox
+              Grid.Column="1"
+              ItemsSource="{Binding OAuthOptions}"
+              SelectedItem="{Binding SelectedOAuthOption, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              IsEnabled="{Binding !IsConnecting}"
+              AutomationProperties.Name="Browser sign-in provider"
+            >
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="svc:OAuthOption">
+                  <TextBlock Text="{Binding ProviderName}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+              <Button
+                Classes="accent"
+                Content="Sign in"
+                Command="{Binding ConnectOAuthCommand}"
+                IsVisible="{Binding !IsConnecting}"
+              />
+              <Button
+                Content="Cancel"
+                Command="{Binding CancelOAuthCommand}"
+                IsVisible="{Binding IsConnecting}"
+              />
+            </StackPanel>
+            <TextBlock
+              Grid.Row="1"
+              Text="Site"
+              VerticalAlignment="Center"
+              Classes="secondary"
+              IsVisible="{Binding ShowOAuthSite}"
+            />
+            <TextBox
+              Grid.Row="1"
+              Grid.Column="1"
+              Text="{Binding ConnectOAuthSite, Mode=TwoWay}"
+              Watermark="Blank uses your first site"
+              IsVisible="{Binding ShowOAuthSite}"
+              AutomationProperties.Name="Browser sign-in site address"
+            />
+            <TextBlock
+              Grid.Row="2"
+              Grid.Column="1"
+              Text="Or paste a token below if the provider has no browser sign-in."
+              Classes="hint"
+              TextWrapping="Wrap"
+            />
+          </Grid>
+
+          <TextBlock
+            Text="{Binding OAuthSetupHint}"
+            IsVisible="{Binding !HasOAuthOptions}"
+            Classes="hint"
+            TextWrapping="Wrap"
+          />
 
           <Grid
             ColumnDefinitions="140,*,Auto"

@@ -236,6 +236,60 @@ public sealed class ScreenshotTests : IDisposable
         await SnapAsync(window, "settings-account-dark");
     }
 
+    [AvaloniaFact]
+    public async Task Settings_account_section_offers_browser_sign_in_for_configured_apps()
+    {
+        await SeedAsync();
+        var account = await SignedInAccount.CreateAsync(
+            _app.Services.UiState,
+            [
+                new OAuthOption("github", "GitHub", Configured: false, "setup"),
+                new OAuthOption("linear", "Linear", Configured: false, "setup"),
+                new OAuthOption(
+                    "jira",
+                    "Jira",
+                    Configured: false,
+                    "setup",
+                    ShowSite: true,
+                    ServerProviderId: "atlassian"
+                ),
+            ],
+            serverProviders: ["github", "atlassian"],
+            tokens:
+            [
+                new TokenOption(
+                    "github",
+                    "GitHub",
+                    AuthMethod.PersonalToken,
+                    SiteField.Optional,
+                    false
+                ),
+            ]
+        );
+        var (window, shell) = Open(ThemeVariant.Dark, account);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Settings);
+        Dispatcher.UIThread.RunJobs();
+
+        var vm = shell.Settings!.Account!;
+        vm.SelectedOAuthOption!.ProviderId.ShouldBe("github");
+        window
+            .GetVisualDescendants()
+            .OfType<Button>()
+            .ShouldContain(b => b.Content as string == "Sign in");
+        await SnapAsync(window, "settings-account-oauth-dark");
+
+        // Jira asks for a site, so the site row appears once it is selected.
+        vm.SelectedOAuthOption = vm.OAuthOptions.Single(o => o.ProviderId == "jira");
+        Dispatcher.UIThread.RunJobs();
+        vm.ShowOAuthSite.ShouldBeTrue();
+        window
+            .GetVisualDescendants()
+            .OfType<TextBox>()
+            .ShouldContain(t => t.Watermark == "Blank uses your first site");
+        await SnapAsync(window, "settings-account-oauth-site-dark");
+    }
+
     sealed class UnusedServerAuth : IServerAuth
     {
         public Task<ServerSession> SignUpAsync(

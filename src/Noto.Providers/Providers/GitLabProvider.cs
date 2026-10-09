@@ -11,6 +11,9 @@ public sealed class GitLabProvider : ProviderBase
         [AuthMethod.PersonalToken, AuthMethod.OAuth2];
     public override bool AcceptsSiteAddress => true;
 
+    // The server's browser flow targets gitlab.com; a self-hosted GitLab signs in with a token.
+    public override bool OAuthNeedsInstance => true;
+
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
     [
         new("gitlab.com", "/{path*}/-/merge_requests/{n}*"),

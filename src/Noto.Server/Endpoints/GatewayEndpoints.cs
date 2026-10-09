@@ -38,15 +38,21 @@ public static class GatewayEndpoints
                 CancellationToken ct
             ) =>
             {
-                var oneTime = await broker.CompleteAsync(
+                var result = await broker.CompleteAsync(
                     provider,
                     error is null ? code : null,
                     state,
                     ct
                 );
-                return PopupResult(http, config, provider, oneTime);
+                return result.ReturnTo is null
+                    ? PopupResult(http, config, provider, result.OneTimeCode!)
+                    : Results.Redirect(LoopbackReturn.Build(result));
             }
         );
+
+        // Which providers this server can sign people in with. The desktop shows only these.
+        gw.MapGet("/oauth", (OAuthBroker broker) => Results.Ok(broker.Available()))
+            .RequireAuthorization();
 
         oauth
             .MapPost(

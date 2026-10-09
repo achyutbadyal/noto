@@ -183,15 +183,7 @@ public class TokenIsolationTests : IDisposable
     }
 
     ConnectionService Service() =>
-        new(
-            _h.Uow,
-            _h.Credentials,
-            _h.Registry,
-            _h.Factory,
-            _h.Clock,
-            new HttpClient(),
-            new Dictionary<string, OAuthClient>()
-        );
+        new(_h.Uow, _h.Credentials, _h.Registry, _h.Factory, _h.Clock, new FakeOAuthGateway());
 
     // Every table, every column, plus the raw database and WAL bytes.
     string DumpDatabase()
@@ -359,43 +351,25 @@ public class TokenIsolationTests : IDisposable
     [Fact]
     public async Task Oauth_flow_end_to_end_with_a_fake_browser()
     {
-        var provider = new ScriptedProvider("fake")
-        {
-            Config = new("https://auth.test/authorize", "https://auth.test/token", ["read"], ""),
-        };
+        var provider = new ScriptedProvider("fake");
         var h = new Harness([provider]);
         h.Factory.ByProvider["fake"] = new FakeHttp();
-        var tokenEndpoint = new FakeHandler(
-            (_, _) =>
-                FakeHandler.Json(
-                    """{ "access_token": "oauth-at", "refresh_token": "oauth-rt", "expires_in": 3600 }"""
-                )
-        );
+        var gateway = new FakeOAuthGateway { Providers = [new("fake", "Fake")] };
         var service = new ConnectionService(
             h.Uow,
             h.Credentials,
             h.Registry,
             h.Factory,
             h.Clock,
-            new HttpClient(tokenEndpoint),
-            new Dictionary<string, OAuthClient> { ["fake"] = new("cid") }
+            gateway
         );
 
-        var connection = await service.ConnectOAuthAsync(
-            "fake",
-            async authorize =>
-            {
-                var q = System.Web.HttpUtility.ParseQueryString(authorize.Query);
-                q["code_challenge_method"].ShouldBe("S256");
-                using var http = new HttpClient();
-                await http.GetAsync($"{q["redirect_uri"]}?code=abc&state={q["state"]}");
-            }
-        );
+        var connection = await service.ConnectOAuthAsync("fake", FakeBrowser.Approve(gateway));
 
         connection.AuthMethod.ShouldBe(AuthMethod.OAuth2);
         var stored = (await h.Credentials.LoadAsync(connection.Id))!;
-        (stored.AccessToken, stored.RefreshToken).ShouldBe(("oauth-at", "oauth-rt"));
-        tokenEndpoint.Calls.Single().Body.ShouldContain("code_verifier=");
+        stored.AccessToken.ShouldBe(gateway.Tokens.AccessToken);
+        stored.RefreshToken.ShouldBe(gateway.Tokens.RefreshToken);
     }
 
     sealed class ThrowingHttp(Exception e) : IProviderHttp

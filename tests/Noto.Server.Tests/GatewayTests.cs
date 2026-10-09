@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Noto.Server.Gateway;
 
 namespace Noto.Server.Tests;
@@ -606,6 +607,118 @@ public sealed class GatewayTests : IDisposable
         var response = await s.Client.PostAsync("/v1/gateway/oauth/slack/start", Json(new { }));
         response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
         (await Body(response)).GetProperty("code").GetString().ShouldBe("PROVIDER_NOT_CONFIGURED");
+    }
+
+    // The desktop redirect must be seen, not followed to the loopback address.
+    static readonly WebApplicationFactoryClientOptions NoRedirects = new()
+    {
+        AllowAutoRedirect = false,
+    };
+
+    // Desktop sign-in: the browser comes back to the app's loopback listener with a one-time code, and the app
+    // redeems it with its own session and PKCE verifier. The app never sees the provider secret.
+    [Fact]
+    public async Task Desktop_flow_returns_the_one_time_code_to_the_loopback_listener_and_redeems_it()
+    {
+        var s = await _f.RegisterAsync();
+        const string verifier = "desktop-verifier-0123456789-abcdefghijklmnop";
+        var start = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/start",
+                Json(
+                    new
+                    {
+                        code_challenge = Challenge(verifier),
+                        return_to = "http://127.0.0.1:53124/callback",
+                    }
+                )
+            )
+        );
+        var state = start.GetProperty("state").GetString()!;
+        _f.Upstream.Respond = _ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """{"access_token":"gho_abc","refresh_token":"ghr_def","expires_in":3600,"scope":"repo"}""",
+                Encoding.UTF8,
+                "application/json"
+            ),
+        };
+
+        var back = await _f.CreateClient(NoRedirects)
+            .GetAsync($"/v1/gateway/oauth/github/callback?code=provider-code&state={state}");
+
+        back.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        var target = back.Headers.Location!;
+        target.GetLeftPart(UriPartial.Path).ShouldBe("http://127.0.0.1:53124/callback");
+        Query(target.ToString())["state"].ShouldBe(state);
+        var oneTime = Query(target.ToString())["code"]!;
+
+        var tokens = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/redeem",
+                Json(new { one_time_code = oneTime, code_verifier = verifier })
+            )
+        );
+        tokens.GetProperty("access_token").GetString().ShouldBe("gho_abc");
+    }
+
+    [Theory]
+    [InlineData("https://evil.example/callback")]
+    [InlineData("http://example.com:53124/callback")]
+    [InlineData("http://127.0.0.1:53124/steal")]
+    [InlineData("http://127.0.0.1/callback")]
+    [InlineData("http://127.0.0.1:53124/callback?next=https://evil.example")]
+    public async Task Return_address_must_be_a_loopback_callback(string returnTo)
+    {
+        var s = await _f.RegisterAsync();
+
+        var response = await s.Client.PostAsync(
+            "/v1/gateway/oauth/github/start",
+            Json(new { code_challenge = Challenge("v"), return_to = returnTo })
+        );
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        (await Body(response)).GetProperty("code").GetString().ShouldBe("INVALID_RETURN_TO");
+    }
+
+    [Fact]
+    public async Task A_provider_refusal_reaches_the_desktop_as_an_error_not_a_code()
+    {
+        var s = await _f.RegisterAsync();
+        var start = await Body(
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/github/start",
+                Json(
+                    new
+                    {
+                        code_challenge = Challenge("v"),
+                        return_to = "http://localhost:53124/callback",
+                    }
+                )
+            )
+        );
+        var state = start.GetProperty("state").GetString()!;
+
+        var back = await _f.CreateClient(NoRedirects)
+            .GetAsync($"/v1/gateway/oauth/github/callback?error=access_denied&state={state}");
+
+        back.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        var target = back.Headers.Location!.ToString();
+        Query(target)["error"].ShouldBe("AUTHORIZATION_DENIED");
+        Query(target).ShouldNotContainKey("code");
+    }
+
+    [Fact]
+    public async Task The_provider_list_names_only_the_providers_this_server_is_configured_for()
+    {
+        var s = await _f.RegisterAsync();
+
+        var list = await Body(await s.Client.GetAsync("/v1/gateway/oauth"));
+
+        var ids = list.EnumerateArray().Select(p => p.GetProperty("id").GetString()).ToList();
+        ids.ShouldContain("github");
+        ids.ShouldNotContain("slack");
+        list.ToString().ShouldNotContain("gh-secret");
     }
 
     async Task<(

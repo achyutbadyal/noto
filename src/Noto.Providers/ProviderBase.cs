@@ -20,6 +20,17 @@ public abstract class ProviderBase : IAppProvider
 
     public virtual bool UsesUsername(AuthMethod method) => false;
 
+    public virtual bool OAuthAcceptsSite => false;
+
+    public virtual bool OAuthNeedsInstance => false;
+
+    // Default: the site stays as the user entered it, and requests go to ApiRoot.
+    public virtual Task<OAuthSite?> ResolveOAuthSiteAsync(
+        IProviderHttp http,
+        string? instanceUrl,
+        CancellationToken ct
+    ) => Task.FromResult<OAuthSite?>(null);
+
     public virtual bool CanHandle(Uri url, AppConnection? connection)
     {
         if (connection?.InstanceUrl is { } instance)
@@ -170,15 +181,32 @@ public abstract class ProviderBase : IAppProvider
         string path,
         string query,
         CancellationToken ct
-    )
+    ) => (await GraphQlWithErrorsAsync(http, path, query, ct)).Data;
+
+    // Errors come back beside the data, keyed by the top-level field they belong to (GitHub's aliases "r0", ...).
+    // Keeping them lets a missing object say why it is missing, such as an organization restriction.
+    protected static async Task<(
+        JsonElement Data,
+        IReadOnlyDictionary<string, string> ErrorsByField
+    )> GraphQlWithErrorsAsync(IProviderHttp http, string path, string query, CancellationToken ct)
     {
         var body = new JsonObject { ["query"] = query }.ToJsonString();
         var doc = await http.GetJsonAsync(ProviderRequest.Post(path, body), ct);
-        if (
-            doc.RootElement.TryGetProperty("data", out var data)
-            && data.ValueKind == JsonValueKind.Object
-        )
-            return data.Clone();
+        var root = doc.RootElement;
+        var errors = new Dictionary<string, string>();
+        if (root.TryGetProperty("errors", out var list) && list.ValueKind == JsonValueKind.Array)
+            foreach (var e in list.EnumerateArray())
+                if (
+                    e.TryGetProperty("path", out var path0)
+                    && path0.ValueKind == JsonValueKind.Array
+                    && path0.GetArrayLength() > 0
+                    && path0[0].ValueKind == JsonValueKind.String
+                    && e.TryGetProperty("message", out var msg)
+                    && msg.GetString() is { Length: > 0 } text
+                )
+                    errors.TryAdd(path0[0].GetString()!, text);
+        if (root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object)
+            return (data.Clone(), errors);
         throw new ProviderHttpException(502, error: "graphql returned no data");
     }
 

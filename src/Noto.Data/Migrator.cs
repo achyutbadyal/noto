@@ -3,19 +3,21 @@ using Microsoft.Data.Sqlite;
 
 namespace Noto.Data;
 
-// Applies embedded `NNNN_name.sql` scripts in order, each in its own transaction.
+// Applies embedded `NNNN_name.sql` scripts in order, each in its own transaction. Every script whose version
+// is not yet recorded runs, even one numbered below the newest applied version, so a script added later
+// into an existing number range still reaches databases that are already past it.
 public static class Migrator
 {
     public static void Apply(SqliteConnection conn)
     {
         Exec(conn, "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)");
-        var current = Scalar(conn, "SELECT COALESCE(MAX(version), 0) FROM schema_version");
+        var applied = Applied(conn);
 
         var asm = Assembly.GetExecutingAssembly();
         var scripts = asm.GetManifestResourceNames()
             .Where(n => n.EndsWith(".sql"))
             .Select(n => (Name: n, Version: ParseVersion(n)))
-            .Where(s => s.Version > current)
+            .Where(s => !applied.Contains(s.Version))
             .OrderBy(s => s.Version);
 
         foreach (var (name, version) in scripts)
@@ -43,10 +45,14 @@ public static class Migrator
         cmd.ExecuteNonQuery();
     }
 
-    static long Scalar(SqliteConnection conn, string sql)
+    static HashSet<long> Applied(SqliteConnection conn)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = sql;
-        return (long)cmd.ExecuteScalar()!;
+        cmd.CommandText = "SELECT version FROM schema_version";
+        using var reader = cmd.ExecuteReader();
+        var versions = new HashSet<long>();
+        while (reader.Read())
+            versions.Add(reader.GetInt64(0));
+        return versions;
     }
 }

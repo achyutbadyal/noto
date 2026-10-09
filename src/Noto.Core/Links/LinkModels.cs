@@ -88,6 +88,9 @@ public sealed class AppConnection
     public AuthMethod AuthMethod { get; init; }
     public string DisplayLabel { get; set; } = "";
     public string? InstanceUrl { get; set; }
+
+    // Set when the provider's API is not at its default root for this site (Atlassian's cloud gateway).
+    public string? ApiBaseUrl { get; set; }
     public string[] Scopes { get; set; } = [];
     public DateTimeOffset ConnectedAt { get; init; }
     public DateTimeOffset? LastUsedAt { get; set; }

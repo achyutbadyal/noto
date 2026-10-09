@@ -9,11 +9,13 @@ namespace Noto.Providers.Transport;
 
 public interface IProviderHttpFactory
 {
+    // apiBaseUrl overrides the provider's ApiRoot for this connection (see AppConnection.ApiBaseUrl).
     IProviderHttp Create(
         IAppProvider provider,
         string? instanceUrl,
         AuthMethod method,
-        ICredentialSource credentials
+        ICredentialSource credentials,
+        string? apiBaseUrl = null
     );
 }
 
@@ -24,7 +26,8 @@ public sealed class DirectTransport(
     string? instanceUrl,
     AuthMethod method,
     ICredentialSource credentials,
-    ILogger logger
+    ILogger logger,
+    string? apiBaseUrl = null
 ) : IProviderHttp
 {
     public async Task<ProviderResponse> SendAsync(ProviderRequest request, CancellationToken ct)
@@ -91,12 +94,15 @@ public sealed class DirectTransport(
         return OpenGraphParser.Parse(Encoding.UTF8.GetString(buffer, 0, read));
     }
 
+    Uri ApiRootFor(string? instanceUrl) =>
+        apiBaseUrl is null ? provider.ApiRoot(instanceUrl) : new Uri(apiBaseUrl);
+
     Uri Resolve(ProviderRequest request, IReadOnlyList<KeyValuePair<string, string>> authQuery)
     {
         var path = request.Path;
         var baseUri = path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
             ? new Uri(path)
-            : new Uri(provider.ApiRoot(instanceUrl), path.TrimStart('/'));
+            : new Uri(ApiRootFor(instanceUrl), path.TrimStart('/'));
         var all = (request.Query ?? new Dictionary<string, string>()).Concat(authQuery).ToList();
         if (all.Count == 0)
             return baseUri;
@@ -120,8 +126,9 @@ public sealed class DirectTransportFactory(HttpClient http, ILogger<DirectTransp
         IAppProvider provider,
         string? instanceUrl,
         AuthMethod method,
-        ICredentialSource credentials
-    ) => new DirectTransport(http, provider, instanceUrl, method, credentials, logger);
+        ICredentialSource credentials,
+        string? apiBaseUrl = null
+    ) => new DirectTransport(http, provider, instanceUrl, method, credentials, logger, apiBaseUrl);
 }
 
 // Browser client: requests go through the Noto backend (docs/06 › Gateway). The provider token travels
@@ -237,15 +244,21 @@ public sealed class GatewayTransportFactory(
         IAppProvider provider,
         string? instanceUrl,
         AuthMethod method,
-        ICredentialSource credentials
+        ICredentialSource credentials,
+        string? apiBaseUrl = null
     ) =>
-        new GatewayTransport(
-            http,
-            gatewayBase,
-            notoAccessToken,
-            provider,
-            instanceUrl,
-            method,
-            credentials
-        );
+        apiBaseUrl is not null
+            // The gateway resolves API roots on the server; it needs the same override before this can work.
+            ? throw new NotSupportedException(
+                $"{provider.DisplayName} connections that use a cloud gateway are not supported in the browser yet."
+            )
+            : new GatewayTransport(
+                http,
+                gatewayBase,
+                notoAccessToken,
+                provider,
+                instanceUrl,
+                method,
+                credentials
+            );
 }

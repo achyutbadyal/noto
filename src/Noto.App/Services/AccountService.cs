@@ -31,6 +31,18 @@ public sealed record TokenOption(
     public string Label => $"{ProviderName} · {MethodLabel}";
 }
 
+// A provider that can sign in through the browser. Configured is false when this build has no OAuth app for it.
+// ShowSite: the provider asks which site to connect. A blank site means the account's first one.
+public sealed record OAuthOption(
+    string ProviderId,
+    string ProviderName,
+    bool Configured,
+    string SetupHint,
+    bool ShowSite = false,
+    // The provider's ID on the server, when it differs from ProviderId (Jira and Confluence share "atlassian").
+    string? ServerProviderId = null
+);
+
 // Sign-in to a sync server, and the connected-apps list. The refresh token lives in the OS keyring (the
 // server rotates it on every refresh, so the stored copy is replaced each time). The access token stays in memory.
 public sealed class AccountService(
@@ -41,7 +53,11 @@ public sealed class AccountService(
     IUnitOfWork uow,
     ConnectionService connections,
     IReadOnlyList<TokenOption> tokenOptions,
-    TimeProvider time
+    TimeProvider time,
+    // Providers this build can sign in with (the candidates); the server decides which are configured.
+    IReadOnlyList<OAuthOption>? oauthCandidates = null,
+    Func<Uri, Task>? openBrowser = null,
+    Func<CancellationToken, Task<IReadOnlyList<GatewayProvider>>>? serverProviders = null
 )
 {
     public const string KeyringService = "app.noto.server";
@@ -54,6 +70,35 @@ public sealed class AccountService(
 
     public SignedInAccount? Account { get; private set; }
     public IReadOnlyList<TokenOption> TokenOptions => tokenOptions;
+
+    // The browser sign-in options for Settings. Configured means the signed-in server can run that provider.
+    // Without a session, or when the server can't be reached, nothing is configured.
+    public async Task<IReadOnlyList<OAuthOption>> LoadOAuthOptionsAsync(CancellationToken ct)
+    {
+        var candidates = oauthCandidates ?? [];
+        if (Account is null || serverProviders is null)
+            return candidates.Select(o => o with { Configured = false }).ToList();
+        var available = (await serverProviders(ct)).Select(p => p.Id).ToHashSet();
+        return candidates
+            .Select(o =>
+                o with
+                {
+                    Configured = available.Contains(o.ServerProviderId ?? o.ProviderId),
+                }
+            )
+            .ToList();
+    }
+
+    // A valid server session for providers that run through the server. Throws when signed out.
+    public async Task<(Uri Server, string Token)> SessionAsync(CancellationToken ct)
+    {
+        var token = await AccessTokenAsync(ct);
+        return Account is { } account && token is not null
+            ? (account.Server, token)
+            : throw new AuthRequiredException(
+                "Sign in to your Noto server first (Settings, Account and sync)."
+            );
+    }
 
     public string? ServerText => ui.Get(ServerKey);
 
@@ -151,6 +196,20 @@ public sealed class AccountService(
         CancellationToken ct
     ) =>
         connections.ConnectWithTokenAsync(option.ProviderId, token, option.Method, site, email, ct);
+
+    // Opens the provider's sign-in page in the browser and waits for the redirect back to this device.
+    public Task<AppConnection> ConnectOAuthAsync(
+        string providerId,
+        string? site,
+        CancellationToken ct
+    ) =>
+        connections.ConnectOAuthAsync(
+            providerId,
+            openBrowser
+                ?? throw new InvalidOperationException("Browser sign-in isn't available here"),
+            site,
+            ct
+        );
 
     public Task DisconnectAsync(Guid connectionId, CancellationToken ct) =>
         connections.DisconnectAsync(connectionId, ct);

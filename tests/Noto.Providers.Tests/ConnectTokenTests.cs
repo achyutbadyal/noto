@@ -37,8 +37,7 @@ public sealed class ConnectTokenTests : IDisposable
             _h.Registry,
             new DirectTransportFactory(client, NullLogger<DirectTransport>.Instance),
             _h.Clock,
-            client,
-            new Dictionary<string, OAuthClient>()
+            _h.Gateway
         );
     }
 

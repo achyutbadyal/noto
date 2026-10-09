@@ -1,14 +1,8 @@
 using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace Noto.Providers.Auth;
-
-// Embedded client ids/secrets are supplied by the app build; see docs/10 on why secrets are assumed extractable.
-public sealed record OAuthClient(string ClientId, string? ClientSecret = null);
 
 public static class Pkce
 {
@@ -22,145 +16,44 @@ public static class Pkce
         Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
-// RFC 8252 native flow: system browser + loopback redirect + PKCE.
 public static class OAuthFlow
 {
-    public static Uri BuildAuthorizeUrl(
-        AuthConfig config,
-        OAuthClient client,
-        string redirectUri,
-        string state,
-        string challenge
-    )
-    {
-        var q = new Dictionary<string, string>
-        {
-            ["response_type"] = "code",
-            ["client_id"] = client.ClientId,
-            ["redirect_uri"] = redirectUri,
-            ["state"] = state,
-        };
-        q[config.ScopeParam] = string.Join(' ', config.Scopes);
-        if (config.UsesPkce)
-        {
-            q["code_challenge"] = challenge;
-            q["code_challenge_method"] = "S256";
-        }
-        return new Uri(
-            config.AuthorizeUrl! + (config.AuthorizeUrl!.Contains('?') ? "&" : "?") + Form(q)
-        );
-    }
-
-    public static Task<Credential> ExchangeCodeAsync(
-        HttpClient http,
-        AuthConfig config,
-        OAuthClient client,
-        string code,
-        string redirectUri,
-        string verifier,
-        DateTimeOffset now,
-        CancellationToken ct
-    )
-    {
-        var form = new Dictionary<string, string>
-        {
-            ["grant_type"] = "authorization_code",
-            ["code"] = code,
-            ["redirect_uri"] = redirectUri,
-            ["client_id"] = client.ClientId,
-        };
-        if (config.UsesPkce)
-            form["code_verifier"] = verifier;
-        if (client.ClientSecret is { } secret)
-            form["client_secret"] = secret;
-        return TokenRequestAsync(http, config, form, previousRefresh: null, now, ct);
-    }
-
-    public static Task<Credential> RefreshAsync(
-        HttpClient http,
-        AuthConfig config,
-        OAuthClient client,
-        string refreshToken,
-        DateTimeOffset now,
-        CancellationToken ct
-    )
-    {
-        var form = new Dictionary<string, string>
-        {
-            ["grant_type"] = "refresh_token",
-            ["refresh_token"] = refreshToken,
-            ["client_id"] = client.ClientId,
-        };
-        if (client.ClientSecret is { } secret)
-            form["client_secret"] = secret;
-        return TokenRequestAsync(http, config, form, previousRefresh: refreshToken, now, ct);
-    }
-
-    static async Task<Credential> TokenRequestAsync(
-        HttpClient http,
-        AuthConfig config,
-        Dictionary<string, string> form,
-        string? previousRefresh,
-        DateTimeOffset now,
-        CancellationToken ct
-    )
-    {
-        using var request = new HttpRequestMessage(HttpMethod.Post, config.TokenUrl)
-        {
-            Content = new FormUrlEncodedContent(form),
-        };
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        using var response = await http.SendAsync(request, ct);
-        if (!response.IsSuccessStatusCode)
-            throw new AuthRequiredException($"Token endpoint returned {(int)response.StatusCode}");
-
-        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
-        var root = doc.RootElement;
-        // Slack v2 nests the user token under authed_user.
-        if (
-            !root.TryGetProperty("access_token", out _)
-            && root.TryGetProperty("authed_user", out var user)
-        )
-            root = user;
-        if (
-            !root.TryGetProperty("access_token", out var access)
-            || access.GetString() is not { Length: > 0 } token
-        )
-            throw new AuthRequiredException("Token endpoint returned no access token");
-
-        var expiresIn =
-            root.TryGetProperty("expires_in", out var e) && e.TryGetInt32(out var seconds)
-                ? seconds
-                : (int?)null;
-        // Providers that omit a new refresh token expect the old one to stay valid.
-        var refresh = root.TryGetProperty("refresh_token", out var r)
-            ? r.GetString()
-            : previousRefresh;
-        return new Credential(token, refresh, expiresIn is { } s ? now.AddSeconds(s) : null);
-    }
-
-    static string Form(Dictionary<string, string> values) =>
-        string.Join(
-            '&',
-            values.Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}")
-        );
+    // Gives up after this long, so an abandoned browser tab doesn't leave the sign-in button stuck.
+    public static readonly TimeSpan SignInTimeout = TimeSpan.FromMinutes(5);
 }
 
-// Listens on http://127.0.0.1:<random port>/callback for the single redirect, then stops.
+// Listens on http://127.0.0.1:<port>/callback for the one redirect from the Noto server, then stops. The port is
+// picked at random: the server accepts any loopback port, and no provider ever sees this address.
 public sealed class LoopbackReceiver : IDisposable
 {
     readonly HttpListener _listener = new();
 
-    public LoopbackReceiver()
+    // A null port picks a free one. Tests pass a port they know is free.
+    public LoopbackReceiver(int? port = null)
     {
-        var probe = new TcpListener(IPAddress.Loopback, 0);
+        var chosen = port ?? FreePort();
+        RedirectUri = $"http://127.0.0.1:{chosen}/callback";
+        _listener.Prefixes.Add($"http://127.0.0.1:{chosen}/");
+        try
+        {
+            _listener.Start();
+        }
+        catch (HttpListenerException)
+        {
+            _listener.Close();
+            throw new AuthRequiredException(
+                $"Port {chosen} is in use by another app. Close it and try again."
+            );
+        }
+    }
+
+    static int FreePort()
+    {
+        var probe = new System.Net.Sockets.TcpListener(IPAddress.Loopback, 0);
         probe.Start();
         var port = ((IPEndPoint)probe.LocalEndpoint).Port;
         probe.Stop();
-
-        RedirectUri = $"http://127.0.0.1:{port}/callback";
-        _listener.Prefixes.Add($"http://127.0.0.1:{port}/");
-        _listener.Start();
+        return port;
     }
 
     public string RedirectUri { get; }
@@ -181,12 +74,11 @@ public sealed class LoopbackReceiver : IDisposable
             }
 
             var query = context.Request.QueryString;
-            var valid = context.Request.Url?.AbsolutePath == "/callback";
-            var ok =
-                valid
-                && query["state"] == expectedState
-                && query["error"] is null
-                && query["code"] is not null;
+            // Only the callback with this sign-in's state counts. Anything else (favicon, probes, a stale tab)
+            // gets a page and is ignored, so it can't end the sign-in.
+            var ours =
+                context.Request.Url?.AbsolutePath == "/callback" && query["state"] == expectedState;
+            var ok = ours && query["error"] is null && query["code"] is not null;
             await Respond(
                 context,
                 ok
@@ -194,12 +86,12 @@ public sealed class LoopbackReceiver : IDisposable
                     : "Authorization failed. Return to Noto and try again."
             );
 
-            if (!valid)
-                continue; // favicon and probes don't end the flow
-            if (query["state"] != expectedState)
-                throw new AuthRequiredException("OAuth state mismatch");
+            if (!ours)
+                continue;
             if (query["error"] is { } error)
                 throw new AuthRequiredException($"Authorization denied: {error}");
+            if (query["code"] is null)
+                throw new AuthRequiredException("The sign-in response had no code");
             return query["code"]!;
         }
     }

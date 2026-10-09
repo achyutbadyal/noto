@@ -9,15 +9,6 @@ namespace Noto.Providers.Tests;
 
 public class OAuthTests
 {
-    static readonly AuthConfig Config = new(
-        "https://auth.test/authorize",
-        "https://auth.test/token",
-        ["read", "write"],
-        ""
-    );
-    static readonly OAuthClient Client = new("cid", "csecret");
-    static readonly DateTimeOffset Now = DateTimeOffset.Parse("2026-10-07T10:00:00Z");
-
     [Fact]
     public void Pkce_challenge_matches_the_rfc7636_example()
     {
@@ -54,101 +45,6 @@ public class OAuthTests
     }
 
     [Fact]
-    public void Authorize_url_carries_pkce_state_and_loopback_redirect()
-    {
-        var url = OAuthFlow.BuildAuthorizeUrl(
-            Config,
-            Client,
-            "http://127.0.0.1:5000/callback",
-            "st4te",
-            "chal"
-        );
-        var q = System.Web.HttpUtility.ParseQueryString(url.Query);
-
-        (q["client_id"], q["state"], q["code_challenge"], q["code_challenge_method"]).ShouldBe(
-            ("cid", "st4te", "chal", "S256")
-        );
-        q["redirect_uri"].ShouldBe("http://127.0.0.1:5000/callback");
-        q["scope"].ShouldBe("read write");
-    }
-
-    [Fact]
-    public async Task Code_exchange_sends_verifier_and_parses_tokens()
-    {
-        var handler = new FakeHandler(
-            (_, _) =>
-                FakeHandler.Json(
-                    """{ "access_token": "at", "refresh_token": "rt", "expires_in": 3600 }"""
-                )
-        );
-        var cred = await OAuthFlow.ExchangeCodeAsync(
-            new HttpClient(handler),
-            Config,
-            Client,
-            "the-code",
-            "http://127.0.0.1:1/callback",
-            "ver",
-            Now,
-            default
-        );
-
-        cred.ShouldBe(new Credential("at", "rt", Now.AddHours(1)));
-        var body = handler.Calls.Single().Body;
-        body.ShouldContain("grant_type=authorization_code");
-        body.ShouldContain("code_verifier=ver");
-        body.ShouldContain("client_secret=csecret");
-    }
-
-    [Fact]
-    public async Task Refresh_keeps_the_old_refresh_token_when_none_is_returned()
-    {
-        var handler = new FakeHandler(
-            (_, _) => FakeHandler.Json("""{ "access_token": "at2", "expires_in": 60 }""")
-        );
-        var cred = await OAuthFlow.RefreshAsync(
-            new HttpClient(handler),
-            Config,
-            Client,
-            "old-rt",
-            Now,
-            default
-        );
-        (cred.AccessToken, cred.RefreshToken).ShouldBe(("at2", "old-rt"));
-    }
-
-    [Fact]
-    public async Task Token_endpoint_failure_requires_reauth()
-    {
-        var handler = new FakeHandler((_, _) => FakeHandler.Json("{}", 400));
-        await Should.ThrowAsync<AuthRequiredException>(() =>
-            OAuthFlow.RefreshAsync(new HttpClient(handler), Config, Client, "rt", Now, default)
-        );
-    }
-
-    [Fact]
-    public async Task Slack_style_nested_user_token_is_read()
-    {
-        var handler = new FakeHandler(
-            (_, _) =>
-                FakeHandler.Json("""{ "ok": true, "authed_user": { "access_token": "xoxp-1" } }""")
-        );
-        var cred = await OAuthFlow.ExchangeCodeAsync(
-            new HttpClient(handler),
-            Config with
-            {
-                UsesPkce = false,
-            },
-            Client,
-            "c",
-            "http://127.0.0.1:1/callback",
-            "v",
-            Now,
-            default
-        );
-        cred.AccessToken.ShouldBe("xoxp-1");
-    }
-
-    [Fact]
     public async Task Loopback_receiver_returns_the_code_for_a_matching_state()
     {
         using var receiver = new LoopbackReceiver();
@@ -164,15 +60,18 @@ public class OAuthTests
     }
 
     [Fact]
-    public async Task Loopback_receiver_rejects_a_state_mismatch()
+    public async Task Loopback_receiver_ignores_a_forged_callback_and_keeps_waiting_for_the_real_one()
     {
         using var receiver = new LoopbackReceiver();
         var wait = receiver.WaitForCodeAsync("expected", default);
 
         using var http = new HttpClient();
-        await http.GetAsync($"{receiver.RedirectUri}?code=x&state=forged");
+        var forged = await http.GetAsync($"{receiver.RedirectUri}?code=x&state=forged");
+        forged.IsSuccessStatusCode.ShouldBeTrue();
+        wait.IsCompleted.ShouldBeFalse();
 
-        await Should.ThrowAsync<AuthRequiredException>(() => wait);
+        await http.GetAsync($"{receiver.RedirectUri}?code=real&state=expected");
+        (await wait).ShouldBe("real");
     }
 
     [Fact]
@@ -194,35 +93,24 @@ public class OAuthTests
 
 public class TokenManagerTests
 {
-    static (Harness H, ScriptedProvider P, FakeHandler Oauth) Build(
-        Func<HttpRequestMessage, string, HttpResponseMessage>? reply = null
+    static (Harness H, ScriptedProvider P, FakeOAuthGateway Gateway) Build(
+        Func<string, string, CancellationToken, Task<Credential>>? refresh = null
     )
     {
-        var oauth = new FakeHandler(
-            reply
-                ?? (
-                    (_, _) =>
-                        FakeHandler.Json(
-                            """{ "access_token": "fresh", "refresh_token": "rt2", "expires_in": 3600 }"""
-                        )
-                )
-        );
-        var provider = new ScriptedProvider
+        var gateway = new FakeOAuthGateway
         {
-            Config = new("https://auth.test/authorize", "https://auth.test/token", [], ""),
+            RefreshHandler = refresh,
+            Tokens = new Credential("fresh", "rt2", DateTimeOffset.Parse("2026-10-07T11:00:00Z")),
         };
-        var harness = new Harness(
-            [provider],
-            oauthHandler: oauth,
-            oauthClients: new Dictionary<string, OAuthClient> { ["fake"] = new("cid") }
-        );
-        return (harness, provider, oauth);
+        var provider = new ScriptedProvider();
+        var harness = new Harness([provider], gateway: gateway);
+        return (harness, provider, gateway);
     }
 
     [Fact]
     public async Task Valid_token_is_returned_without_refreshing()
     {
-        var (h, _, oauth) = Build();
+        var (h, _, gateway) = Build();
         var c = await h.ConnectAsync("fake");
         await h.Credentials.SaveAsync(
             c.Id,
@@ -230,13 +118,13 @@ public class TokenManagerTests
         );
 
         (await h.Tokens.GetValidAsync(c.Id, default)).AccessToken.ShouldBe("live");
-        oauth.Calls.ShouldBeEmpty();
+        gateway.RefreshCalls.ShouldBeEmpty();
     }
 
     [Fact]
     public async Task Concurrent_callers_trigger_exactly_one_refresh()
     {
-        var (h, _, oauth) = Build();
+        var (h, _, gateway) = Build();
         var c = await h.ConnectAsync("fake");
         await h.Credentials.SaveAsync(
             c.Id,
@@ -247,7 +135,7 @@ public class TokenManagerTests
             Enumerable.Range(0, 8).Select(_ => h.Tokens.GetValidAsync(c.Id, default))
         );
 
-        oauth.Calls.Count.ShouldBe(1);
+        gateway.RefreshCalls.Count.ShouldBe(1);
         results.ShouldAllBe(r => r.AccessToken == "fresh");
         (await h.Credentials.LoadAsync(c.Id))!.RefreshToken.ShouldBe("rt2");
     }
@@ -255,7 +143,9 @@ public class TokenManagerTests
     [Fact]
     public async Task Failed_refresh_marks_the_connection_refresh_failed()
     {
-        var (h, _, _) = Build((_, _) => FakeHandler.Json("{}", 400));
+        var (h, _, _) = Build(
+            (_, _, _) => Task.FromException<Credential>(new ProviderRejectedException("rejected"))
+        );
         var c = await h.ConnectAsync("fake");
         await h.Credentials.SaveAsync(
             c.Id,
@@ -266,6 +156,61 @@ public class TokenManagerTests
 
         (await h.Uow.RunAsync(s => s.Connections.GetAsync(c.Id)))!.Status.ShouldBe(
             ConnectionStatus.RefreshFailed
+        );
+    }
+
+    [Fact]
+    public async Task Refresh_that_returns_no_refresh_token_keeps_the_one_we_had()
+    {
+        var (h, _, gateway) = Build();
+        gateway.RefreshHandler = (_, _, _) =>
+            Task.FromResult(new Credential("fresh", null, h.Clock.UtcNow.AddHours(1)));
+        var c = await h.ConnectAsync("fake");
+        await h.Credentials.SaveAsync(
+            c.Id,
+            new Credential("old", "rt-kept", h.Clock.UtcNow.AddSeconds(-5))
+        );
+
+        await h.Tokens.GetValidAsync(c.Id, default);
+
+        (await h.Credentials.LoadAsync(c.Id))!.RefreshToken.ShouldBe("rt-kept");
+    }
+
+    [Fact]
+    public async Task A_provider_refusal_marks_the_connection_refresh_failed()
+    {
+        var (h, _, gateway) = Build();
+        gateway.RefreshHandler = (_, _, _) =>
+            Task.FromException<Credential>(new ProviderRejectedException("revoked"));
+        var c = await h.ConnectAsync("fake");
+        await h.Credentials.SaveAsync(
+            c.Id,
+            new Credential("old", "rt", h.Clock.UtcNow.AddSeconds(-5))
+        );
+
+        await Should.ThrowAsync<AuthRequiredException>(() => h.Tokens.GetValidAsync(c.Id, default));
+
+        (await h.Uow.RunAsync(s => s.Connections.GetAsync(c.Id)))!.Status.ShouldBe(
+            ConnectionStatus.RefreshFailed
+        );
+    }
+
+    [Fact]
+    public async Task An_outage_during_refresh_leaves_the_connection_alone()
+    {
+        var (h, _, gateway) = Build();
+        gateway.RefreshHandler = (_, _, _) =>
+            Task.FromException<Credential>(new HttpRequestException("server unreachable"));
+        var c = await h.ConnectAsync("fake");
+        await h.Credentials.SaveAsync(
+            c.Id,
+            new Credential("old", "rt", h.Clock.UtcNow.AddSeconds(-5))
+        );
+
+        await Should.ThrowAsync<HttpRequestException>(() => h.Tokens.GetValidAsync(c.Id, default));
+
+        (await h.Uow.RunAsync(s => s.Connections.GetAsync(c.Id)))!.Status.ShouldBe(
+            ConnectionStatus.Active
         );
     }
 

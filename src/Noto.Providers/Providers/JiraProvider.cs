@@ -16,15 +16,22 @@ public sealed partial class JiraProvider : ProviderBase
 
     public override bool UsesUsername(AuthMethod method) => method == AuthMethod.ApiKey;
 
-    // Cloud: API token (email + token, basic). Data Center: PAT (bearer). OAuth 3LO needs cloud-id routing and is not implemented.
+    // Cloud: OAuth 3LO (browser) or API token (email + token, basic). Data Center: PAT (bearer).
     public override IReadOnlyList<AuthMethod> SupportedAuthMethods =>
-        [AuthMethod.ApiKey, AuthMethod.PersonalToken];
+        [AuthMethod.OAuth2, AuthMethod.ApiKey, AuthMethod.PersonalToken];
 
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
     [new("*.atlassian.net", "/browse/{key}")]; // self-hosted hosts match via their connection
 
-    public override AuthConfig GetAuthConfig() =>
-        new(null, null, [], "https://id.atlassian.com/manage-profile/security/api-tokens");
+    public override AuthConfig GetAuthConfig() => AtlassianCloud.Config();
+
+    public override bool OAuthAcceptsSite => true;
+
+    public override async Task<OAuthSite?> ResolveOAuthSiteAsync(
+        IProviderHttp http,
+        string? instanceUrl,
+        CancellationToken ct
+    ) => await AtlassianCloud.ResolveAsync(http, "jira", instanceUrl, ct);
 
     public override Uri ApiRoot(string? instanceUrl) => new($"{instanceUrl!.TrimEnd('/')}/");
 

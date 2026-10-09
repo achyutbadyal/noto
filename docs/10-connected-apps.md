@@ -29,7 +29,7 @@ This is a core feature for the developer and manager personas.
 | Capability                    | macOS / Windows / Linux                   | iOS / Android                                   | Web (WASM)                                                    |
 | ----------------------------- | ----------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------- |
 | Credential storage            | Keychain / Credential Manager / libsecret | Keychain / AndroidKeyStore                      | IndexedDB, encrypted with a non-extractable Web Crypto key    |
-| OAuth                         | System browser + loopback redirect + PKCE | ASWebAuthenticationSession / Custom Tabs + PKCE | Gateway OAuth broker                                          |
+| OAuth                         | System browser → Noto server broker, one-time code back on loopback + PKCE | Same, via ASWebAuthenticationSession / Custom Tabs | Gateway OAuth broker                              |
 | API calls                     | Direct HTTPS to provider                  | Direct HTTPS to provider                        | Via `/gateway/fetch` (needs a signed-in Noto backend)         |
 | OpenGraph fallback            | Direct                                    | Direct                                          | Via `/gateway/opengraph`                                      |
 | Intranet hosts (on-prem Jira) | Yes (device network)                      | Yes (device network)                            | Only via a **self-hosted** gateway with that host allowlisted |
@@ -61,7 +61,7 @@ Connections are per device. Signing in on a new device means reconnecting your a
 
 Every provider offers the auth methods it supports:
 
-- **OAuth** (one click): the system browser opens, the user authorizes, and Noto receives the code on a `http://127.0.0.1:<random port>/callback` loopback listener with a PKCE verifier. It exchanges the code and stores the tokens in the keyring.
+- **OAuth** (one click): the system browser opens the provider's authorize page through the user's Noto server. After consent, the server exchanges the code with its own client secret and sends the browser back to the app's `http://127.0.0.1:<port>/callback` with a one-time code. The app redeems that code with its PKCE verifier and its server session, then stores the tokens in the keyring. The desktop never holds a provider client secret.
 - **Personal token** (PAT / API token / API key): paste it in. Noto validates it with a cheap "who am I" call and stores it in the keyring. This is the fastest path for developers, and the only one for some self-hosted tools.
 
 ### Pasting a URL into a Todo
@@ -231,7 +231,7 @@ public sealed class AppConnection          // local-only table; secrets are in t
 
 ### OAuth details & known trade-offs
 
-- **Native OAuth** follows RFC 8252 (OAuth for native apps): system browser, loopback redirect, PKCE. Providers whose token exchange requires a `client_secret` (Slack, Atlassian, GitHub OAuth Apps) get one **embedded in the native build**. RFC 8252 treats native clients as public, so this secret should be assumed extractable. Mitigations: PKCE everywhere it's supported, minimal read-only scopes, per-release secret rotation where the provider allows it, and abuse monitoring on the provider dashboards. The secret alone grants no access to any user's data.
+- **Native OAuth** runs through the user's own Noto server, which holds the provider secrets (Slack, Atlassian, GitHub OAuth Apps and others require one for the code exchange). Client secrets are never shipped in a native build. The app sends the browser to the server and receives a one-time code on a loopback address, the same way the web client uses its popup. The server rejects any return address that isn't a loopback callback, so the one-time code can't be sent to a third party. Providers need only the server's callback URL registered, the same one the web uses.
 - **Token refresh:** before expiry, under a single-flight lock per connection. On failure → `RefreshFailed` → chips show `reconnect`.
 - **Disconnect:** revokes at the provider where an API exists, then deletes the keyring item and the connection's cached previews.
 

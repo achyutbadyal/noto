@@ -23,7 +23,29 @@ public sealed partial class AccountViewModel : ObservableObject
     }
 
     public IReadOnlyList<TokenOption> TokenOptions { get; }
+    public ObservableCollection<OAuthOption> OAuthOptions { get; } = [];
     public ObservableCollection<ConnectionRow> Connections { get; } = [];
+
+    public bool HasOAuthOptions => OAuthOptions.Count > 0;
+
+    [ObservableProperty]
+    string _oAuthSetupHint = "";
+
+    CancellationTokenSource? _oauthCancel;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowOAuthSite))]
+    [NotifyCanExecuteChangedFor(nameof(ConnectOAuthCommand))]
+    OAuthOption? _selectedOAuthOption;
+
+    [ObservableProperty]
+    string _connectOAuthSite = "";
+
+    public bool ShowOAuthSite => SelectedOAuthOption?.ShowSite == true;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ConnectOAuthCommand), nameof(CancelOAuthCommand))]
+    bool _isConnecting;
 
     [ObservableProperty]
     string _serverText = "";
@@ -109,7 +131,49 @@ public sealed partial class AccountViewModel : ObservableObject
         && (!o.NeedsEmail || !string.IsNullOrWhiteSpace(ConnectEmail));
 
     // Loads the connected-apps list. Called when Settings opens.
-    public async Task LoadAsync() => await ReloadConnectionsAsync();
+    // A failed read shows a message in the connections section; it must not take down the Settings page.
+    public async Task LoadAsync()
+    {
+        try
+        {
+            await ReloadConnectionsAsync();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            ConnectionStatus = $"Couldn't load connected apps: {Message(e)}";
+            ConnectionStatusIsError = true;
+        }
+        await LoadOAuthOptionsAsync();
+    }
+
+    // Asks the signed-in server which providers it can sign people in with.
+    async Task LoadOAuthOptionsAsync()
+    {
+        try
+        {
+            var options = await _account.LoadOAuthOptionsAsync(CancellationToken.None);
+            var configured = options.Where(o => o.Configured).ToList();
+            OAuthOptions.Clear();
+            foreach (var option in configured)
+                OAuthOptions.Add(option);
+            SelectedOAuthOption = configured.FirstOrDefault();
+            OAuthSetupHint = configured.Count > 0 ? "" : SetupHint();
+            OnPropertyChanged(nameof(HasOAuthOptions));
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            OAuthOptions.Clear();
+            SelectedOAuthOption = null;
+            OAuthSetupHint = $"Couldn't load sign-in options: {Message(e)}";
+            OnPropertyChanged(nameof(HasOAuthOptions));
+        }
+    }
+
+    // Says what is missing: a server connection, or provider credentials on that server.
+    string SetupHint() =>
+        _account.Account is null
+            ? "Browser sign-in goes through your Noto server. Connect this device to it under Account and sync, or paste a token below."
+            : "Your Noto server has no sign-in apps set up. Its administrator adds each provider's client ID and secret to the server's .env (docs/12-connected-apps-setup.md), or paste a token below.";
 
     [RelayCommand]
     void SaveServer()
@@ -159,6 +223,37 @@ public sealed partial class AccountViewModel : ObservableObject
             }
         );
 
+    [RelayCommand(CanExecute = nameof(CanConnectOAuth))]
+    async Task ConnectOAuthAsync()
+    {
+        var option = SelectedOAuthOption!;
+        var cancel = _oauthCancel = new CancellationTokenSource();
+        IsConnecting = true;
+        ConnectionStatus = $"Finish signing in to {option.ProviderName} in your browser.";
+        ConnectionStatusIsError = false;
+        try
+        {
+            // A site typed for one provider must not follow the user to another one.
+            var site = option.ShowSite ? NullIfBlank(ConnectOAuthSite) : null;
+            await RunConnectionAsync(
+                "Connected.",
+                ct => _account.ConnectOAuthAsync(option.ProviderId, site, ct),
+                cancel.Token
+            );
+        }
+        finally
+        {
+            _oauthCancel = null;
+            IsConnecting = false;
+            cancel.Dispose();
+        }
+    }
+
+    bool CanConnectOAuth => SelectedOAuthOption is not null && !IsConnecting;
+
+    [RelayCommand(CanExecute = nameof(IsConnecting))]
+    void CancelOAuth() => _oauthCancel?.Cancel();
+
     [RelayCommand]
     Task DisconnectAsync(ConnectionRow row) =>
         RunConnectionAsync("Disconnected.", ct => _account.DisconnectAsync(row.Id, ct));
@@ -180,15 +275,25 @@ public sealed partial class AccountViewModel : ObservableObject
         }
         RefreshSignedIn();
         await ReloadConnectionsAsync();
+        await LoadOAuthOptionsAsync();
     }
 
     // Catches everything: an unhandled exception in an async command takes the whole app down.
-    async Task RunConnectionAsync(string success, Func<CancellationToken, Task> work)
+    async Task RunConnectionAsync(
+        string success,
+        Func<CancellationToken, Task> work,
+        CancellationToken ct = default
+    )
     {
         try
         {
-            await work(CancellationToken.None);
+            await work(ct);
             ConnectionStatus = success;
+            ConnectionStatusIsError = false;
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            ConnectionStatus = "Sign-in cancelled.";
             ConnectionStatusIsError = false;
         }
         catch (Exception e) when (e is not OperationCanceledException)

@@ -80,7 +80,7 @@ public sealed partial class GitHubProvider : ProviderBase
             if (good.Count == 0)
                 continue;
 
-            var data = await GraphQlAsync(
+            var (data, errors) = await GraphQlWithErrorsAsync(
                 http,
                 "graphql",
                 BuildQuery(good.Select(g => g.Ref!).ToList()),
@@ -93,7 +93,7 @@ public sealed partial class GitHubProvider : ProviderBase
                     data.TryGetProperty($"r{n}", out var repo)
                     && Obj(repo, good[n].Ref!.Field) is { } node
                         ? Map(url, good[n].Ref!, node)
-                        : Unavailable(url);
+                        : Unavailable(url, errors.TryGetValue($"r{n}", out var why) ? why : null);
             }
         }
         return results;

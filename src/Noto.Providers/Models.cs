@@ -48,8 +48,14 @@ public sealed record AuthConfig(
     string PatHelpUrl,
     bool UsesPkce = true,
     bool RequiresClientSecret = false,
-    string ScopeParam = "scope"
+    string ScopeParam = "scope",
+    // The provider's ID on the Noto server, when that differs from this app's ID (Jira and Confluence share "atlassian").
+    string? ServerProviderId = null
 );
+
+// Where a provider's API lives for this connection, resolved after sign-in. InstanceUrl is the site a user
+// recognizes; ApiBaseUrl is the endpoint requests go to when it differs from the provider's default.
+public sealed record OAuthSite(string? InstanceUrl, string? ApiBaseUrl);
 
 public sealed record ConnectionIdentity(string DisplayLabel, IReadOnlyList<string>? Scopes = null);
 
@@ -155,6 +161,19 @@ public interface IAppProvider
 
     // `connection` resolves instance hosts; null means "match by the provider's fixed hosts only".
     bool CanHandle(Uri url, AppConnection? connection);
+
+    // True when the OAuth sign-in asks for a site address (Atlassian: picks the site when an account has several).
+    bool OAuthAcceptsSite { get; }
+
+    // True when browser sign-in can only reach the default host, so a self-hosted instance needs a token instead.
+    bool OAuthNeedsInstance { get; }
+
+    // Runs after the OAuth code exchange, before the connection is saved. Null keeps the site as entered.
+    Task<OAuthSite?> ResolveOAuthSiteAsync(
+        IProviderHttp http,
+        string? instanceUrl,
+        CancellationToken ct
+    );
 
     // Lets the registry hint "Connect Jira (jira.acme.com)" for an unknown host.
     bool LooksLikeOwn(Uri url);

@@ -12,8 +12,7 @@ public sealed class ConnectionService(
     ProviderRegistry registry,
     IProviderHttpFactory transports,
     IClock clock,
-    HttpClient http,
-    IReadOnlyDictionary<string, OAuthClient> oauthClients
+    IOAuthGateway gateway
 )
 {
     // Pastes a personal token, validates it with a cheap "who am I" call, then stores it.
@@ -51,6 +50,7 @@ public sealed class ConnectionService(
             new Credential(token.Trim(), Username: username?.Trim()),
             method,
             site,
+            null,
             [],
             ct
         );
@@ -66,7 +66,8 @@ public sealed class ConnectionService(
         return uri.GetLeftPart(UriPartial.Authority);
     }
 
-    // Opens `openBrowser` with the authorize URL and waits for the loopback redirect.
+    // Sign-in through the browser. The Noto server holds the provider secret and does the code exchange. This
+    // side listens on a loopback address, sends the server's one-time code back to it, and redeems the code.
     public async Task<AppConnection> ConnectOAuthAsync(
         string providerId,
         Func<Uri, Task> openBrowser,
@@ -77,47 +78,60 @@ public sealed class ConnectionService(
         var provider =
             registry.Get(providerId)
             ?? throw new ArgumentException("Unknown provider", nameof(providerId));
-        var config = provider.GetAuthConfig();
-        if (!oauthClients.TryGetValue(providerId, out var client))
-            throw new AuthRequiredException("No OAuth client is configured for this provider");
-
         var (verifier, challenge) = Pkce.Create();
-        var state = Convert.ToHexString(
-            System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)
-        );
-        using var receiver = new LoopbackReceiver();
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(OAuthFlow.SignInTimeout);
+        var token = deadline.Token;
+        try
+        {
+            using var receiver = new LoopbackReceiver();
 
-        // Listen first so a fast redirect can never beat the listener.
-        var pending = receiver.WaitForCodeAsync(state, ct);
-        await openBrowser(
-            OAuthFlow.BuildAuthorizeUrl(config, client, receiver.RedirectUri, state, challenge)
-        );
-        var code = await pending;
-        var credential = await OAuthFlow.ExchangeCodeAsync(
-            http,
-            config,
-            client,
-            code,
-            receiver.RedirectUri,
-            verifier,
-            clock.UtcNow,
-            ct
-        );
-        return await FinishAsync(
-            provider,
-            credential,
-            AuthMethod.OAuth2,
-            instanceUrl,
-            config.Scopes,
-            ct
-        );
+            // Listen before starting the flow, so a fast redirect can never beat the listener.
+            var serverId = GatewayIds.For(provider);
+            var start = await gateway.StartAsync(serverId, challenge, receiver.RedirectUri, token);
+            var pending = receiver.WaitForCodeAsync(start.State, token);
+            await openBrowser(new Uri(start.AuthorizeUrl));
+            var oneTime = await pending;
+            var credential = await gateway.RedeemAsync(serverId, oneTime, verifier, token);
+
+            // Some providers pick the site and its API host only once the token exists (Atlassian).
+            var site =
+                await provider.ResolveOAuthSiteAsync(
+                    transports.Create(
+                        provider,
+                        instanceUrl,
+                        AuthMethod.OAuth2,
+                        new StaticCredentialSource(credential)
+                    ),
+                    instanceUrl,
+                    token
+                ) ?? new OAuthSite(instanceUrl, null);
+            return await FinishAsync(
+                provider,
+                credential,
+                AuthMethod.OAuth2,
+                site.InstanceUrl,
+                site.ApiBaseUrl,
+                [],
+                token
+            );
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new AuthRequiredException("Sign-in timed out. Try again.");
+        }
     }
+
+    // Providers the Noto server can sign people in with. Empty when no session or no server credentials.
+    public Task<IReadOnlyList<GatewayProvider>> AvailableOAuthAsync(CancellationToken ct) =>
+        gateway.ListAsync(ct);
 
     async Task<AppConnection> FinishAsync(
         IAppProvider provider,
         Credential credential,
         AuthMethod method,
         string? instanceUrl,
+        string? apiBaseUrl,
         IReadOnlyList<string> scopes,
         CancellationToken ct
     )
@@ -126,7 +140,8 @@ public sealed class ConnectionService(
             provider,
             instanceUrl,
             method,
-            new StaticCredentialSource(credential)
+            new StaticCredentialSource(credential),
+            apiBaseUrl
         );
         var identity = await provider.ValidateAsync(http, ct);
 
@@ -137,6 +152,7 @@ public sealed class ConnectionService(
             AuthMethod = method,
             DisplayLabel = identity.DisplayLabel,
             InstanceUrl = instanceUrl,
+            ApiBaseUrl = apiBaseUrl,
             Scopes = (identity.Scopes ?? scopes).ToArray(),
             ConnectedAt = clock.UtcNow,
             Status = ConnectionStatus.Active,
@@ -169,7 +185,8 @@ public sealed class ConnectionService(
                         provider,
                         connection.InstanceUrl,
                         connection.AuthMethod,
-                        new StaticCredentialSource(credential)
+                        new StaticCredentialSource(credential),
+                        connection.ApiBaseUrl
                     ),
                     ct
                 );

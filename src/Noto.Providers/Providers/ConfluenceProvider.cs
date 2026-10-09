@@ -11,13 +11,21 @@ public sealed class ConfluenceProvider : ProviderBase
 
     public override bool UsesUsername(AuthMethod method) => method == AuthMethod.ApiKey;
 
-    // Atlassian API token (email + token). OAuth 3LO needs cloud-id routing and is not implemented.
-    public override IReadOnlyList<AuthMethod> SupportedAuthMethods => [AuthMethod.ApiKey];
+    // Cloud: OAuth 3LO (browser) or API token (email + token).
+    public override IReadOnlyList<AuthMethod> SupportedAuthMethods =>
+        [AuthMethod.OAuth2, AuthMethod.ApiKey];
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
     [new("*.atlassian.net", "/wiki/spaces/{space}/pages/{id}*")];
 
-    public override AuthConfig GetAuthConfig() =>
-        new(null, null, [], "https://id.atlassian.com/manage-profile/security/api-tokens");
+    public override AuthConfig GetAuthConfig() => AtlassianCloud.Config();
+
+    public override bool OAuthAcceptsSite => true;
+
+    public override async Task<OAuthSite?> ResolveOAuthSiteAsync(
+        IProviderHttp http,
+        string? instanceUrl,
+        CancellationToken ct
+    ) => await AtlassianCloud.ResolveAsync(http, "confluence", instanceUrl, ct);
 
     public override Uri ApiRoot(string? instanceUrl) => new($"{instanceUrl!.TrimEnd('/')}/");
 

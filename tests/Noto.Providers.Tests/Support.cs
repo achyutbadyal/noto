@@ -75,7 +75,8 @@ public sealed class FakeFactory : IProviderHttpFactory
         IAppProvider provider,
         string? instanceUrl,
         AuthMethod method,
-        ICredentialSource credentials
+        ICredentialSource credentials,
+        string? apiBaseUrl = null
     )
     {
         CreatedFor.Add(provider.ProviderId);
@@ -123,6 +124,7 @@ public sealed class Harness : IDisposable
     public FakeFactory Factory { get; } = new();
     public ProviderRegistry Registry { get; }
     public TokenManager Tokens { get; }
+    public FakeOAuthGateway Gateway { get; }
     public FakeDelay Delay { get; }
     public CollectingLogger<PreviewService> Log { get; } = new();
     public PreviewService Previews { get; }
@@ -132,8 +134,7 @@ public sealed class Harness : IDisposable
     public Harness(
         IEnumerable<IAppProvider> providers,
         PreviewOptions? options = null,
-        HttpMessageHandler? oauthHandler = null,
-        IReadOnlyDictionary<string, OAuthClient>? oauthClients = null,
+        FakeOAuthGateway? gateway = null,
         string? dbPath = null
     )
     {
@@ -142,14 +143,8 @@ public sealed class Harness : IDisposable
             : new SqliteUnitOfWork($"Data Source={dbPath}");
         Credentials = new CredentialStore(Keyring);
         Registry = new ProviderRegistry(providers);
-        Tokens = new TokenManager(
-            Uow,
-            Credentials,
-            Registry,
-            Clock,
-            oauthHandler is null ? new HttpClient() : new HttpClient(oauthHandler),
-            oauthClients ?? new Dictionary<string, OAuthClient>()
-        );
+        Gateway = gateway ?? new FakeOAuthGateway();
+        Tokens = new TokenManager(Uow, Credentials, Registry, Clock, Gateway);
         Delay = new FakeDelay(Clock);
         Previews = new PreviewService(
             Uow,
@@ -307,4 +302,83 @@ public sealed class FakeHandler(Func<HttpRequestMessage, string, HttpResponseMes
         {
             Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json"),
         };
+}
+
+// Stands in for the Noto server's OAuth broker. It records each call and returns canned results, so the
+// desktop side can be tested without a server or a provider.
+public sealed class FakeOAuthGateway : IOAuthGateway
+{
+    public sealed record StartCall(string Provider, string CodeChallenge, string ReturnTo);
+
+    public sealed record RedeemCall(string Provider, string OneTimeCode, string CodeVerifier);
+
+    public List<GatewayProvider> Providers { get; set; } = [new("github", "GitHub")];
+    public List<StartCall> Starts { get; } = [];
+    public List<RedeemCall> Redeems { get; } = [];
+    public List<string> RefreshCalls { get; } = [];
+    public string State { get; set; } = "state-1";
+    public Credential Tokens { get; set; } =
+        new("gho_abc", "ghr_def", DateTimeOffset.Parse("2026-10-07T11:00:00Z"));
+    public Func<string, string, CancellationToken, Task<Credential>>? RefreshHandler { get; set; }
+    public Exception? StartError { get; set; }
+
+    public Task<IReadOnlyList<GatewayProvider>> ListAsync(CancellationToken ct) =>
+        Task.FromResult<IReadOnlyList<GatewayProvider>>(Providers);
+
+    public Task<GatewayStart> StartAsync(
+        string providerId,
+        string codeChallenge,
+        string returnTo,
+        CancellationToken ct
+    )
+    {
+        if (StartError is { } error)
+            throw error;
+        Starts.Add(new StartCall(providerId, codeChallenge, returnTo));
+        return Task.FromResult(
+            new GatewayStart($"https://auth.provider.test/authorize?state={State}", State)
+        );
+    }
+
+    public Task<Credential> RedeemAsync(
+        string providerId,
+        string oneTimeCode,
+        string codeVerifier,
+        CancellationToken ct
+    )
+    {
+        Redeems.Add(new RedeemCall(providerId, oneTimeCode, codeVerifier));
+        return Task.FromResult(Tokens);
+    }
+
+    public Task<Credential> RefreshAsync(
+        string providerId,
+        string refreshToken,
+        CancellationToken ct
+    )
+    {
+        RefreshCalls.Add(refreshToken);
+        return (RefreshHandler ?? ((_, _, _) => Task.FromResult(Tokens)))(
+            providerId,
+            refreshToken,
+            ct
+        );
+    }
+}
+
+// The user at the provider's page: the browser follows the server's redirect back to the app's loopback address.
+public static class FakeBrowser
+{
+    public static Func<Uri, Task> Approve(FakeOAuthGateway gateway, string code = "one-time") =>
+        async _ => await Follow(gateway, $"code={code}");
+
+    public static Func<Uri, Task> Deny(FakeOAuthGateway gateway) =>
+        async _ => await Follow(gateway, "error=AUTHORIZATION_DENIED");
+
+    static async Task Follow(FakeOAuthGateway gateway, string result)
+    {
+        var start = gateway.Starts.Single();
+        using var http = new HttpClient();
+        await http.GetAsync($"{start.ReturnTo}?{result}&state={gateway.State}");
+    }
 }

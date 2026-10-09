@@ -10,6 +10,29 @@ public class GitHubProviderTests
 {
     readonly GitHubProvider _github = new();
 
+    [Fact]
+    public async Task A_missing_pull_request_keeps_the_reason_github_gave()
+    {
+        // An organization that restricts OAuth apps hides its private repos: data is null, the error says why.
+        const string body = """
+            {
+              "data": { "r0": null },
+              "errors": [
+                { "message": "Although you appear to have the correct authorization credentials, the organization has enabled OAuth App access restrictions.", "path": ["r0"] }
+              ]
+            }
+            """;
+
+        var previews = await _github.FetchBatchAsync(
+            [U("https://github.com/balkanid/extractor-okta/pull/138")],
+            new FakeHttp().OnPath("graphql", body),
+            default
+        );
+
+        previews[0].Status.ShouldBe(PreviewStatus.Unavailable);
+        previews[0].ErrorMessage!.ShouldContain("OAuth App access restrictions");
+    }
+
     static Uri U(string s) => new(s);
 
     [Fact]
@@ -349,23 +372,6 @@ public class SlackProviderTests
             )
         );
         ex.Status.ShouldBe(status);
-    }
-
-    [Fact]
-    public void Slack_uses_user_scope_on_the_authorize_url()
-    {
-        var config = new SlackProvider().GetAuthConfig();
-        var url = OAuthFlow
-            .BuildAuthorizeUrl(
-                config,
-                new OAuthClient("cid"),
-                "http://127.0.0.1:1/callback",
-                "st",
-                "ch"
-            )
-            .ToString();
-        url.ShouldContain("user_scope=");
-        url.ShouldNotContain("code_challenge"); // Slack's v2 flow is not PKCE
     }
 }
 

@@ -11,8 +11,7 @@ public sealed class TokenManager(
     CredentialStore credentials,
     ProviderRegistry registry,
     IClock clock,
-    HttpClient http,
-    IReadOnlyDictionary<string, OAuthClient> oauthClients
+    IOAuthGateway gateway
 )
 {
     static readonly TimeSpan Skew = TimeSpan.FromMinutes(2);
@@ -66,22 +65,20 @@ public sealed class TokenManager(
             var provider =
                 registry.Get(connection.ProviderId)
                 ?? throw new AuthRequiredException("Unknown provider");
-            if (!oauthClients.TryGetValue(provider.ProviderId, out var client))
-                throw new AuthRequiredException("No OAuth client configured");
-
-            var fresh = await OAuthFlow.RefreshAsync(
-                http,
-                provider.GetAuthConfig(),
-                client,
-                refreshToken,
-                clock.UtcNow,
-                ct
-            );
+            // The server holds the provider secret, so refresh goes through it.
+            var fresh = await gateway.RefreshAsync(GatewayIds.For(provider), refreshToken, ct);
+            // Providers that don't rotate the refresh token omit it; the one we have stays valid.
+            fresh = fresh with
+            {
+                RefreshToken = fresh.RefreshToken ?? refreshToken,
+            };
             await credentials.SaveAsync(connectionId, fresh);
             return fresh;
         }
-        catch (Exception e) when (e is AuthRequiredException or HttpRequestException)
+        catch (ProviderRejectedException)
         {
+            // Only the provider refusing the grant means the user must reconnect. An outage or an expired
+            // server session leaves the connection alone: the provider token may still be valid.
             await SetStatusAsync(connectionId, ConnectionStatus.RefreshFailed);
             throw new AuthRequiredException("Token refresh failed");
         }

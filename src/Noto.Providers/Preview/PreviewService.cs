@@ -146,7 +146,8 @@ public sealed class PreviewService(
                 match.Connection?.AuthMethod ?? AuthMethod.PersonalToken,
                 match.Connection is null
                     ? new StaticCredentialSource(null)
-                    : tokens.For(match.Connection)
+                    : tokens.For(match.Connection),
+                match.Connection?.ApiBaseUrl
             );
             var previews = await match.Provider.FetchBatchAsync(uris, http, ct);
             _backoff.TryRemove(key, out _);

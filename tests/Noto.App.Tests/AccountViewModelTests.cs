@@ -81,6 +81,62 @@ public sealed class AccountViewModelTests
         vm.HasConnectionStatus.ShouldBeTrue();
     }
 
+    [Fact]
+    public async Task Only_providers_the_signed_in_server_runs_are_offered_for_browser_sign_in()
+    {
+        var account = await SignedInAccount.CreateAsync(
+            new InMemoryUiState(),
+            [
+                new OAuthOption("linear", "Linear", Configured: false, "setup"),
+                new OAuthOption("github", "GitHub", Configured: false, "setup"),
+            ],
+            serverProviders: ["github"]
+        );
+        var vm = new AccountViewModel(account);
+
+        await vm.LoadAsync();
+
+        vm.OAuthOptions.Select(o => o.ProviderId).ShouldBe(new[] { "github" });
+        vm.SelectedOAuthOption!.ProviderId.ShouldBe("github");
+        vm.HasOAuthOptions.ShouldBeTrue();
+        vm.OAuthSetupHint.ShouldBeEmpty();
+        vm.ConnectOAuthCommand.CanExecute(null).ShouldBeTrue();
+    }
+
+    [Fact]
+    public async Task A_signed_in_server_with_no_provider_apps_says_so_and_offers_nothing()
+    {
+        var account = await SignedInAccount.CreateAsync(
+            new InMemoryUiState(),
+            [new OAuthOption("github", "GitHub", Configured: false, "setup")],
+            serverProviders: []
+        );
+        var vm = new AccountViewModel(account);
+
+        await vm.LoadAsync();
+
+        vm.HasOAuthOptions.ShouldBeFalse();
+        vm.OAuthSetupHint.ShouldContain("no sign-in apps set up");
+        vm.ConnectOAuthCommand.CanExecute(null).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Without_a_server_session_the_hint_asks_to_connect_the_device()
+    {
+        var account = await SignedInAccount.CreateAsync(
+            new InMemoryUiState(),
+            [new OAuthOption("github", "GitHub", Configured: false, "setup")],
+            serverProviders: ["github"],
+            signedIn: false
+        );
+        var vm = new AccountViewModel(account);
+
+        await vm.LoadAsync();
+
+        vm.HasOAuthOptions.ShouldBeFalse();
+        vm.OAuthSetupHint.ShouldContain("Connect this device to it");
+    }
+
     sealed class NoAuth : IServerAuth
     {
         public Task<ServerSession> SignUpAsync(

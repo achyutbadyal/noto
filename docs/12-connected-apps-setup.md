@@ -1,6 +1,6 @@
 # Connected apps: getting client IDs and secrets
 
-The sync server runs the OAuth code exchange for connected apps, so each provider needs an OAuth app you register yourself. Set the values in `.env` (see [`.env.sample`](../.env.sample)). A provider is enabled when its ID and secret are both set.
+Each connected app needs an OAuth app that you register with the provider. Its client ID and secret go only in your **server's** `.env` (see [`.env.sample`](../.env.sample)). The server runs the code exchange, so the secrets never reach a desktop app. A provider is enabled when its ID and secret are both set.
 
 **Callback URL:** register this for every provider, with your server's `PUBLIC_URL`:
 
@@ -9,6 +9,8 @@ $PUBLIC_URL/v1/gateway/oauth/<provider>/callback
 ```
 
 For local testing, `PUBLIC_URL=http://localhost:8080` gives `http://localhost:8080/v1/gateway/oauth/github/callback`. Some providers reject plain `http` for non-localhost hosts, so use `https` for a real deployment.
+
+The desktop app signs in through this same server callback. It needs no redirect URL of its own, so nothing about the desktop build is registered with the provider.
 
 Provider consoles change their layout often. The paths below were current when written; the names of the things you need (client ID, client secret, callback URL, scopes) stay the same.
 
@@ -66,11 +68,17 @@ Provider consoles change their layout often. The paths below were current when w
 
 ## After you have them
 
-Put them in `.env` and restart the server:
+Put them in the server's `.env` and restart the server:
 
 ```sh
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
 ```
 
-The server uses these values for its own OAuth flow and does not store provider tokens. The native desktop build has its own copy of the secret for providers that need one. Treat that copy as extractable (see [`10-connected-apps.md`](10-connected-apps.md)).
+The server uses these values for its own OAuth flow and does not store provider tokens. It also tells the desktop app which providers it can sign people in with (`GET /v1/gateway/oauth`, signed-in users only), so the desktop shows only those.
+
+The desktop app has no provider settings of its own. Once a desktop is signed in to its server, Settings → Connected apps shows **Sign in with** for each configured provider. Pasting a token still works without a server.
+
+A provider with no ID and secret on the server shows no browser option, and its token form still works.
+
+**Atlassian (Jira and Confluence)** share one OAuth app on the server, so set `ATLASSIAN_CLIENT_ID` and `ATLASSIAN_CLIENT_SECRET` once for both. In the sign-in row, enter the site (for example `acme.atlassian.net`) when the account has more than one; leave it blank to use the first site. Requests then go through `api.atlassian.com`. Atlassian API tokens still work for Jira and Confluence when browser sign-in isn't set up.

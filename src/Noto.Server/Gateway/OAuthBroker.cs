@@ -11,7 +11,23 @@ namespace Noto.Server.Gateway;
 
 public sealed record OAuthStartRequest(
     [property: JsonPropertyName("instance_url")] string? InstanceUrl,
-    [property: JsonPropertyName("code_challenge")] string? CodeChallenge
+    [property: JsonPropertyName("code_challenge")] string? CodeChallenge,
+    // Where the browser goes after the exchange: a loopback address the desktop app is listening on.
+    [property: JsonPropertyName("return_to")] string? ReturnTo = null
+);
+
+// Result of the browser redirect. Exactly one of OneTimeCode and ErrorCode is set. ReturnTo is set when the
+// flow started from a desktop app, which receives the result on its loopback listener instead of a popup.
+public sealed record OAuthCompletion(
+    string? ReturnTo,
+    string State,
+    string? OneTimeCode,
+    string? ErrorCode
+);
+
+public sealed record OAuthProviderInfo(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name
 );
 
 public sealed record OAuthStartResponse(
@@ -56,6 +72,7 @@ public sealed class OAuthBroker(
         string? InstanceUrl,
         string ServerVerifier,
         string? ClientChallenge,
+        string? ReturnTo,
         DateTimeOffset ExpiresAt
     );
 
@@ -71,6 +88,7 @@ public sealed class OAuthBroker(
     {
         var (provider, oauth, clientId, _) = Configured(providerId);
         var tokenBase = InstanceBase(provider, req.InstanceUrl);
+        var returnTo = LoopbackReturn.Validate(req.ReturnTo);
 
         var state = Random();
         var verifier = Random();
@@ -82,6 +100,7 @@ public sealed class OAuthBroker(
                 req.InstanceUrl,
                 verifier,
                 req.CodeChallenge,
+                returnTo,
                 time.GetUtcNow() + StateTtl
             ),
             StateTtl
@@ -116,7 +135,7 @@ public sealed class OAuthBroker(
     }
 
     // Browser redirect target: exchanges the code and returns a one-time code for the opener window.
-    public async Task<string> CompleteAsync(
+    public async Task<OAuthCompletion> CompleteAsync(
         string providerId,
         string? code,
         string? state,
@@ -138,6 +157,29 @@ public sealed class OAuthBroker(
                 "INVALID_STATE",
                 "Unknown or expired authorization state"
             );
+
+        // A desktop flow hears about failures on its own redirect; a browser popup shows the error page.
+        try
+        {
+            var oneTime = await ExchangeAndStoreAsync(providerId, code, pending, ct);
+            return new OAuthCompletion(pending.ReturnTo, state, oneTime, null);
+        }
+        catch (Exception e)
+            when (pending.ReturnTo is not null && e is not OperationCanceledException)
+        {
+            // Anything that stops the exchange must reach the app, or it waits for the full sign-in timeout.
+            var errorCode = e is ApiException api ? api.Code : "EXCHANGE_FAILED";
+            return new OAuthCompletion(pending.ReturnTo, state, null, errorCode);
+        }
+    }
+
+    async Task<string> ExchangeAndStoreAsync(
+        string providerId,
+        string? code,
+        PendingAuth pending,
+        CancellationToken ct
+    )
+    {
         if (string.IsNullOrEmpty(code))
             throw ApiException.BadRequest("AUTHORIZATION_DENIED", "Authorization was not granted");
 
@@ -174,6 +216,24 @@ public sealed class OAuthBroker(
         );
         return oneTime;
     }
+
+    // The client ID and secret from .env, or null when either is missing: the provider is then not enabled.
+    (string ClientId, string Secret)? Credentials(ProviderDef provider)
+    {
+        var clientId = settings[$"{provider.EnvPrefix}_CLIENT_ID"];
+        var secret = settings[$"{provider.EnvPrefix}_CLIENT_SECRET"];
+        return string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(secret)
+            ? null
+            : (clientId, secret);
+    }
+
+    // Providers this server can sign people in with: the catalog entry plus both secrets from .env.
+    public IReadOnlyList<OAuthProviderInfo> Available() =>
+        ProviderCatalog
+            .All.Where(p => p.OAuth is not null)
+            .Where(p => Credentials(p) is not null)
+            .Select(p => new OAuthProviderInfo(p.Id, p.Name))
+            .ToList();
 
     public ProviderTokens Redeem(Guid userId, string providerId, RedeemRequest req)
     {
@@ -296,18 +356,12 @@ public sealed class OAuthBroker(
         var provider =
             ProviderCatalog.Find(providerId)
             ?? throw ApiException.NotFound("UNKNOWN_PROVIDER", "Unknown provider");
-        var clientId = settings[$"{provider.EnvPrefix}_CLIENT_ID"];
-        var secret = settings[$"{provider.EnvPrefix}_CLIENT_SECRET"];
-        if (
-            provider.OAuth is null
-            || string.IsNullOrEmpty(clientId)
-            || string.IsNullOrEmpty(secret)
-        )
+        if (provider.OAuth is null || Credentials(provider) is not { } credentials)
             throw ApiException.NotFound(
                 "PROVIDER_NOT_CONFIGURED",
                 "This provider is not enabled on this server"
             );
-        return (provider, provider.OAuth, clientId, secret);
+        return (provider, provider.OAuth, credentials.ClientId, credentials.Secret);
     }
 
     // Self-hosted providers (GitLab, Atlassian DC) carry their own instance host in the OAuth URLs.
