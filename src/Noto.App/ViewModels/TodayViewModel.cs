@@ -28,7 +28,9 @@ public sealed partial class TodayViewModel : ItemListViewModel
             workspaceId,
             plannedForToday: true,
             resolveWorkspace,
-            () => TodayOrFallback
+            () => TodayOrFallback,
+            services.Suggestions,
+            services.Links
         );
         Strip = new DayStripViewModel();
     }

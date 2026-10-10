@@ -1,3 +1,4 @@
+using Noto.Core.Ai;
 using Noto.Core.Commands;
 using Noto.Core.Derivations;
 using Noto.Core.Export;
@@ -23,7 +24,8 @@ public sealed class AppServices
         PlatformServices platform,
         IUiState? uiState = null,
         IDayNotes? dayNotes = null,
-        LinkPreviews? previews = null
+        LinkPreviews? previews = null,
+        AiOptions? ai = null
     )
     {
         Uow = uow;
@@ -43,6 +45,8 @@ public sealed class AppServices
         Focus = new FocusSession(bus, Workspaces, clock);
         Links = new LinkIndexer(uow, clock);
         Previews = previews;
+        Ai = ai;
+        Suggestions = (ISuggestionService?)ai ?? NullSuggestionService.Instance;
         Recurrence = new RecurrenceService(uow, clock);
         Export = new ExportService(uow, clock);
         Import = new ImportService(bus, uow, clock);
@@ -66,6 +70,17 @@ public sealed class AppServices
 
     // Null when no providers are wired (tests, offline builds): links then show as plain text only.
     public LinkPreviews? Previews { get; }
+
+    // The same object seen through the resolve-one-URL interface the create form uses before handing
+    // text to a model. Null when there are no providers, so the form simply skips link resolution.
+    public ILinkResolver? LinkResolver => Previews;
+
+    // Null when the host has no AI configuration; the settings pane then shows the feature as unavailable.
+    public AiOptions? Ai { get; }
+
+    // What the create form asks for a suggestion. Never null — with no AI it is a no-op that reports
+    // IsEnabled false, so the sparkle simply doesn't appear.
+    public ISuggestionService Suggestions { get; }
     public RecurrenceService Recurrence { get; }
     public DayNoteService DayNoteService { get; }
     public ExportService Export { get; }

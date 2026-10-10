@@ -10,6 +10,7 @@ using Noto.Core.Import;
 using Noto.Core.Models;
 using Noto.Core.Presets;
 using Noto.Platform.Abstractions;
+using Noto.Providers.Ai;
 
 namespace Noto.App.ViewModels;
 
@@ -21,6 +22,13 @@ public sealed record CapabilityRow(string Name, bool IsSupported, string? Reason
 // A category in the settings rail. One pane is shown at a time, so the page reads as a settings window
 // rather than a 600-line scroll (docs/07 §10.2).
 public sealed record SettingsCategory(string Key, string Title);
+
+// One AI mode in the picker. `Reason` is set when the mode cannot run here, so the pane can say why
+// instead of offering a dead choice (docs/07 §19: degrade visibly).
+public sealed record AiModeChoice(AiMode Mode, string Label, string Description)
+{
+    public override string ToString() => Label;
+}
 
 // One accent swatch. IsSelected is observable so the ring follows the workspace without the view having
 // to compare strings.
@@ -63,7 +71,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         WorkspaceActions workspaces,
         Guid workspaceId,
         AppearanceViewModel appearance,
-        AccountViewModel? account = null
+        AccountViewModel? account = null,
+        AiOptions? ai = null
     )
     {
         _import = import;
@@ -73,6 +82,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         _workspaceId = workspaceId;
         Appearance = appearance;
         Account = account;
+        Ai = ai;
 
         // "Account" only exists when the host has an account service.
         Categories =
@@ -82,6 +92,7 @@ public sealed partial class SettingsViewModel : ObservableObject
                 account is not null ? new SettingsCategory("account", "Account & sync") : null,
                 new SettingsCategory("workspace", "Workspace & modes"),
                 new SettingsCategory("capacity", "Capacity & day"),
+                ai is not null ? new SettingsCategory("ai", "AI suggestions") : null,
                 new SettingsCategory("appearance", "Appearance"),
                 new SettingsCategory("device", "Data & this device"),
             }.OfType<SettingsCategory>(),
@@ -118,6 +129,10 @@ public sealed partial class SettingsViewModel : ObservableObject
     public AccountViewModel? Account { get; }
     public bool HasAccount => Account is not null;
 
+    // Null when the host has no AI configuration (tests, offline-only builds).
+    public AiOptions? Ai { get; }
+    public bool HasAi => Ai is not null;
+
     // The rail. One pane shows at a time; each Show* flag drives exactly one pane's IsVisible.
     public IReadOnlyList<SettingsCategory> Categories { get; }
 
@@ -126,6 +141,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         nameof(ShowAccount),
         nameof(ShowWorkspace),
         nameof(ShowCapacity),
+        nameof(ShowAi),
         nameof(ShowAppearance),
         nameof(ShowDevice)
     )]
@@ -134,6 +150,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public bool ShowAccount => HasAccount && Category.Key == "account";
     public bool ShowWorkspace => Category.Key == "workspace";
     public bool ShowCapacity => Category.Key == "capacity";
+    public bool ShowAi => HasAi && Category.Key == "ai";
     public bool ShowAppearance => Category.Key == "appearance";
     public bool ShowDevice => Category.Key == "device";
     public IReadOnlyList<Noto.Core.Import.ImportFormat> ImportFormats { get; } =
@@ -268,6 +285,87 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     string? _error;
 
+    // ---- AI suggestions ----
+    //
+    // "Off" is the hide-everything switch: the sparkle disappears from the create form and nothing is
+    // ever sent anywhere. The other modes fill that same form from a model the user chooses and pays for.
+
+    public IReadOnlyList<AiModeChoice> AiModes { get; } =
+    [
+        .. Enum.GetValues<AiMode>()
+            .Select(m => new AiModeChoice(m, AiOptions.Label(m), AiOptions.Description(m))),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(AiNeedsEndpoint), nameof(AiNeedsKey))]
+    AiModeChoice? _aiChoice;
+
+    [ObservableProperty]
+    string _aiEndpoint = "";
+
+    [ObservableProperty]
+    string _aiModel = "";
+
+    // Write-only: the stored key is never read back into the UI, only replaced.
+    [ObservableProperty]
+    string _aiKey = "";
+
+    [ObservableProperty]
+    string? _aiStatus;
+
+    public bool AiHasKey => Ai?.HasKey == true;
+
+    public bool AiNeedsEndpoint => AiChoice?.Mode is AiMode.Local or AiMode.Cloud;
+
+    public bool AiNeedsKey => AiChoice?.Mode is AiMode.Cloud;
+
+    public string AiKeyHint =>
+        AiHasKey
+            ? "A key is stored. Type a new one to replace it."
+            : "Stored in the system keyring, never in the database.";
+
+    // Why the chosen mode can't run here, if it can't.
+    public string? AiModeReason => Ai?.Registry.ReasonUnavailable(AiChoice?.Mode ?? AiMode.Off);
+
+    partial void OnAiChoiceChanged(AiModeChoice? value)
+    {
+        if (
+            !_loading
+            && value is not null
+            && AiEndpoint.Trim().Length == 0
+            && value.Mode is AiMode.Local or AiMode.Cloud
+        )
+            AiEndpoint = AiOptions.DefaultEndpoint(value.Mode);
+        OnPropertyChanged(nameof(AiModeReason));
+    }
+
+    [RelayCommand]
+    public async Task SaveAiAsync()
+    {
+        if (Ai is null)
+            return;
+        await Ai.SaveAsync(AiChoice?.Mode ?? AiMode.Off, AiEndpoint, AiModel, AiKey);
+        AiKey = "";
+        AiStatus =
+            AiChoice?.Mode == AiMode.Off ? "AI is off. The sparkle is hidden everywhere."
+            : Ai.IsEnabled ? $"{AiOptions.Label(Ai.Mode)} is on."
+            : "Saved, but this mode can't run yet — see the note above.";
+        OnPropertyChanged(nameof(AiHasKey));
+        OnPropertyChanged(nameof(AiKeyHint));
+        _runner.NotifyChanged();
+    }
+
+    // The helper is a file on disk, so it can appear (or be removed) while the app is running. Re-read
+    // it here instead of making the user restart the app to clear a stale "not installed" note.
+    [RelayCommand]
+    public void RecheckAi()
+    {
+        OnPropertyChanged(nameof(AiModeReason));
+        OnPropertyChanged(nameof(AiHasKey));
+        OnPropertyChanged(nameof(AiKeyHint));
+        AiStatus = AiModeReason is null && AiChoice?.Mode != AiMode.Off ? "Ready to use." : null;
+    }
+
     public async Task LoadAsync()
     {
         var ws =
@@ -293,6 +391,23 @@ public sealed partial class SettingsViewModel : ObservableObject
         foreach (var swatch in Accents)
             swatch.IsSelected = swatch.Name == accent;
         CustomAccent = ws.Color?.StartsWith('#') == true ? ws.Color : "";
+
+        if (Ai is not null)
+        {
+            AiChoice = AiModes.FirstOrDefault(c => c.Mode == Ai.Mode) ?? AiModes[0];
+            AiEndpoint =
+                Ai.Endpoint.Length > 0 ? Ai.Endpoint
+                : Ai.Mode is AiMode.Local or AiMode.Cloud ? AiOptions.DefaultEndpoint(Ai.Mode)
+                : "";
+            AiModel = Ai.Model;
+            AiKey = "";
+            AiStatus = null;
+            // AiChoice only raises when the value actually changes, so opening this pane again after
+            // installing the helper would otherwise keep showing the stale "not installed" note.
+            OnPropertyChanged(nameof(AiModeReason));
+            OnPropertyChanged(nameof(AiKeyHint));
+        }
+
         _loading = false;
     }
 

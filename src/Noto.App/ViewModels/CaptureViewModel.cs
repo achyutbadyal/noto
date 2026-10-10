@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.Core.Ai;
 using Noto.Core.Links;
 using Noto.Core.Time;
 using Noto.Core.Workspaces;
@@ -21,6 +22,8 @@ public sealed partial class CaptureViewModel : ObservableObject
     readonly WorkspaceActions _workspaces;
     readonly LinkIndexer _links;
     readonly ActionRunner _runner;
+    readonly ISuggestionService _suggestions;
+    readonly ILinkResolver? _linkResolver;
     IReadOnlyList<WorkspaceChoice> _all = [];
 
     public CaptureViewModel(
@@ -28,7 +31,9 @@ public sealed partial class CaptureViewModel : ObservableObject
         PlatformServices platform,
         WorkspaceActions workspaces,
         LinkIndexer links,
-        ActionRunner runner
+        ActionRunner runner,
+        ISuggestionService? suggestions = null,
+        ILinkResolver? linkResolver = null
     )
     {
         _clock = clock;
@@ -36,12 +41,16 @@ public sealed partial class CaptureViewModel : ObservableObject
         _workspaces = workspaces;
         _links = links;
         _runner = runner;
+        _suggestions = suggestions ?? NullSuggestionService.Instance;
+        _linkResolver = linkResolver;
         Add = new AddItemViewModel(
             runner,
             Guid.Empty,
             plannedForToday: true,
             null,
-            () => DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime)
+            () => DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+            _suggestions,
+            _linkResolver
         );
     }
 
@@ -102,7 +111,9 @@ public sealed partial class CaptureViewModel : ObservableObject
                     is { } w
                     ? w.Id
                     : null,
-            () => DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime)
+            () => DateOnly.FromDateTime(_clock.UtcNow.UtcDateTime),
+            _suggestions,
+            _linkResolver
         )
         {
             Text = text,

@@ -521,6 +521,118 @@
             IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
           />
         </StackPanel>
+        <!-- AI suggestions. "Off" is the hide-everything switch: every AI affordance disappears from the
+             create form and nothing is sent anywhere (docs/07 §19). -->
+        <StackPanel IsVisible="{Binding ShowAi}" Spacing="16">
+          <StackPanel Spacing="4">
+            <TextBlock Text="AI suggestions" Classes="section" />
+            <TextBlock
+              Text="Adds a Fill action to the new-task panel: it reads a rough title and fills the fields below. It only ever fills the form — you review it and save. Off hides it completely."
+              Classes="hint"
+              FontSize="12"
+              TextWrapping="Wrap"
+            />
+          </StackPanel>
+
+          <!-- Every mode with its trade-off visible at once, instead of one line behind a dropdown. -->
+          <ListBox
+            Classes="guide"
+            ItemsSource="{Binding AiModes}"
+            SelectedItem="{Binding AiChoice, Mode=TwoWay}"
+            Background="Transparent"
+            AutomationProperties.Name="AI mode"
+          >
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:AiModeChoice">
+                <StackPanel Spacing="1" Margin="0,2">
+                  <TextBlock Text="{Binding Label}" FontSize="13" />
+                  <TextBlock
+                    Text="{Binding Description}"
+                    Classes="hint"
+                    FontSize="11"
+                    TextWrapping="Wrap"
+                  />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+
+          <!-- Connection details exist only for the modes that have one. -->
+          <Border Classes="card" Padding="14,12" IsVisible="{Binding AiNeedsEndpoint}">
+            <StackPanel Spacing="10">
+              <TextBlock Text="Connection" Classes="section" />
+              <StackPanel Spacing="4">
+                <TextBlock Text="Endpoint" Classes="secondary" FontSize="12" />
+                <TextBox
+                  Text="{Binding AiEndpoint, Mode=TwoWay}"
+                  Watermark="https://api.openai.com/v1"
+                  AutomationProperties.Name="AI endpoint"
+                />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="Model" Classes="secondary" FontSize="12" />
+                <TextBox
+                  Text="{Binding AiModel, Mode=TwoWay}"
+                  Watermark="gpt-4o-mini"
+                  AutomationProperties.Name="AI model"
+                />
+              </StackPanel>
+              <StackPanel Spacing="4" IsVisible="{Binding AiNeedsKey}">
+                <TextBlock Text="API key" Classes="secondary" FontSize="12" />
+                <TextBox
+                  Text="{Binding AiKey, Mode=TwoWay}"
+                  PasswordChar="•"
+                  Watermark="Paste a key to store it"
+                  AutomationProperties.Name="AI API key"
+                />
+                <TextBlock
+                  Text="{Binding AiKeyHint}"
+                  Classes="hint"
+                  FontSize="11"
+                  TextWrapping="Wrap"
+                />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Shown only when the chosen mode cannot actually run here, so a dead choice explains
+               itself instead of looking broken. -->
+          <Border
+            Classes="card"
+            Padding="14,12"
+            IsVisible="{Binding AiModeReason, Converter={x:Static ObjectConverters.IsNotNull}}"
+          >
+            <StackPanel Spacing="3">
+              <TextBlock Text="Not ready yet" FontSize="12" FontWeight="Medium" />
+              <TextBlock
+                Text="{Binding AiModeReason}"
+                Classes="hint"
+                FontSize="12"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+          </Border>
+
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button
+              Classes="accent"
+              Content="Save"
+              Padding="14,6"
+              Command="{Binding SaveAiCommand}"
+            />
+            <!-- The helper is a file on disk, so it can appear while the app is open. Re-read it
+                 without a restart. -->
+            <Button Content="Recheck" Padding="14,6" Command="{Binding RecheckAiCommand}" />
+            <TextBlock
+              Text="{Binding AiStatus}"
+              Classes="hint"
+              FontSize="12"
+              VerticalAlignment="Center"
+              IsVisible="{Binding AiStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
+            />
+          </StackPanel>
+        </StackPanel>
+
         <StackPanel IsVisible="{Binding ShowAppearance}" Spacing="20">
           <!-- Device-level: theme, density and text size -->
           <StackPanel

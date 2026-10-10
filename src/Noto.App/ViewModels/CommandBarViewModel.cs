@@ -3,7 +3,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.Core.Ai;
 using Noto.Core.Interfaces;
+using Noto.Core.Links;
 using Noto.Core.Models;
 using Noto.Core.Presets;
 using Noto.Core.Text;
@@ -78,12 +80,22 @@ public sealed partial class CommandBarViewModel : ObservableObject
     readonly ISearchIndex _search;
     readonly ActionRunner _runner;
     readonly ICommandBarHost _host;
+    readonly ISuggestionService _suggestions;
+    readonly ILinkResolver? _links;
 
-    public CommandBarViewModel(ISearchIndex search, ActionRunner runner, ICommandBarHost host)
+    public CommandBarViewModel(
+        ISearchIndex search,
+        ActionRunner runner,
+        ICommandBarHost host,
+        ISuggestionService? suggestions = null,
+        ILinkResolver? links = null
+    )
     {
         _search = search;
         _runner = runner;
         _host = host;
+        _suggestions = suggestions ?? NullSuggestionService.Instance;
+        _links = links;
     }
 
     public ObservableCollection<CommandResult> Results { get; } = [];
@@ -386,7 +398,9 @@ public sealed partial class CommandBarViewModel : ObservableObject
                     is { } w
                     ? w.Id
                     : null,
-            () => _host.Today
+            () => _host.Today,
+            _suggestions,
+            _links
         )
         {
             Text = raw,

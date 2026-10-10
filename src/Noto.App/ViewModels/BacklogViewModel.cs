@@ -22,7 +22,9 @@ public sealed class BacklogViewModel : ItemListViewModel
             workspaceId,
             plannedForToday: false,
             resolveWorkspace,
-            () => TodayOrFallback
+            () => TodayOrFallback,
+            services.Suggestions,
+            services.Links
         );
     }
 

@@ -20,7 +20,7 @@ public sealed class AppFixture : IDisposable
     public ViewModelFactory Vms { get; }
     public Workspace Workspace { get; private set; } = null!;
 
-    public AppFixture(Preset? preset = null)
+    public AppFixture(Preset? preset = null, AiOptions? ai = null)
     {
         var bus = new CommandBus(Db, Clock, Guid.CreateVersion7());
         var platform = new PlatformServices(
@@ -30,7 +30,7 @@ public sealed class AppFixture : IDisposable
             new UnsupportedNotifications("test"),
             new StaticReduceMotion()
         );
-        Services = new AppServices(Db, bus, Clock, Db, platform);
+        Services = new AppServices(Db, bus, Clock, Db, platform, ai: ai);
         Vms = new ViewModelFactory(Services);
         Workspace = Services
             .Workspaces.CreateAsync("Work", "work", preset ?? BuiltInPresets.Sprint, 0)

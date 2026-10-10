@@ -35,6 +35,10 @@ run = "dotnet run --project src/Noto.Desktop/Noto.Desktop.csproj"
 description = "Run the desktop app with the quick-capture panel open"
 run = "dotnet run --project src/Noto.Desktop/Noto.Desktop.csproj -- --capture"
 
+[tasks."ai:helper"]
+description = "Build and install the on-device Apple Intelligence helper (macOS 26+, needs the Swift toolchain)"
+run = "bash scripts/build-ai-helper.sh"
+
 [tasks.icons]
 description = "Rebuild the app icon set (PNG/ICNS/ICO + menu-bar glyph) from assets/icon/*.svg"
 run = "cd assets/icon && yarn install --silent && yarn node build-icons.mjs"

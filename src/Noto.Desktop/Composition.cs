@@ -86,7 +86,8 @@ sealed class Composition : IDisposable
             _db,
             Platform,
             ui,
-            previews: new LinkPreviews(_db, previews, registry, clock)
+            previews: new LinkPreviews(_db, previews, registry, clock),
+            ai: new AiOptions(ui, Platform.Keyring, http)
         );
         Account = BuildAccount(deviceId, ui, http, registry, connections);
     }

@@ -1,3 +1,5 @@
+using Noto.Core.Ai;
+using Noto.Core.Links;
 using Noto.Core.Time;
 
 namespace Noto.App.Services;
@@ -7,5 +9,7 @@ public sealed record ListServices(
     WorkspaceReader Reader,
     ActionRunner Runner,
     FocusSession Focus,
-    IClock Clock
+    IClock Clock,
+    ISuggestionService Suggestions,
+    ILinkResolver? Links
 );

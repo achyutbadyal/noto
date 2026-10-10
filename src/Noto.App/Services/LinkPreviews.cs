@@ -90,7 +90,7 @@ public sealed class LinkPreviews(
     PreviewService previews,
     ProviderRegistry registry,
     IClock clock
-)
+) : ILinkResolver
 {
     // Failed previews and ones waiting on a connection are asked again after this, so a list of broken links
     // does not go back to the network on every navigation.
@@ -141,6 +141,80 @@ public sealed class LinkPreviews(
             urls.Select(u => new PreviewRequest(u, PreviewPriority.Visible)).ToList(),
             ct
         );
+
+    // Resolve one URL for something that needs to know what it *is* (the AI suggester). Cache first —
+    // a link the user already has on a task costs nothing. Only a miss or a stale entry goes to the
+    // network, and a failure is reported rather than swallowed, so a caller can say "there is a link
+    // here, I just couldn't read it" instead of pretending the text had none.
+    public async Task<LinkContext?> ResolveAsync(string url, CancellationToken ct = default)
+    {
+        if (LinkUrl.Normalize(url) is not { } normalized)
+            return null;
+
+        var cache = await previews.GetCachedAsync([normalized]);
+        var preview = cache.GetValueOrDefault(normalized);
+        if (preview is null || IsDue(preview, clock.UtcNow))
+        {
+            try
+            {
+                var refreshed = await previews.RefreshAsync(
+                    [new PreviewRequest(normalized, PreviewPriority.Visible)],
+                    ct
+                );
+                preview = refreshed.Previews.GetValueOrDefault(normalized) ?? preview;
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                // Offline, or the provider refused. Fall through with whatever the cache held, which
+                // still yields a usable "couldn't be read" context rather than nothing at all.
+            }
+        }
+
+        return Context(normalized, preview);
+    }
+
+    LinkContext Context(string url, LinkPreview? preview)
+    {
+        if (preview is null)
+            return new LinkContext(url, null, "Web link", null, null, [], "not fetched yet");
+
+        var provider = _names.GetValueOrDefault(preview.ProviderId, preview.ProviderId);
+        return new LinkContext(
+            url,
+            Blank(preview.Title),
+            provider,
+            LinkLine.From(url, preview, provider).Snippet,
+            StateOf(preview.State),
+            [.. preview.ChipFacts.Select(f => f.Text).Where(t => t.Length > 0)],
+            Unreadable(preview)
+        );
+    }
+
+    static string? Blank(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
+
+    static string? StateOf(LinkState? state) =>
+        state switch
+        {
+            LinkState.Open => "Open",
+            LinkState.InProgress => "In progress",
+            LinkState.InReview => "In review",
+            LinkState.Blocked => "Blocked",
+            LinkState.Done => "Done",
+            LinkState.Closed => "Closed",
+            _ => null,
+        };
+
+    // Loaded and Stale are real data. Everything else means there is nothing to hand over, and the
+    // reason matters more than the emptiness.
+    static string? Unreadable(LinkPreview preview) =>
+        preview.Status switch
+        {
+            PreviewStatus.Loaded or PreviewStatus.Stale => null,
+            PreviewStatus.AuthRequired => "needs a connected account",
+            PreviewStatus.Unavailable => preview.ErrorMessage ?? "no longer accessible",
+            PreviewStatus.Error => "couldn't be loaded",
+            _ => "not fetched yet",
+        };
 
     LinkLine Line(string url, IReadOnlyDictionary<string, LinkPreview> cache)
     {

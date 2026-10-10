@@ -11,19 +11,19 @@ Everything below was verified by automated tests unless it is listed under [Not 
 
 ## Summary by roadmap phase
 
-| Phase                      | State                                 | Notes                                                                                                                                          |
-| -------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 Foundation               | Done                                  | Models, I1–I7 invariants, time semantics, SQLite + migrations, command bus with events and undo                                                |
-| 2 Derivations              | Done                                  | Carry/age/defers, day stats, caches + invalidation. Perf budgets met                                                                           |
-| 3 Core loop (macOS)        | Built, visually checked headless only | Today, Review, Shutdown, Backlog, inspector, ⌘K, FTS5 search, undo toasts, a11y labels                                                         |
-| 4 Presets and insights     | Done                                  | Presets, order, pressure, stuck prompt, insights v1, pace forecast, day strip, time travel                                                     |
-| 5 Dogfood → MVP            | **Not done**                          | Needs two weeks of real use                                                                                                                    |
-| 6 macOS native             | Built, **not exercised**              | Hotkey, menubar, notifications, capture-with-context compile and have unit tests; never fired on a real desktop. Import/export done and tested |
-| 7 Connected apps (desktop) | Done against fixtures                 | Nine providers, previews, live links, auth flows. Never run against real services                                                              |
-| 8 Sync and backend         | Done                                  | HLC op-log, per-field LWW, convergence harness, server, auth. Postgres and Docker untested                                                     |
-| 9 Web                      | Server half done, **client not done** | Gateway, SSRF guard, CSP are in. No WASM host, no SQLite/OPFS spike                                                                            |
-| 10 Layouts and recurrence  | Done                                  | Recurrence, habits, board, timeline, weekly review: logic and Avalonia views                                                                   |
-| 11 More providers          | Done against fixtures                 | Slack, GitLab, Notion, Confluence, Figma                                                                                                       |
+| Phase                      | State                                          | Notes                                                                                                                                                                           |
+| -------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Foundation               | Done                                           | Models, I1–I7 invariants, time semantics, SQLite + migrations, command bus with events and undo                                                                                 |
+| 2 Derivations              | Done                                           | Carry/age/defers, day stats, caches + invalidation. Perf budgets met                                                                                                            |
+| 3 Core loop (macOS)        | Built, visually checked headless only          | Today, Review, Shutdown, Backlog, inspector, ⌘K, FTS5 search, undo toasts, a11y labels                                                                                          |
+| 4 Presets and insights     | Done                                           | Presets, order, pressure, stuck prompt, insights v1, pace forecast, day strip, time travel                                                                                      |
+| 5 Dogfood → MVP            | **Not done**                                   | Needs two weeks of real use                                                                                                                                                     |
+| 6 macOS native             | Built, **not exercised**                       | Hotkey, menubar, notifications, capture-with-context compile and have unit tests; never fired on a real desktop. Import/export done and tested                                  |
+| 7 Connected apps (desktop) | Done against fixtures                          | Nine providers, previews, live links, auth flows. Never run against real services                                                                                               |
+| 8 Sync and backend         | Done                                           | HLC op-log, per-field LWW, convergence harness, server, auth. Postgres and Docker untested                                                                                      |
+| 9 Web                      | Server half done, **client not done**          | Gateway, SSRF guard, CSP are in. No WASM host, no SQLite/OPFS spike                                                                                                             |
+| 10 Layouts and recurrence  | Done                                           | Recurrence, habits, board, timeline, weekly review: logic and Avalonia views                                                                                                    |
+| 11 More providers          | Done against fixtures                          | Slack, GitLab, Notion, Confluence, Figma                                                                                                                                        |
 | 12 Platforms               | Windows/Linux written, unverified on real OSes | Windows (Credential Manager, RegisterHotKey, toasts) and Linux (secret-tool, X11 XGrabKey, notify-send) platform layers; zip/tarball packaging; CI matrix. No iOS/Android hosts |
 
 ## What exists
@@ -56,6 +56,8 @@ Minimal API + EF Core 10 (SQLite and Postgres providers). Argon2id passwords, 15
 ### `Noto.Providers`
 
 GitHub (batched GraphQL), Jira, Linear, Slack (admin-approval flow), GitLab, Notion, Confluence, Figma, OpenGraph fallback, custom JSONPath apps. Cache-first preview service with visible-first queue, rate gate, backoff, change dot. Live-link rules (merged PR → "Done?" suggestion; Waiting item returns when its ticket leaves a blocked status). PAT and OAuth (PKCE, loopback, refresh). Tokens never reach SQLite, exports or logs (tested, including raw DB/WAL bytes).
+
+**AI field suggestions** (`Noto.Providers/Ai`, contract in `Noto.Core/Ai`). A sparkle in the new-task panel asks a model to fill the form from a rough title. It writes into the form's own fields only — never a task — so every value is reviewable before saving. Off by default; the settings pane picks a mode (Off / Apple on-device / local server / cloud API), and Off removes the affordance everywhere. One OpenAI-compatible provider serves both hosted APIs and local servers (Ollama, LM Studio, llama.cpp, vLLM); the on-device Apple Intelligence provider runs through `noto-ai-helper`, a small Swift executable in `tools/noto-ai-helper` that wraps the FoundationModels framework (`mise run ai:helper` builds and installs it; it needs macOS 26+ and a Swift toolchain). The reply is parsed defensively (clamped, unknown keys dropped, unusable values ignored) and a failure is reported rather than applied.
 
 ### `Noto.App` / `Noto.Desktop` / `Noto.Platform`
 
@@ -132,6 +134,8 @@ Compiled and unit-tested, but never run for real:
 
 - No Redo (the bus has none). Rows aren't virtualized, so a very large backlog will be slow. The inspector edits plain Markdown with no rendering.
 - `#tags` are parsed and shown as chips but not saved (no tag command on the bus).
+- AI suggestions fill every field the form has, but tags have no field yet, so they are shown in the fill note rather than applied. The "When" dropdown is preset-based, so a concrete day the model returns collapses to the nearest preset (today / tomorrow / in a week).
+- The on-device Apple Intelligence path needs `noto-ai-helper` (`mise run ai:helper`; macOS 26+ and a Swift toolchain). The helper is found next to the running app, so the script copies it into every output layout — `bin/{Debug,Release}`, `dist/noto-desktop` and `dist/Noto.app` — and `package_mac.sh` bundles it too; re-run it after publishing. The settings pane has a **Recheck** button, since the binary can appear while the app is open. Its C#↔Swift contract is pinned by a test, and the helper itself was verified by hand on macOS 27 (it answers in ~5 s cold, and wraps its reply in ```json fences — which is why the parser strips them). No AI provider has been exercised against a real _cloud_ endpoint, and the helper is not part of CI.
 - Habit grid: only today's cell can be ticked.
 - `--capture` starts the app with the panel open; there is no single-instance IPC.
 - Link chips and cards are not wired into the UI; Auto-prompting the Weekly Review is not wired.

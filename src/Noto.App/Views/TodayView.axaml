@@ -299,6 +299,84 @@
                   KeyDown="OnDetailKeyDown"
                   AutomationProperties.Name="Task title"
                 />
+
+                <!-- One strip under the title, in exactly one of four states: the action, the work, the
+                     evidence, the failure. It fills the form's own fields and never creates a task, so
+                     everything it writes is reviewable and undoable (docs/07 §19). -->
+                <StackPanel Spacing="6" IsVisible="{Binding Add.HasSuggestions}">
+                  <Button
+                    Classes="link"
+                    HorizontalAlignment="Left"
+                    IsVisible="{Binding Add.ShowFillAction}"
+                    IsEnabled="{Binding Add.CanSuggest}"
+                    Command="{Binding Add.SuggestCommand}"
+                    AutomationProperties.Name="Fill fields from the title with AI"
+                  >
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <PathIcon Data="{v:Icon sparkle}" Width="13" Height="13" />
+                      <TextBlock Text="Fill the rest from this title" />
+                    </StackPanel>
+                  </Button>
+
+                  <StackPanel
+                    Orientation="Horizontal"
+                    Spacing="8"
+                    IsVisible="{Binding Add.IsSuggesting}"
+                  >
+                    <PathIcon
+                      Data="{v:Icon sparkle}"
+                      Width="13"
+                      Height="13"
+                      Opacity="0.6"
+                      VerticalAlignment="Center"
+                    />
+                    <TextBlock
+                      Text="{Binding Add.SuggestionStep}"
+                      Classes="hint"
+                      FontSize="12"
+                      VerticalAlignment="Center"
+                    />
+                    <ProgressBar IsIndeterminate="True" Width="72" VerticalAlignment="Center" />
+                  </StackPanel>
+
+                  <TextBlock
+                    Text="{Binding Add.SuggestionError}"
+                    Classes="error"
+                    FontSize="12"
+                    TextWrapping="Wrap"
+                    IsVisible="{Binding Add.SuggestionError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                  />
+
+                  <!-- What changed, why, and one step back. The evidence stays until the title moves
+                       on, so it can never describe values that are no longer on screen. -->
+                  <Border Classes="card" Padding="12,10" IsVisible="{Binding Add.HasFill}">
+                    <DockPanel>
+                      <Button
+                        DockPanel.Dock="Right"
+                        Classes="link"
+                        Content="Undo"
+                        VerticalAlignment="Top"
+                        Margin="12,0,0,0"
+                        Command="{Binding Add.UndoFillCommand}"
+                        AutomationProperties.Name="Undo the fill"
+                      />
+                      <StackPanel Spacing="3">
+                        <TextBlock
+                          Text="{Binding Add.SuggestionNote}"
+                          FontSize="12"
+                          TextWrapping="Wrap"
+                        />
+                        <TextBlock
+                          Text="{Binding Add.FilledFields, StringFormat='Filled {0}'}"
+                          Classes="hint"
+                          FontSize="11"
+                          TextWrapping="Wrap"
+                          IsVisible="{Binding Add.FilledFields, Converter={x:Static ObjectConverters.IsNotNull}}"
+                        />
+                      </StackPanel>
+                    </DockPanel>
+                  </Border>
+                </StackPanel>
               </StackPanel>
 
               <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto">

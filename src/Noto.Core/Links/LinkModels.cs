@@ -80,6 +80,29 @@ public sealed class LinkPreview
     public bool HasChange => StateHash is not null && StateHash != ViewedStateHash;
 }
 
+// What a URL turned out to be, resolved before anything else reads the text around it (docs/04 §6).
+// Deliberately only the parts a model can use — identity, state and a short summary — never the page.
+//
+// `Unreadable` is set when the link exists but could not be read (offline, no connection, gone). It is
+// carried rather than dropped so a caller can say "there is a link here, I just couldn't read it"
+// instead of silently pretending the text had no link in it.
+public sealed record LinkContext(
+    string Url,
+    string? Title,
+    string? Provider,
+    string? Summary,
+    string? State,
+    IReadOnlyList<string> Facts,
+    string? Unreadable
+);
+
+// Resolves a URL so its meaning can be handed to something else (the AI suggester). Cache first, then a
+// fetch: unauthenticated OpenGraph for any host, or the connected app when the user has one for it.
+public interface ILinkResolver
+{
+    Task<LinkContext?> ResolveAsync(string url, CancellationToken ct = default);
+}
+
 // Metadata only. Secrets live in the OS keyring under service `app.noto.connections`.
 public sealed class AppConnection
 {

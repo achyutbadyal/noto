@@ -7,19 +7,28 @@ namespace Noto.App.ViewModels;
 // this factory (built from the host's AppServices) is where they're picked, so nothing reaches into a bag.
 public sealed class ViewModelFactory(AppServices s)
 {
-    readonly ListServices _list = new(s.Reader, s.Runner, s.Focus, s.Clock);
+    readonly ListServices _list = new(
+        s.Reader,
+        s.Runner,
+        s.Focus,
+        s.Clock,
+        s.Suggestions,
+        s.LinkResolver
+    );
 
     public AppearanceViewModel Appearance() => new(s.UiState);
 
     public UndoToastViewModel Toast() => new(s.Undo);
 
-    public CommandBarViewModel CommandBar(ICommandBarHost host) => new(s.Search, s.Runner, host);
+    public CommandBarViewModel CommandBar(ICommandBarHost host) =>
+        new(s.Search, s.Runner, host, s.Suggestions, s.LinkResolver);
 
     public InspectorViewModel Inspector() => new(s.Reader, s.Runner, s.Focus, Decisions());
 
     public OnboardingViewModel Onboarding() => new(s.Workspaces);
 
-    public CaptureViewModel Capture() => new(s.Clock, s.Platform, s.Workspaces, s.Links, s.Runner);
+    public CaptureViewModel Capture() =>
+        new(s.Clock, s.Platform, s.Workspaces, s.Links, s.Runner, s.Suggestions, s.LinkResolver);
 
     public TodayViewModel Today(Guid workspaceId, Func<string, Guid?>? resolveWorkspace = null) =>
         new(_list, workspaceId, resolveWorkspace);
@@ -73,7 +82,8 @@ public sealed class ViewModelFactory(AppServices s)
             s.Workspaces,
             workspaceId,
             appearance,
-            account
+            account,
+            s.Ai
         );
 
     DecisionController Decisions() => new(s.Runner);
