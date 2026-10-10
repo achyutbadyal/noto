@@ -2,11 +2,13 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.App.Themes;
 using Noto.App.ViewModels;
 using Noto.App.Views;
 using Noto.Core.Commands;
@@ -51,6 +53,24 @@ public sealed class ScreenshotTests : IDisposable
         await _app.Services.Bus.SendAsync(new SetPriority(deploy, 2));
         await _app.Services.Workspaces.SetNowAsync(_app.Workspace.Id, deploy);
         await _app.Services.Workspaces.CreateAsync("Personal", "home", BuiltInPresets.Zen, 1);
+    }
+
+    // Fourteen days of history, so the insight sample gates (InsightsEngine.MinSample == 10) open.
+    // Small things mostly land, big ones mostly don't — that is the signal the size card reports.
+    // The clock has to sit on the day being seeded, or "completed on the planned day" is never true.
+    async Task SeedHistoryAsync()
+    {
+        _app.Clock.Advance(TimeSpan.FromDays(-14));
+        for (var back = 14; back >= 1; back--)
+        {
+            var day = AppFixture.Today.AddDays(-back);
+            var small = await _app.AddAsync($"Small thing {back}", day, 20);
+            var big = await _app.AddAsync($"Big thing {back}", day, 180);
+            await _app.Services.Bus.SendAsync(new CompleteItem(small));
+            if (back % 4 == 0)
+                await _app.Services.Bus.SendAsync(new CompleteItem(big));
+            _app.Clock.Advance(TimeSpan.FromDays(1));
+        }
     }
 
     (MainWindow Window, ShellViewModel Shell) Open(
@@ -111,6 +131,80 @@ public sealed class ScreenshotTests : IDisposable
         await SnapAsync(window, "today-light");
     }
 
+    // The capture field colours recognised tokens inline, so capture reads as structured input rather
+    // than free text (docs/07 §7.1).
+    [AvaloniaFact]
+    public async Task Capture_highlights_recognized_tokens_inline()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+
+        shell.TodayPage!.Add.Text = "Review PR #482 tomorrow ~30m !2";
+        Dispatcher.UIThread.RunJobs();
+        await SettleAsync();
+
+        var mirror = window
+            .GetVisualDescendants()
+            .OfType<TextBlock>()
+            .First(t => t.Name == "AddHighlight");
+        mirror.Inlines.ShouldNotBeNull();
+        mirror.Inlines!.Count.ShouldBeGreaterThan(1);
+
+        // Tokens must be coloured *differently from each other*, not merely coloured.
+        var colours = mirror
+            .Inlines.OfType<Avalonia.Controls.Documents.Run>()
+            .Where(r => r.Foreground is not null)
+            .Select(r => (r.Foreground as ISolidColorBrush)?.Color)
+            .Where(c => c is not null)
+            .Distinct()
+            .ToList();
+        colours.Count.ShouldBeGreaterThanOrEqualTo(2);
+
+        await SnapAsync(window, "capture-tokens-dark");
+    }
+
+    // Picking a workspace accent must repaint the app, not just save a string: the accent is a live
+    // resource in both theme dictionaries (docs/07 §11.1).
+    [AvaloniaFact]
+    public async Task Accent_settings_save_and_repaint_the_app()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Settings);
+
+        var settings = shell.Settings!;
+        var teal = settings.Accents.First(a => a.Name == "teal");
+        teal.IsSelected.ShouldBeFalse();
+
+        await settings.PickAccentCommand.ExecuteAsync(teal);
+        Dispatcher.UIThread.RunJobs();
+        await SettleAsync();
+
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Color.ShouldBe("teal");
+        settings.Accents.First(a => a.Name == "teal").IsSelected.ShouldBeTrue();
+
+        var dict = (ResourceDictionary)
+            Avalonia.Application.Current!.Resources.ThemeDictionaries[ThemeVariant.Dark]!;
+        (dict["AccentBrush"] as ISolidColorBrush)!.Color.ShouldBe(
+            Color.Parse(ThemeTokens.AccentFor("teal", dark: true))
+        );
+
+        // Show the pane the swatches live on.
+        settings.Category = settings.Categories.First(c => c.Key == "appearance");
+        Dispatcher.UIThread.RunJobs();
+
+        await SnapAsync(window, "settings-accent-dark");
+
+        Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        await SnapAsync(window, "settings-accent-light");
+
+        // The headless app is shared across the assembly: leave the accent as we found it.
+        ThemeBuilder.SetAccent(Avalonia.Application.Current!, null);
+    }
+
     [AvaloniaFact]
     public async Task Morning_review_card_renders()
     {
@@ -126,6 +220,38 @@ public sealed class ScreenshotTests : IDisposable
         await shell.HandleKeyAsync(KeyChord.Of("d"));
         Dispatcher.UIThread.RunJobs();
         await SnapAsync(window, "review-prompt-dark");
+    }
+
+    // Shutdown and Weekly Review share the review card treatment: a step is a card with a progress rail.
+    [AvaloniaFact]
+    public async Task Shutdown_steps_render_as_cards()
+    {
+        await SeedAsync();
+        var done = await _app.AddAsync("Finished thing", AppFixture.Today);
+        await _app.Services.Bus.SendAsync(new CompleteItem(done));
+
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Shutdown);
+        Dispatcher.UIThread.RunJobs();
+
+        var shutdown = shell.Shutdown!;
+        shutdown.Step.ShouldBe(ShutdownStep.Done);
+        window.GetVisualDescendants().OfType<ShutdownView>().ShouldNotBeEmpty();
+        await SnapAsync(window, "shutdown-done-dark");
+
+        // Enter advances out of step 1. In step 2 the review consumes Enter for its own decisions, so
+        // the step is advanced by its button, exactly as the view wires it.
+        await shell.HandleKeyAsync(KeyChord.Of("Enter"));
+        Dispatcher.UIThread.RunJobs();
+        shutdown.Step.ShouldBe(ShutdownStep.NotDone);
+        await SnapAsync(window, "shutdown-notdone-dark");
+
+        await shutdown.NextCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        shutdown.Step.ShouldBe(ShutdownStep.Note);
+        shutdown.StepProgress.ShouldBe(1.0);
+        await SnapAsync(window, "shutdown-note-dark");
     }
 
     [AvaloniaFact]
@@ -340,6 +466,24 @@ public sealed class ScreenshotTests : IDisposable
         await shell.GoAsync(AppPage.Today);
         shell.IsHelpOpen = true;
         await SnapAsync(window, "help-dark");
+    }
+
+    // The other half of the Insights page: with enough history the catalogue actually renders. The
+    // no-history path (catalogue greyed with a progress meter) is covered by the snapshot above.
+    [AvaloniaFact]
+    public async Task Insights_with_enough_history_render_real_cards()
+    {
+        await SeedHistoryAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Insights);
+
+        shell.Insights!.Cards.ShouldNotBeEmpty();
+        shell.Insights.Locked.ShouldNotBeNull();
+        await SnapAsync(window, "insights-full-dark");
+
+        Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        await SnapAsync(window, "insights-full-light");
     }
 
     [AvaloniaFact]

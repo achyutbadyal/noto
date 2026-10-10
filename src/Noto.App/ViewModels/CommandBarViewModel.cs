@@ -33,6 +33,7 @@ public interface ICommandBarHost
     IReadOnlyList<WorkspaceRef> WorkspaceRefs { get; }
     Guid? CurrentWorkspaceId { get; }
     DateOnly Today { get; }
+    AppearanceViewModel Appearance { get; }
     Task GoAsync(AppPage page);
     Task SelectWorkspaceAsync(Guid id);
     Task OpenItemAsync(Guid workspaceId, Guid itemId);
@@ -126,14 +127,10 @@ public sealed partial class CommandBarViewModel : ObservableObject
         Chips = parsed.Tokens.Select(t => t.Text).ToList();
 
         var results = new List<CommandResult>();
-        results.AddRange(
-            Commands()
-                .Select(c => (c, score: FuzzyMatch.Score(query, c.Title)))
-                .Where(x => x.score > 0)
-                .OrderByDescending(x => x.score)
-                .Take(query.Length == 0 ? 40 : 8)
-                .Select(x => x.c)
-        );
+
+        // Ranked in blocks so a fuzzy hit on a guide topic can never outrank a real command or a real
+        // item (docs/07 §7.1): core commands, then items, then guide topics, then "add this".
+        results.AddRange(Rank(Commands(), query, query.Length == 0 ? 40 : 8));
 
         if (query.Length >= 2)
         {
@@ -150,6 +147,9 @@ public sealed partial class CommandBarViewModel : ObservableObject
                 ))
             );
         }
+
+        // Guide topics come after real results: they are reference, not actions.
+        results.AddRange(Rank(GuideCommands(), query, query.Length == 0 ? 40 : 3));
 
         if (parsed.Title.Length > 0 && _host.CurrentWorkspaceId is { } wsId)
             results.Add(
@@ -292,15 +292,32 @@ public sealed partial class CommandBarViewModel : ObservableObject
             null,
             () => _host.ShowHelpTopicAsync(HelpTopicIds.Start)
         );
-        foreach (var topic in HelpContent.Topics)
+
+        // Appearance: one explicit entry per choice, plus the cycling shortcut (⌘⇧L).
+        yield return new(
+            ResultKind.Command,
+            "Switch appearance",
+            $"Currently {AppearanceViewModel.ThemeLabelFor(_host.Appearance.Theme)}",
+            KeyMap.ShortcutFor(AppAction.CycleTheme),
+            () =>
+            {
+                _host.Appearance.CycleTheme();
+                return Task.CompletedTask;
+            }
+        );
+        foreach (var choice in AppearanceViewModel.ThemeChoices)
         {
-            var id = topic.Id;
+            var c = choice;
             yield return new(
                 ResultKind.Command,
-                $"Guide: {topic.Title}",
-                topic.Summary,
+                $"Appearance: {AppearanceViewModel.ThemeLabelFor(c)}",
+                c == _host.Appearance.Theme ? "Current" : null,
                 null,
-                () => _host.ShowHelpTopicAsync(id)
+                () =>
+                {
+                    _host.Appearance.SetTheme(c);
+                    return Task.CompletedTask;
+                }
             );
         }
 
@@ -327,6 +344,34 @@ public sealed partial class CommandBarViewModel : ObservableObject
             );
         }
     }
+
+    // Guide topics form their own block, ranked after the core commands (docs/07 §7.1).
+    IEnumerable<CommandResult> GuideCommands()
+    {
+        foreach (var topic in HelpContent.Topics)
+        {
+            var id = topic.Id;
+            yield return new(
+                ResultKind.Command,
+                $"Guide: {topic.Title}",
+                topic.Summary,
+                null,
+                () => _host.ShowHelpTopicAsync(id)
+            );
+        }
+    }
+
+    static IEnumerable<CommandResult> Rank(
+        IEnumerable<CommandResult> source,
+        string query,
+        int take
+    ) =>
+        source
+            .Select(c => (c, score: FuzzyMatch.Score(query, c.Title)))
+            .Where(x => x.score > 0)
+            .OrderByDescending(x => x.score)
+            .Take(take)
+            .Select(x => x.c);
 
     async Task AddAsync(string raw, Guid workspaceId)
     {

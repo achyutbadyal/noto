@@ -69,7 +69,13 @@ public sealed partial class WeeklyReviewViewModel(
 
     [
         ObservableProperty,
-        NotifyPropertyChangedFor(nameof(StepTitle), nameof(StepNumber), nameof(IsLast))
+        NotifyPropertyChangedFor(
+            nameof(StepTitle),
+            nameof(StepNumber),
+            nameof(IsLast),
+            nameof(StepProgress),
+            nameof(StepLabel)
+        )
     ]
     WeeklyStep _step;
 
@@ -98,6 +104,11 @@ public sealed partial class WeeklyReviewViewModel(
 
     public int StepNumber => (int)Step + 1;
     public bool IsLast => Step == WeeklyStep.NextWeek;
+
+    // Drives the step rail, so a five-step flow shows where you are without counting labels.
+    public const int StepCount = 5;
+    public double StepProgress => StepNumber / (double)StepCount;
+    public string StepLabel => $"Weekly review · step {StepNumber} of {StepCount}";
     public string StepTitle =>
         Step switch
         {

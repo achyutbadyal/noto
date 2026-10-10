@@ -297,6 +297,26 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     ReviewEntry? _justDecided;
 
+    // The card leaves *toward* the decision, so the motion itself confirms what was chosen and there is
+    // no need for a "saved" toast (docs/07 §4.1). Cleared just after, so the next card settles back.
+    [ObservableProperty]
+    string _exitDirection = "";
+
+    public const int ExitMs = 180;
+
+    static string DirectionFor(string decision) =>
+        decision.Contains("Defer", StringComparison.OrdinalIgnoreCase) ? "left"
+        : decision.Contains("Someday", StringComparison.OrdinalIgnoreCase) ? "up"
+        : decision.Contains("Drop", StringComparison.OrdinalIgnoreCase) ? "down"
+        : decision.Contains("Break", StringComparison.OrdinalIgnoreCase) ? "down"
+        : "right";
+
+    async Task ClearExitAsync()
+    {
+        await Task.Delay(ExitMs);
+        ExitDirection = "";
+    }
+
     void OnDecided(string label)
     {
         if (_pending is not { } entry)
@@ -319,6 +339,9 @@ public sealed partial class ReviewViewModel : ObservableObject
 
     void Advance(ReviewEntry decidedEntry)
     {
+        ExitDirection = DirectionFor(decidedEntry.Decision ?? "");
+        _ = ClearExitAsync();
+
         var next =
             Entries.Skip(Entries.IndexOf(decidedEntry) + 1).FirstOrDefault(e => !e.IsDecided)
             ?? Entries.FirstOrDefault(e => !e.IsDecided);

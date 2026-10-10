@@ -9,7 +9,7 @@
   x:DataType="vm:InspectorViewModel"
 >
   <ScrollViewer>
-    <StackPanel Margin="16" Spacing="14">
+    <StackPanel Margin="16,12,16,20" Spacing="18">
       <TextBlock
         Text="Select an item to see its details."
         Classes="hint"
@@ -17,13 +17,18 @@
         IsVisible="{Binding !HasItem}"
       />
 
-      <StackPanel Spacing="14" IsVisible="{Binding HasItem}">
-        <StackPanel Spacing="3">
-          <TextBlock
-            Text="{Binding Title}"
+      <StackPanel Spacing="18" IsVisible="{Binding HasItem}">
+        <!-- Identity. The title is the heading; there is no pane title above it (docs/07 §10.2). -->
+        <StackPanel Spacing="4">
+          <TextBox
+            Classes="quiet"
             FontSize="18"
             FontWeight="SemiBold"
-            TextWrapping="Wrap"
+            Text="{Binding TitleEdit, Mode=TwoWay}"
+            KeyDown="OnTitleKeyDown"
+            LostFocus="OnTitleLostFocus"
+            Watermark="Untitled"
+            AutomationProperties.Name="Title"
           />
           <TextBlock Text="{Binding ScheduleText}" Classes="secondary" TextWrapping="Wrap" />
           <TextBlock Text="{Binding StateText}" Classes="hint" />
@@ -74,11 +79,15 @@
           </Grid>
         </StackPanel>
 
-        <!-- editable attributes: each change is a real command, so it lands in the activity log below -->
-        <StackPanel Spacing="8">
-          <Grid ColumnDefinitions="*,Auto">
+        <!--
+          Details and schedule are read-first: each row shows the current value as text and only turns
+          into a control under the pointer or the keyboard (docs/07 §10.2). Every change is still a real
+          command, so it lands in the log below and undoes with ⌘Z.
+        -->
+        <StackPanel Spacing="2">
+          <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,4">
             <TextBlock
-              Text="EDIT"
+              Text="DETAILS"
               Classes="section"
               VerticalAlignment="Center"
               ToolTip.Tip="Recorded in the log below, and undone with ⌘Z."
@@ -93,91 +102,81 @@
               <PathIcon Data="{v:Icon info}" />
             </Button>
           </Grid>
-          <Grid
-            ColumnDefinitions="84,*"
-            RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-            ColumnSpacing="8"
-            RowSpacing="8"
-          >
-            <TextBlock Text="Title" Classes="secondary" VerticalAlignment="Center" />
-            <TextBox
-              Grid.Column="1"
-              Text="{Binding TitleEdit, Mode=TwoWay}"
-              KeyDown="OnTitleKeyDown"
-              LostFocus="OnTitleLostFocus"
-              AutomationProperties.Name="Title"
-            />
-
-            <TextBlock Grid.Row="1" Text="Time" Classes="secondary" VerticalAlignment="Center" />
+          <Grid ColumnDefinitions="92,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+            <TextBlock Text="Time" Classes="secondary" VerticalAlignment="Center" />
             <ComboBox
-              Grid.Row="1"
               Grid.Column="1"
+              Classes="quiet"
               ItemsSource="{Binding Estimates}"
               SelectedItem="{Binding Estimate, Mode=TwoWay}"
-              HorizontalAlignment="Stretch"
               AutomationProperties.Name="Estimate"
             />
 
             <TextBlock
-              Grid.Row="2"
+              Grid.Row="1"
               Text="Priority"
               Classes="secondary"
               VerticalAlignment="Center"
             />
             <ComboBox
-              Grid.Row="2"
+              Grid.Row="1"
               Grid.Column="1"
+              Classes="quiet"
               ItemsSource="{Binding Priorities}"
               SelectedItem="{Binding Priority, Mode=TwoWay}"
-              HorizontalAlignment="Stretch"
               AutomationProperties.Name="Priority"
               ToolTip.Tip="1 is highest."
             />
 
-            <TextBlock Grid.Row="3" Text="When" Classes="secondary" VerticalAlignment="Center" />
-            <ComboBox
-              Grid.Row="3"
-              Grid.Column="1"
-              ItemsSource="{Binding Whens}"
-              SelectedItem="{Binding When, Mode=TwoWay}"
-              HorizontalAlignment="Stretch"
-              AutomationProperties.Name="When"
-            />
-
-            <TextBlock Grid.Row="4" Text="Due" Classes="secondary" VerticalAlignment="Center" />
-            <ComboBox
-              Grid.Row="4"
-              Grid.Column="1"
-              ItemsSource="{Binding Dues}"
-              SelectedItem="{Binding Due, Mode=TwoWay}"
-              HorizontalAlignment="Stretch"
-              AutomationProperties.Name="Due date"
-            />
-
             <TextBlock
-              Grid.Row="5"
+              Grid.Row="2"
               Text="Day part"
               Classes="secondary"
               VerticalAlignment="Center"
             />
             <ComboBox
-              Grid.Row="5"
+              Grid.Row="2"
               Grid.Column="1"
+              Classes="quiet"
               ItemsSource="{Binding TimesOfDay}"
               SelectedItem="{Binding TimeOfDay, Mode=TwoWay}"
-              HorizontalAlignment="Stretch"
               AutomationProperties.Name="Time of day"
+            />
+          </Grid>
+        </StackPanel>
+
+        <StackPanel Spacing="2">
+          <TextBlock Text="SCHEDULE" Classes="section" Margin="0,0,0,4" />
+          <Grid ColumnDefinitions="92,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="2">
+            <TextBlock Text="When" Classes="secondary" VerticalAlignment="Center" />
+            <ComboBox
+              Grid.Column="1"
+              Classes="quiet"
+              ItemsSource="{Binding Whens}"
+              SelectedItem="{Binding When, Mode=TwoWay}"
+              AutomationProperties.Name="When"
+            />
+
+            <TextBlock Grid.Row="1" Text="Due" Classes="secondary" VerticalAlignment="Center" />
+            <ComboBox
+              Grid.Row="1"
+              Grid.Column="1"
+              Classes="quiet"
+              ItemsSource="{Binding Dues}"
+              SelectedItem="{Binding Due, Mode=TwoWay}"
+              AutomationProperties.Name="Due date"
             />
 
             <TextBlock
-              Grid.Row="6"
+              Grid.Row="2"
               Text="Waiting on"
               Classes="secondary"
               VerticalAlignment="Center"
             />
             <TextBox
-              Grid.Row="6"
+              Grid.Row="2"
               Grid.Column="1"
+              Classes="quiet"
               Text="{Binding WaitingOn, Mode=TwoWay}"
               Watermark="Nobody"
               KeyDown="OnWaitingKeyDown"
@@ -186,13 +185,14 @@
               ToolTip.Tip="Setting this moves the item to the Waiting on section."
             />
           </Grid>
-          <TextBlock
-            Text="{Binding Error}"
-            Classes="error"
-            TextWrapping="Wrap"
-            IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
-          />
         </StackPanel>
+
+        <TextBlock
+          Text="{Binding Error}"
+          Classes="error"
+          TextWrapping="Wrap"
+          IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+        />
 
         <!-- stuck prompt: intervention, not punishment -->
         <Border Classes="raised" Padding="12" IsVisible="{Binding ShowStuckPrompt}">
@@ -202,7 +202,7 @@
                 Data="{v:Icon stuck}"
                 Width="14"
                 Height="14"
-                Foreground="{DynamicResource PressureStaleBrush}"
+                Foreground="{DynamicResource PressureWarmBrush}"
                 VerticalAlignment="Top"
                 Margin="0,2,0,0"
               />

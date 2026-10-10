@@ -2,7 +2,7 @@
 
 A cross-platform, accountability-driven todo app where the day is the unit of work. Unfinished items roll over, and every carried item asks for a decision. Local-first (SQLite), with an optional self-hostable sync server.
 
-Design docs are in [`docs/`](docs/); start with [`01-vision.md`](docs/01-vision.md). Current status is in [`docs/11-whats-done.md`](docs/11-whats-done.md).
+Design docs are in [`docs/`](docs/); start with [`01-vision.md`](docs/01-vision.md) for the idea and [`07-ui-ux-design.md`](docs/07-ui-ux-design.md) for the interface. Current status is in [`docs/11-whats-done.md`](docs/11-whats-done.md).
 
 ## Screenshots
 

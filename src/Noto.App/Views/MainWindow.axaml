@@ -8,8 +8,8 @@
   x:DataType="vm:ShellViewModel"
   Icon="avares://Noto.App/Assets/noto.png"
   Title="Noto"
-  Width="1240"
-  Height="800"
+  Width="1320"
+  Height="860"
   MinWidth="720"
   MinHeight="480"
   FontFamily="SF Pro Text, Inter, Segoe UI Variable Text, Segoe UI, Helvetica Neue, sans-serif"
@@ -322,8 +322,9 @@
       </Border>
 
       <!-- ===================== Main column ===================== -->
-      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,*" ClipToBounds="True">
-        <!-- Unified toolbar (lives inside the native title bar) -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,Auto,*" ClipToBounds="True">
+        <!-- Unified toolbar (lives inside the native title bar). The page title is not here: it lives
+             in the content as a display header, so chrome stops outranking content (docs/07 §3.4). -->
         <Grid Grid.Row="0" Height="52" ColumnDefinitions="Auto,*,Auto" Margin="16,0">
           <StackPanel
             Grid.Column="0"
@@ -339,26 +340,6 @@
             >
               <PathIcon Data="{v:Icon sidebar}" />
             </Button>
-            <StackPanel Orientation="Horizontal" Spacing="2" IsVisible="{Binding IsListPage}">
-              <Button
-                Classes="icon small"
-                Command="{Binding StepDayCommand}"
-                CommandParameter="-1"
-                AutomationProperties.Name="Previous day"
-                ToolTip.Tip="Previous day"
-              >
-                <PathIcon Data="{v:Icon chevron-left}" />
-              </Button>
-              <Button
-                Classes="icon small"
-                Command="{Binding StepDayCommand}"
-                CommandParameter="1"
-                AutomationProperties.Name="Next day"
-                ToolTip.Tip="Next day"
-              >
-                <PathIcon Data="{v:Icon chevron-right}" />
-              </Button>
-            </StackPanel>
             <Border Classes="raised" Padding="2" CornerRadius="9" IsVisible="{Binding IsListPage}">
               <StackPanel Orientation="Horizontal" Spacing="2">
                 <Button
@@ -378,16 +359,6 @@
               </StackPanel>
             </Border>
           </StackPanel>
-
-          <TextBlock
-            Grid.Column="1"
-            Text="{Binding HeaderTitle}"
-            Classes="headline"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            TextTrimming="CharacterEllipsis"
-            Margin="12,0"
-          />
 
           <StackPanel
             Grid.Column="2"
@@ -428,13 +399,8 @@
                   VerticalAlignment="Center"
                   IsVisible="{Binding ShowToolbarLabels}"
                 />
-                <Border
-                  Classes="pill"
-                  Padding="5,0"
-                  Margin="6,0,0,0"
-                  IsVisible="{Binding ShowToolbarLabels}"
-                >
-                  <TextBlock Text="⌘K" FontSize="11" Classes="hint" VerticalAlignment="Center" />
+                <Border Classes="kbd" Margin="6,0,0,0" IsVisible="{Binding ShowToolbarLabels}">
+                  <TextBlock Text="⌘K" />
                 </Border>
               </StackPanel>
             </Button>
@@ -458,18 +424,56 @@
         </Grid>
 
         <Border Grid.Row="1" Classes="hairline" Margin="16,0" />
+
+        <!-- Page header: the display title (and day navigation) live in the content, not the toolbar. -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="24,14,24,0" ColumnSpacing="12">
+          <TextBlock
+            Text="{Binding HeaderTitle}"
+            Classes.display="{Binding IsListPage}"
+            Classes.displaySmall="{Binding !IsListPage}"
+            TextTrimming="CharacterEllipsis"
+            VerticalAlignment="Center"
+          />
+          <StackPanel
+            Grid.Column="1"
+            Orientation="Horizontal"
+            Spacing="2"
+            IsVisible="{Binding IsListPage}"
+            VerticalAlignment="Center"
+          >
+            <Button
+              Classes="icon small"
+              Command="{Binding StepDayCommand}"
+              CommandParameter="-1"
+              AutomationProperties.Name="Previous day"
+              ToolTip.Tip="Previous day"
+            >
+              <PathIcon Data="{v:Icon chevron-left}" />
+            </Button>
+            <Button
+              Classes="icon small"
+              Command="{Binding StepDayCommand}"
+              CommandParameter="1"
+              AutomationProperties.Name="Next day"
+              ToolTip.Tip="Next day"
+            >
+              <PathIcon Data="{v:Icon chevron-right}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+
         <TextBlock
-          Grid.Row="2"
+          Grid.Row="3"
           Text="{Binding WeekOutcomes}"
           Classes="secondary"
-          Margin="16,8,16,0"
+          Margin="24,8,24,0"
           FontSize="12"
           TextWrapping="Wrap"
           IsVisible="{Binding WeekOutcomes, Converter={x:Static ObjectConverters.IsNotNull}}"
         />
 
         <ContentControl
-          Grid.Row="3"
+          Grid.Row="4"
           x:Name="PageHost"
           Content="{Binding Content}"
           IsTabStop="False"
@@ -489,21 +493,7 @@
         BorderThickness="1,0,0,0"
         ClipToBounds="True"
       >
-        <DockPanel>
-          <Grid DockPanel.Dock="Top" Height="44" Margin="14,0,8,0" ColumnDefinitions="*,Auto">
-            <TextBlock Text="INSPECTOR" Classes="section" VerticalAlignment="Center" />
-            <Button
-              Grid.Column="1"
-              Classes="icon small"
-              Command="{Binding ToggleInspectorCommand}"
-              AutomationProperties.Name="Close inspector"
-            >
-              <PathIcon Data="{v:Icon close}" Width="14" Height="14" />
-            </Button>
-          </Grid>
-          <Border DockPanel.Dock="Top" Classes="hairline" />
-          <v:InspectorView DataContext="{Binding Inspector}" />
-        </DockPanel>
+        <v:InspectorView DataContext="{Binding Inspector}" />
       </Border>
     </Grid>
 
@@ -654,8 +644,10 @@
             <ItemsControl ItemsSource="{Binding Shortcuts}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="l:Binding">
-                  <Grid ColumnDefinitions="120,*,Auto" Margin="0,3">
-                    <TextBlock Text="{Binding Display}" FontWeight="SemiBold" Classes="mono" />
+                  <Grid ColumnDefinitions="130,*,Auto" Margin="0,3">
+                    <Border Classes="kbd" HorizontalAlignment="Left">
+                      <TextBlock Text="{Binding Display}" />
+                    </Border>
                     <TextBlock Grid.Column="1" Text="{Binding Description}" />
                     <TextBlock Grid.Column="2" Text="{Binding Scope}" Classes="hint" />
                   </Grid>
@@ -685,10 +677,16 @@
         <TextBlock Text="{Binding Toast.Message}" VerticalAlignment="Center" />
         <Button
           Classes="link"
-          Content="Undo  ⌘Z"
           Command="{Binding Toast.UndoCommand}"
           IsVisible="{Binding Toast.CanUndo}"
-        />
+        >
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="Undo" />
+            <Border Classes="kbd">
+              <TextBlock Text="⌘Z" />
+            </Border>
+          </StackPanel>
+        </Button>
         <Button
           Classes="icon small"
           Command="{Binding Toast.DismissCommand}"

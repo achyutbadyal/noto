@@ -20,7 +20,11 @@ public sealed record DayBarViewModel(
 public sealed partial class DayStripViewModel : ObservableObject
 {
     public const int Days = 14;
-    public const double MaxHeight = 28;
+    public const double MaxHeight = 34;
+
+    // A day with nothing planned still draws a visible stub, so the strip reads as a chart with a
+    // baseline rather than a dashed line (docs/07 §3.1).
+    const double MinHeight = 4;
 
     public ObservableCollection<DayBarViewModel> Bars { get; } = [];
 
@@ -41,7 +45,7 @@ public sealed partial class DayStripViewModel : ObservableObject
                 Bars.Add(
                     new(
                         day,
-                        3,
+                        MinHeight,
                         day.ToString("ddd")[..1],
                         empty,
                         day == today,
@@ -58,7 +62,7 @@ public sealed partial class DayStripViewModel : ObservableObject
             Bars.Add(
                 new(
                     day,
-                    Math.Max(3, rate * MaxHeight),
+                    Math.Max(MinHeight, rate * MaxHeight),
                     day.ToString("ddd")[..1],
                     tooltip,
                     day == today,

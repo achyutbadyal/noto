@@ -7,20 +7,15 @@
   x:DataType="vm:InsightsViewModel"
 >
   <ScrollViewer>
-    <StackPanel MaxWidth="720" Margin="24" Spacing="16" HorizontalAlignment="Stretch">
+    <StackPanel MaxWidth="760" Margin="24,8,24,24" Spacing="18" HorizontalAlignment="Stretch">
       <TextBlock
         Text="{Binding StreakText}"
         Classes="secondary"
         IsVisible="{Binding StreakText.Length}"
         ToolTip.Tip="Consecutive days with at least one planned item finished."
       />
-      <TextBlock
-        Text="{Binding EmptyText}"
-        Classes="secondary"
-        TextWrapping="Wrap"
-        IsVisible="{Binding HasEmpty}"
-      />
 
+      <!-- Unlocked insights: a sentence, backed by a chart. -->
       <ItemsControl ItemsSource="{Binding Cards}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:InsightCard">
@@ -30,7 +25,7 @@
               Margin="0,0,0,12"
               AutomationProperties.Name="{Binding Headline}"
             >
-              <StackPanel Spacing="10">
+              <StackPanel Spacing="12">
                 <TextBlock
                   Text="{Binding Headline}"
                   FontSize="16"
@@ -43,10 +38,37 @@
                   TextWrapping="Wrap"
                   IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}"
                 />
-                <ItemsControl ItemsSource="{Binding Rows}">
+
+                <!-- A trend is a shape, not a list: one bar per sample, on a shared baseline. -->
+                <ItemsControl
+                  ItemsSource="{Binding Sparkline}"
+                  IsVisible="{Binding HasSparkline}"
+                  HorizontalAlignment="Left"
+                  Margin="0,2,0,0"
+                >
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:InsightRow">
-                      <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="12" Margin="0,3">
+                      <Border
+                        Width="16"
+                        Height="{Binding Fraction, Converter={x:Static v:RowConverters.SparkHeight}}"
+                        CornerRadius="2"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource AccentBrush}"
+                        ToolTip.Tip="{Binding Label}"
+                      />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding HasRows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:InsightRow">
+                      <Grid ColumnDefinitions="150,*,Auto" ColumnSpacing="12" Margin="0,3">
                         <TextBlock
                           Text="{Binding Label}"
                           Classes="secondary"
@@ -70,6 +92,7 @@
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
+
                 <Grid
                   ColumnDefinitions="Auto,*"
                   ColumnSpacing="6"
@@ -95,6 +118,47 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+
+      <!--
+        Before there is enough history, show the catalogue greyed with a progress-to-unlock meter. A
+        sentence on an otherwise empty page teaches nothing (docs/07 §8.2).
+      -->
+      <StackPanel IsVisible="{Binding HasLocked}" Spacing="8">
+        <TextBlock Text="STILL LEARNING" Classes="section" />
+        <TextBlock Text="{Binding LearningText}" Classes="hint" FontSize="12" TextWrapping="Wrap" />
+        <ItemsControl ItemsSource="{Binding Locked}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:LockedInsight">
+              <Border Classes="card" Margin="0,0,0,8" Opacity="0.7">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                  <StackPanel Spacing="8">
+                    <TextBlock
+                      Text="{Binding Title}"
+                      FontSize="14"
+                      FontWeight="Medium"
+                      TextWrapping="Wrap"
+                    />
+                    <ProgressBar
+                      Minimum="0"
+                      Maximum="1"
+                      Value="{Binding Progress}"
+                      Width="220"
+                      HorizontalAlignment="Left"
+                    />
+                  </StackPanel>
+                  <TextBlock
+                    Grid.Column="1"
+                    Text="{Binding ProgressText}"
+                    Classes="hint"
+                    VerticalAlignment="Center"
+                    ToolTip.Tip="Days of history gathered / needed before this insight appears."
+                  />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
 
       <StackPanel IsVisible="{Binding HasOldest}" Spacing="4">
         <Grid ColumnDefinitions="*,Auto">

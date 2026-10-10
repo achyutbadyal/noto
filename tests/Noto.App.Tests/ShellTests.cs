@@ -1,5 +1,7 @@
+using Avalonia.Styling;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.App.Themes;
 using Noto.App.ViewModels;
 using Noto.Core.Commands;
 using Noto.Core.Models;
@@ -516,6 +518,105 @@ public sealed class ShellTests : IDisposable
     }
 
     [Fact]
+    public void Appearance_cycles_through_system_light_and_dark()
+    {
+        var state = new InMemoryUiState();
+        var appearance = new AppearanceViewModel(state);
+
+        appearance.Theme.ShouldBe(ThemeChoice.System);
+        appearance.IsSystemTheme.ShouldBeTrue();
+        appearance.ThemeLabel.ShouldBe("System");
+        appearance.ThemeDescription.ShouldBe("Follow this Mac");
+
+        appearance.CycleTheme();
+        appearance.Theme.ShouldBe(ThemeChoice.Light);
+        appearance.IsLightTheme.ShouldBeTrue();
+        state.Get("theme").ShouldBe("Light");
+
+        appearance.CycleTheme();
+        appearance.Theme.ShouldBe(ThemeChoice.Dark);
+        state.Get("theme").ShouldBe("Dark");
+
+        // Wraps back around, so the shortcut is always a single press.
+        appearance.CycleTheme();
+        appearance.Theme.ShouldBe(ThemeChoice.System);
+
+        // The command bar's explicit entries go straight to a choice.
+        appearance.SetTheme(ThemeChoice.Dark);
+        appearance.ThemeLabel.ShouldBe("Dark");
+        appearance.ThemeDescription.ShouldBe("Always dark");
+        state.Get("theme").ShouldBe("Dark");
+    }
+
+    [Fact]
+    public void Every_theme_choice_maps_to_a_variant()
+    {
+        // System must stay "Default" so Avalonia follows the OS rather than pinning a variant.
+        ThemeBuilder.Variant(ThemeChoice.System).ShouldBe(ThemeVariant.Default);
+        ThemeBuilder.Variant(ThemeChoice.Light).ShouldBe(ThemeVariant.Light);
+        ThemeBuilder.Variant(ThemeChoice.Dark).ShouldBe(ThemeVariant.Dark);
+    }
+
+    [Fact]
+    public async Task Appearance_commands_are_reachable_from_the_command_bar()
+    {
+        await _shell.InitializeAsync();
+        await _shell.CommandBar.OpenAsync();
+        _shell.CommandBar.Text = "appearance: dark";
+        await _shell.CommandBar.UpdateAsync();
+
+        var dark = _shell.CommandBar.Results.First(r => r.Title == "Appearance: Dark");
+        _shell.CommandBar.SelectedIndex = _shell.CommandBar.Results.IndexOf(dark);
+        await _shell.CommandBar.ExecuteSelectedAsync();
+
+        _shell.Appearance.Theme.ShouldBe(ThemeChoice.Dark);
+    }
+
+    [Fact]
+    public async Task Theme_shortcut_cycles_and_reports_the_new_appearance()
+    {
+        await _shell.InitializeAsync();
+        _shell.Appearance.Theme.ShouldBe(ThemeChoice.System);
+
+        await Press("cmd+shift+l");
+
+        _shell.Appearance.Theme.ShouldBe(ThemeChoice.Light);
+        _shell.Toast.Message.ShouldContain("Light");
+    }
+
+    [Fact]
+    public async Task Accent_can_be_picked_from_the_palette_or_a_hex_value()
+    {
+        await _shell.InitializeAsync();
+        await _shell.GoAsync(AppPage.Settings);
+        var settings = _shell.Settings!;
+
+        settings.Accents.Count.ShouldBe(ThemeTokens.Accents.Count);
+        // The fixture's workspace is seeded from the "Work" template, so exactly one ink is current.
+        settings.Accents.Count(a => a.IsSelected).ShouldBe(1);
+        settings.Accents.ShouldContain(a => a.Name == ThemeTokens.DefaultAccent);
+
+        var target = settings.Accents.First(a => !a.IsSelected);
+        await settings.PickAccentCommand.ExecuteAsync(target);
+
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Color.ShouldBe(target.Name);
+        settings.Accents.Single(a => a.IsSelected).Name.ShouldBe(target.Name);
+
+        // A bad hex is refused with a message, and the saved accent is untouched.
+        settings.CustomAccent = "nonsense";
+        await settings.ApplyCustomAccentCommand.ExecuteAsync(null);
+        settings.Error.ShouldNotBeNull();
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Color.ShouldBe(target.Name);
+
+        // A literal colour is stored as-is, and matches no swatch (AccentKey treats it as its own key).
+        settings.CustomAccent = "#c2410c";
+        await settings.ApplyCustomAccentCommand.ExecuteAsync(null);
+        settings.Error.ShouldBeNull();
+        (await _app.Services.Workspaces.GetAsync(_app.Workspace.Id))!.Color.ShouldBe("#C2410C");
+        settings.Accents.ShouldAllBe(a => !a.IsSelected);
+    }
+
+    [Fact]
     public void Appearance_persists_and_clamps()
     {
         var state = new InMemoryUiState();
@@ -574,12 +675,21 @@ public sealed class ShellTests : IDisposable
     }
 
     [Fact]
-    public async Task Insights_say_when_there_is_not_enough_data()
+    public async Task Insights_show_the_catalogue_and_a_progress_meter_without_enough_data()
     {
         await _shell.InitializeAsync();
         await _shell.GoAsync(AppPage.Insights);
-        _shell.Insights!.Cards.ShouldBeEmpty();
-        _shell.Insights.EmptyText.ShouldContain("at least 10");
+        var insights = _shell.Insights!;
+
+        insights.Cards.ShouldBeEmpty();
+        // Instead of a bare sentence, the page lists what is coming and how close each one is.
+        insights.Locked.ShouldNotBeEmpty();
+        insights.HasLocked.ShouldBeTrue();
+        insights.LearningText.ShouldNotBeNullOrWhiteSpace();
+        insights.Locked.ShouldAllBe(l => l.Required == Noto.Core.Insights.InsightsEngine.MinSample);
+        insights.Locked.ShouldAllBe(l => l.Sample < l.Required);
+        insights.Locked.ShouldAllBe(l => l.Progress >= 0 && l.Progress <= 1);
+        insights.Locked.ShouldContain(l => l.Title.Contains("stall"));
     }
 
     [Fact]

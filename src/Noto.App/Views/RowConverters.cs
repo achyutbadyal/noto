@@ -33,13 +33,36 @@ public static class RowConverters
         today => today ? 1.0 : 0.55
     );
 
+    // Sparkline bars: a 0..1 fraction becomes a bar height, so a trend reads as a shape.
+    public static readonly IValueConverter SparkHeight = new FuncValueConverter<double, double>(
+        fraction => 4 + Math.Clamp(fraction, 0, 1) * 24
+    );
+
+    // The review card leaves toward the decision: ←defer, ↑someday, ↓drop, →today (docs/07 §4.1).
+    public static readonly IValueConverter ExitMargin = new FuncValueConverter<string?, Thickness>(
+        dir =>
+            dir switch
+            {
+                "left" => new Thickness(-30, 0, 30, 0),
+                "right" => new Thickness(30, 0, -30, 0),
+                "up" => new Thickness(0, -22, 0, 22),
+                "down" => new Thickness(0, 22, 0, -22),
+                _ => new Thickness(0),
+            }
+    );
+
+    public static readonly IValueConverter ExitOpacity = new FuncValueConverter<string?, double>(
+        dir => string.IsNullOrEmpty(dir) ? 1.0 : 0.25
+    );
+
     // The inspector collapses to zero width (instead of IsVisible) so its width can animate.
     public static readonly IValueConverter InspectorWidth = new FuncValueConverter<bool, double>(
         show => show ? 320 : 0
     );
 
+    // The key is rendered as a kbd chip beside the label, not baked into the string.
     public static readonly IValueConverter CloseLabel = new FuncValueConverter<bool, string>(
-        complete => complete ? "Start the day  Esc" : "Skip review  Esc"
+        complete => complete ? "Start the day" : "Skip review"
     );
 
     public static readonly IValueConverter IsDoneStep = new FuncValueConverter<ShutdownStep, bool>(
@@ -53,17 +76,10 @@ public static class RowConverters
         s => s == ShutdownStep.Note
     );
 
-    // Workspace accent names resolve per theme variant at bind time.
-    public static readonly IValueConverter Accent = new FuncValueConverter<string?, IBrush?>(
-        name => new SolidColorBrush(
-            Color.Parse(
-                Themes.ThemeTokens.AccentFor(
-                    name,
-                    Avalonia.Application.Current?.ActualThemeVariant
-                        == Avalonia.Styling.ThemeVariant.Dark
-                )
-            )
-        )
+    // Workspace accent names resolve to a shared, mutable brush, so a theme switch repaints every
+    // workspace tick in place instead of waiting for the next refresh (docs/11 known gap).
+    public static readonly IValueConverter Accent = new FuncValueConverter<string?, IBrush?>(name =>
+        Themes.ThemeBuilder.AccentBrush(name)
     );
 
     public static readonly IValueConverter SelectedBackground = new FuncValueConverter<

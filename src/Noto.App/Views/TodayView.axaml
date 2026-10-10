@@ -21,11 +21,17 @@
           <Button
             Grid.Column="1"
             Classes="accent"
-            Content="Review  ⌘⇧R"
             Padding="12,4"
             VerticalAlignment="Center"
             Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).StartReviewFromUiCommand}"
-          />
+          >
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Review" VerticalAlignment="Center" />
+              <Border Classes="kbd">
+                <TextBlock Text="⌘⇧R" />
+              </Border>
+            </StackPanel>
+          </Button>
         </Grid>
       </Border>
 
@@ -47,25 +53,30 @@
             <DataTemplate x:DataType="vm:DayBarViewModel">
               <Button
                 Padding="2"
-                Height="36"
+                Height="46"
                 VerticalContentAlignment="Bottom"
                 Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}"
                 CommandParameter="{Binding}"
                 ToolTip.Tip="{Binding Tooltip}"
                 AutomationProperties.Name="{Binding AutomationName}"
               >
-                <StackPanel Spacing="2" VerticalAlignment="Bottom">
+                <!--
+                  Bar, then a 1px tick. Every tick sits at the same height, so together they form a
+                  baseline: a day with nothing planned reads as zero on an axis, not a stray dash.
+                -->
+                <StackPanel Spacing="3" VerticalAlignment="Bottom">
                   <Border
-                    Width="14"
+                    Width="18"
                     Height="{Binding Height}"
-                    CornerRadius="2"
+                    CornerRadius="3"
                     VerticalAlignment="Bottom"
                     Background="{DynamicResource AccentBrush}"
                     Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}"
                   />
+                  <Border Width="18" Height="1" Background="{DynamicResource HairlineBrush}" />
                   <TextBlock
                     Text="{Binding Label}"
-                    FontSize="9"
+                    FontSize="10"
                     Classes="hint"
                     HorizontalAlignment="Center"
                   />
@@ -178,15 +189,19 @@
             </ItemsControl>
 
             <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
-              <TextBox
-                x:Name="AddBox"
-                Grid.Column="0"
-                Classes="bare"
-                Text="{Binding Add.Text, Mode=TwoWay}"
-                Watermark="New task…"
-                AutomationProperties.Name="New task title"
-                KeyDown="OnAddKeyDown"
-              />
+              <Panel Grid.Column="0">
+                <TextBlock x:Name="AddHighlight" Classes="mirror" />
+                <TextBox
+                  x:Name="AddBox"
+                  Classes="bare"
+                  Foreground="Transparent"
+                  CaretBrush="{DynamicResource Text1Brush}"
+                  Text="{Binding Add.Text, Mode=TwoWay}"
+                  Watermark="New task…"
+                  AutomationProperties.Name="New task title"
+                  KeyDown="OnAddKeyDown"
+                />
+              </Panel>
               <ComboBox
                 Grid.Column="1"
                 Width="126"

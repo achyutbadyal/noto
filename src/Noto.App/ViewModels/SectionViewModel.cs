@@ -14,6 +14,9 @@ public sealed partial class SectionViewModel(string title, bool collapsible = tr
     bool _isCollapsed;
 
     public int? WipLimit { get; init; }
+
+    // Board columns only: the model column this section maps to, so a drop can move an item into it.
+    public string? ColumnId { get; init; }
     public bool IsOverWip => WipLimit is { } limit && Rows.Count > limit;
     public string Header =>
         WipLimit is { } limit

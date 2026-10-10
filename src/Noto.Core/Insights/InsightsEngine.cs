@@ -34,6 +34,14 @@ public sealed record WaitStat(string Person, int Intervals, double MedianDays);
 
 public sealed record OldOpenItem(TodoItem Item, int Age, int Carry);
 
+// Which insights exist and how close each is to having enough samples. Surfaced so the Insights page can
+// show what is coming, greyed, with a progress-to-unlock meter, instead of a blank page (docs/07 §8.2).
+public sealed record InsightSample(string Key, string Title, int Sample, int Required)
+{
+    public bool Unlocked => Sample >= Required;
+    public double Progress => Required <= 0 ? 1 : Math.Clamp(Sample / (double)Required, 0, 1);
+}
+
 public sealed record InsightsReport(
     Insight<IReadOnlyList<SizeStat>>? SizeVsCompletion,
     Insight<IReadOnlyList<WeekdayStat>>? WeekdayLoad,
@@ -43,7 +51,8 @@ public sealed record InsightsReport(
     Insight<IReadOnlyList<WaitStat>>? WaitingByPerson,
     Insight<double>? MedianCarryAtCompletion,
     int StaleCount,
-    IReadOnlyList<OldOpenItem> OldestOpen
+    IReadOnlyList<OldOpenItem> OldestOpen,
+    IReadOnlyList<InsightSample> Samples
 );
 
 public static class InsightsEngine
@@ -84,16 +93,38 @@ public static class InsightsEngine
             .Take(5)
             .ToList();
 
+        // Compute every insight once, then gate. The ungated sample counts are kept so the UI can show
+        // what is still learning and how close it is.
+        var size = SizeVsCompletion(live, metrics, today, from, to);
+        var week = WeekdayLoad(days);
+        var roll = RolloverTrend(days);
+        var stuck = StuckMix(live, ws.DayBoundary, from, to);
+        var accuracy = EstimateAccuracy(live, from, to);
+        var waiting = WaitingByPerson(live, ws.DayBoundary, today, from, to);
+        var carry = CarryAtCompletion(live, metrics, from, to);
+
+        var samples = new List<InsightSample>
+        {
+            new("size", "Whether size decides what gets finished", size.Sample, MinSample),
+            new("weekday", "Which weekdays you overload", week.Sample, MinSample),
+            new("rollover", "Whether rollover is trending down", roll.Sample, MinSample),
+            new("stuck", "Why items stall", stuck.Sample, MinSample),
+            new("estimate", "How accurate your estimates are", accuracy.Sample, MinSample),
+            new("waiting", "How long you wait on other people", waiting.Sample, MinSample),
+            new("carry", "Carry at completion", carry.Sample, MinSample),
+        };
+
         return new InsightsReport(
-            Gate(SizeVsCompletion(live, metrics, today, from, to)),
-            Gate(WeekdayLoad(days)),
-            Gate(RolloverTrend(days)),
-            Gate(StuckMix(live, ws.DayBoundary, from, to)),
-            Gate(EstimateAccuracy(live, from, to)),
-            Gate(WaitingByPerson(live, ws.DayBoundary, today, from, to)),
-            Gate(CarryAtCompletion(live, metrics, from, to)),
+            Gate(size),
+            Gate(week),
+            Gate(roll),
+            Gate(stuck),
+            Gate(accuracy),
+            Gate(waiting),
+            Gate(carry),
             stale,
-            oldest
+            oldest,
+            samples
         );
     }
 

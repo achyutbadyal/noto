@@ -6,46 +6,47 @@
   x:Class="Noto.App.Views.SectionsList"
   x:DataType="vm:ItemListViewModel"
 >
+  <!--
+    One virtualizing list over the flattened sections (a header, then its rows while expanded), so a
+    large backlog only realises the rows on screen. Two templates over one sequence (docs/07 §15).
+  -->
   <ScrollViewer x:Name="Scroller" HorizontalScrollBarVisibility="Disabled">
-    <ItemsControl ItemsSource="{Binding Sections}" Margin="0,0,8,0">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate x:DataType="vm:SectionViewModel">
-          <StackPanel Margin="0,0,0,20" IsVisible="{Binding !IsEmpty}">
-            <Button
-              Padding="10,4"
-              HorizontalAlignment="Stretch"
-              HorizontalContentAlignment="Left"
-              CornerRadius="6"
-              Click="OnSectionHeaderClick"
-              Focusable="False"
-              IsEnabled="{Binding IsCollapsible}"
-            >
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <PathIcon
-                  Classes="chevron"
-                  Classes.collapsed="{Binding IsCollapsed}"
-                  Width="12"
-                  Height="12"
-                  Data="{v:Icon chevron-down}"
-                  IsVisible="{Binding IsCollapsible}"
-                />
-                <TextBlock Text="{Binding Header}" Classes="section" VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
-            <ItemsControl
-              Classes="sectionBody"
-              Classes.collapsed="{Binding IsCollapsed}"
-              ItemsSource="{Binding VisibleRows}"
-            >
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:ItemRowViewModel">
-                  <v:ItemRowView />
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </StackPanel>
+    <ItemsControl ItemsSource="{Binding FlatEntries}" Margin="0,0,8,0">
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <VirtualizingStackPanel />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.DataTemplates>
+        <DataTemplate DataType="vm:SectionViewModel">
+          <Button
+            Padding="10,4"
+            Margin="0,0,0,2"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left"
+            CornerRadius="6"
+            Click="OnSectionHeaderClick"
+            Focusable="False"
+            IsEnabled="{Binding IsCollapsible}"
+            AutomationProperties.Name="{Binding Header}"
+          >
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <PathIcon
+                Classes="chevron"
+                Classes.collapsed="{Binding IsCollapsed}"
+                Width="12"
+                Height="12"
+                Data="{v:Icon chevron-down}"
+                IsVisible="{Binding IsCollapsible}"
+              />
+              <TextBlock Text="{Binding Header}" Classes="section" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </DataTemplate>
-      </ItemsControl.ItemTemplate>
+        <DataTemplate DataType="vm:ItemRowViewModel">
+          <v:ItemRowView />
+        </DataTemplate>
+      </ItemsControl.DataTemplates>
     </ItemsControl>
   </ScrollViewer>
 </UserControl>

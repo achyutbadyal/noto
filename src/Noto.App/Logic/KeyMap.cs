@@ -63,6 +63,7 @@ public enum AppAction
     Confirm,
     PrevReview,
     NextReview,
+    CycleTheme,
 }
 
 public enum KeyScope
@@ -105,6 +106,13 @@ public static class KeyMap
             new(KeyScope.Global, "cmd+shift+r", AppAction.StartReview, "⌘⇧R", "Start review"),
             new(KeyScope.Global, "cmd+shift+d", AppAction.Shutdown, "⌘⇧D", "Shutdown"),
             new(KeyScope.Global, "cmd+z", AppAction.Undo, "⌘Z", "Undo"),
+            new(
+                KeyScope.Global,
+                "cmd+shift+l",
+                AppAction.CycleTheme,
+                "⌘⇧L",
+                "Switch appearance (system / light / dark)"
+            ),
         };
         for (var n = 1; n <= 9; n++)
             b.Add(

@@ -17,7 +17,7 @@
     >
       <StackPanel Spacing="16">
         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-          <TextBlock Text="{Binding Greeting}" FontSize="16" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding Greeting}" Classes="displaySmall" TextWrapping="Wrap" />
           <TextBlock
             Grid.Column="1"
             Text="{Binding ProgressText}"
@@ -43,41 +43,47 @@
         />
         <Separator />
 
-        <!-- the current card -->
-        <StackPanel
-          Spacing="6"
-          IsVisible="{Binding !IsComplete}"
-          AutomationProperties.Name="{Binding CurrentTitle}"
+        <!-- the current card. It leaves toward the decision, so the motion is the confirmation. -->
+        <Border
+          Classes="exit"
+          Margin="{Binding ExitDirection, Converter={x:Static v:RowConverters.ExitMargin}}"
+          Opacity="{Binding ExitDirection, Converter={x:Static v:RowConverters.ExitOpacity}}"
         >
-          <TextBlock
-            Text="{Binding CurrentTitle}"
-            FontSize="22"
-            FontWeight="SemiBold"
-            TextWrapping="Wrap"
-          />
-          <TextBlock Text="{Binding CurrentDetail}" Classes="secondary" TextWrapping="Wrap" />
-          <TextBlock
-            Text="{Binding Current.Decision, StringFormat='Decided: {0}'}"
-            Classes="hint"
-            IsVisible="{Binding Current.IsDecided}"
-          />
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" IsVisible="{Binding HasSuggestion}">
-            <PathIcon
-              Data="{v:Icon sparkle}"
-              Width="14"
-              Height="14"
-              Foreground="{DynamicResource LinkBrush}"
-              VerticalAlignment="Top"
-              Margin="0,2,0,0"
-            />
+          <StackPanel
+            Spacing="6"
+            IsVisible="{Binding !IsComplete}"
+            AutomationProperties.Name="{Binding CurrentTitle}"
+          >
             <TextBlock
-              Grid.Column="1"
-              Text="{Binding SuggestionText}"
-              Foreground="{DynamicResource LinkBrush}"
+              Text="{Binding CurrentTitle}"
+              FontSize="22"
+              FontWeight="SemiBold"
               TextWrapping="Wrap"
             />
-          </Grid>
-        </StackPanel>
+            <TextBlock Text="{Binding CurrentDetail}" Classes="secondary" TextWrapping="Wrap" />
+            <TextBlock
+              Text="{Binding Current.Decision, StringFormat='Decided: {0}'}"
+              Classes="hint"
+              IsVisible="{Binding Current.IsDecided}"
+            />
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" IsVisible="{Binding HasSuggestion}">
+              <PathIcon
+                Data="{v:Icon sparkle}"
+                Width="14"
+                Height="14"
+                Foreground="{DynamicResource LinkBrush}"
+                VerticalAlignment="Top"
+                Margin="0,2,0,0"
+              />
+              <TextBlock
+                Grid.Column="1"
+                Text="{Binding SuggestionText}"
+                Foreground="{DynamicResource LinkBrush}"
+                TextWrapping="Wrap"
+              />
+            </Grid>
+          </StackPanel>
+        </Border>
         <StackPanel Spacing="6" IsVisible="{Binding IsComplete}">
           <TextBlock Text="All decided." FontSize="22" FontWeight="SemiBold" />
           <TextBlock Text="Press Esc to start the day." Classes="secondary" />
@@ -86,7 +92,7 @@
         <!-- one key per decision; the same keys work on the keyboard -->
         <WrapPanel IsVisible="{Binding !IsComplete}" ItemSpacing="8" LineSpacing="8">
           <Button
-            Classes="key"
+            Classes="accent"
             Padding="12,6"
             Command="{Binding PressCommand}"
             CommandParameter="t"
@@ -209,12 +215,22 @@
             TextTrimming="CharacterEllipsis"
             IsVisible="{Binding HasKeepAll}"
           />
-          <Button Grid.Column="2" Content="Undo  ⌘Z" Command="{Binding UndoLastCommand}" />
-          <Button
-            Grid.Column="3"
-            Content="{Binding IsComplete, Converter={x:Static v:RowConverters.CloseLabel}}"
-            Command="{Binding SkipCommand}"
-          />
+          <Button Grid.Column="2" Command="{Binding UndoLastCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="Undo" />
+              <Border Classes="kbd">
+                <TextBlock Text="⌘Z" />
+              </Border>
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="3" Command="{Binding SkipCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <TextBlock Text="{Binding IsComplete, Converter={x:Static v:RowConverters.CloseLabel}}" />
+              <Border Classes="kbd">
+                <TextBlock Text="Esc" />
+              </Border>
+            </StackPanel>
+          </Button>
         </Grid>
       </StackPanel>
     </Border>

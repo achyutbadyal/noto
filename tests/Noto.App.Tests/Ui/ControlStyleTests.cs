@@ -70,4 +70,67 @@ public sealed class ControlStyleTests
         if (actual != expected)
             failures.Add($"{theme} {state}: {actual} != {token} {expected}");
     }
+
+    // Fluent draws the Slider, CheckBox and ToggleSwitch with the *system* accent, which is Windows blue
+    // (#0078D7) and ignores the workspace accent entirely — the "one framework blue doing six jobs"
+    // problem docs/07 §11 exists to fix. ThemeBuilder repoints those keys; this pins the result, so a
+    // renamed key or a Fluent upgrade that adds a state cannot quietly bring the blue back.
+    [AvaloniaFact]
+    public void Framework_controls_follow_the_workspace_accent()
+    {
+        var app = Application.Current!;
+        var failures = new List<string>();
+
+        try
+        {
+            foreach (
+                var (name, variant, expected) in new[]
+                {
+                    ("dark", ThemeVariant.Dark, ThemeTokens.AccentFor("teal", dark: true)),
+                    ("light", ThemeVariant.Light, ThemeTokens.AccentFor("teal", dark: false)),
+                }
+            )
+            {
+                app.RequestedThemeVariant = variant;
+                ThemeBuilder.SetAccent(app, "teal");
+
+                foreach (var key in FrameworkAccentKeys)
+                {
+                    var brush = app.TryFindResource(key, variant, out var value)
+                        ? value as ISolidColorBrush
+                        : null;
+                    if (brush?.Color != Color.Parse(expected))
+                        failures.Add($"{name} {key}: {brush?.Color} != {expected}");
+                }
+
+                // The derived tints must stay distinct, or the pointer-over and pressed states stop
+                // reading as a change.
+                var baseColor = app.TryFindResource("SystemAccentColor", variant, out var b)
+                    ? b as Color?
+                    : null;
+                var light1 = app.TryFindResource("SystemAccentColorLight1", variant, out var l)
+                    ? l as Color?
+                    : null;
+                if (baseColor is null || light1 is null || baseColor == light1)
+                    failures.Add($"{name} SystemAccentColor tints are not distinct");
+            }
+        }
+        finally
+        {
+            // The headless app is shared across the assembly: leave the accent as we found it.
+            ThemeBuilder.SetAccent(app, null);
+        }
+
+        failures.ShouldBeEmpty();
+    }
+
+    static readonly string[] FrameworkAccentKeys =
+    [
+        "SliderTrackValueFill",
+        "SliderTrackValueFillPointerOver",
+        "SliderTrackValueFillPressed",
+        "SliderThumbBackground",
+        "CheckBoxCheckBackgroundFillChecked",
+        "ToggleSwitchFillOn",
+    ];
 }

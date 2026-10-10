@@ -172,6 +172,38 @@ public sealed class CommandBarTests : IDisposable
     }
 
     [Fact]
+    public async Task Real_results_rank_above_guide_topics()
+    {
+        await _app.AddAsync("Deploy v2.3 to staging", AppFixture.Today);
+        await OpenWithAsync("dep");
+
+        // Guide topics are reference, not actions: a real item must never be pushed below them
+        // (docs/07 §7.1).
+        var ordered = Bar.Results.ToList();
+        var itemIndex = ordered.FindIndex(r => r.Kind == ResultKind.Item);
+        var guideIndex = ordered.FindIndex(r =>
+            r.Title.StartsWith("Guide:", StringComparison.Ordinal)
+        );
+
+        itemIndex.ShouldBeGreaterThanOrEqualTo(0);
+        if (guideIndex >= 0)
+            itemIndex.ShouldBeLessThan(guideIndex);
+    }
+
+    [Fact]
+    public async Task Appearance_entries_are_offered_and_apply_a_theme()
+    {
+        await OpenWithAsync("appearance");
+
+        Bar.Results.ShouldContain(r => r.Title == "Appearance: Light");
+        var light = Bar.Results.First(r => r.Title == "Appearance: Light");
+        Bar.SelectedIndex = Bar.Results.IndexOf(light);
+        await Bar.ExecuteSelectedAsync();
+
+        _shell.Appearance.Theme.ShouldBe(ThemeChoice.Light);
+    }
+
+    [Fact]
     public async Task Undo_and_toggles_work_as_commands()
     {
         var id = await _app.AddAsync("A", AppFixture.Today);

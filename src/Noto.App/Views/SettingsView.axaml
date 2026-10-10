@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <UserControl
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -9,566 +10,692 @@
   x:Class="Noto.App.Views.SettingsView"
   x:DataType="vm:SettingsViewModel"
 >
-  <ScrollViewer>
-    <StackPanel MaxWidth="640" Margin="24" Spacing="14" HorizontalAlignment="Stretch">
-      <StackPanel IsVisible="{Binding HasAccount}" Margin="0,0,0,28" Spacing="28">
-        <StackPanel DataContext="{Binding Account}" x:DataType="vm:AccountViewModel" Spacing="12">
-          <StackPanel Spacing="4">
-            <TextBlock Text="Account and sync" Classes="section" />
+  <Grid ColumnDefinitions="196,*">
+    <!-- One pane at a time, chosen from the rail: a settings window, not a 600-line scroll. -->
+    <ListBox
+      Grid.Column="0"
+      Classes="guide"
+      ItemsSource="{Binding Categories}"
+      SelectedItem="{Binding Category, Mode=TwoWay}"
+      Margin="12,8,4,12"
+      Background="Transparent"
+      AutomationProperties.Name="Settings categories"
+    >
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:SettingsCategory">
+          <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+    <ScrollViewer Grid.Column="1">
+      <StackPanel MaxWidth="640" Margin="24,8,24,24" Spacing="14" HorizontalAlignment="Stretch">
+        <StackPanel IsVisible="{Binding ShowAccount}" Spacing="28">
+          <StackPanel DataContext="{Binding Account}" x:DataType="vm:AccountViewModel" Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Account and sync" Classes="section" />
+              <TextBlock
+                Text="Connect this device to a Noto sync server. Syncing workspace data isn't turned on yet."
+                Classes="hint"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+            <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+              <TextBlock Text="Server" VerticalAlignment="Center" Classes="secondary" />
+              <TextBox
+                Grid.Column="1"
+                Text="{Binding ServerText, Mode=TwoWay}"
+                Watermark="https://noto.example.com"
+                AutomationProperties.Name="Server address"
+              />
+              <Button Grid.Column="2" Content="Save" Command="{Binding SaveServerCommand}" />
+            </Grid>
+            <Grid IsVisible="{Binding IsSignedIn}" ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+              <TextBlock Text="Signed in" VerticalAlignment="Center" Classes="secondary" />
+              <TextBlock Grid.Column="1" Text="{Binding SignedInText}" VerticalAlignment="Center" />
+              <Button Grid.Column="2" Content="Sign out" Command="{Binding SignOutCommand}" />
+            </Grid>
+            <Grid
+              IsVisible="{Binding !IsSignedIn}"
+              ColumnDefinitions="140,*"
+              RowDefinitions="Auto,Auto,Auto,Auto"
+              ColumnSpacing="8"
+              RowSpacing="8"
+            >
+              <TextBlock Text="Email" VerticalAlignment="Center" Classes="secondary" />
+              <TextBox
+                Grid.Column="1"
+                Text="{Binding Email, Mode=TwoWay}"
+                AutomationProperties.Name="Email"
+              />
+              <TextBlock
+                Grid.Row="1"
+                Text="Password"
+                VerticalAlignment="Center"
+                Classes="secondary"
+              />
+              <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                Text="{Binding Password, Mode=TwoWay}"
+                PasswordChar="•"
+                AutomationProperties.Name="Password"
+              />
+              <TextBlock
+                Grid.Row="2"
+                Text="Invite code"
+                VerticalAlignment="Center"
+                Classes="secondary"
+              />
+              <TextBox
+                Grid.Row="2"
+                Grid.Column="1"
+                Text="{Binding InviteCode, Mode=TwoWay}"
+                Watermark="Only if the server asks for one"
+                AutomationProperties.Name="Invite code"
+              />
+              <StackPanel
+                Grid.Row="3"
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="8"
+                Margin="0,4,0,0"
+              >
+                <Button Classes="accent" Content="Sign in" Command="{Binding SignInCommand}" />
+                <Button Content="Create account" Command="{Binding SignUpCommand}" />
+              </StackPanel>
+            </Grid>
             <TextBlock
-              Text="Connect this device to a Noto sync server. Syncing workspace data isn't turned on yet."
+              Text="{Binding AccountStatus}"
+              IsVisible="{Binding HasAccountStatus}"
               Classes="hint"
+              Classes.error="{Binding AccountStatusIsError}"
               TextWrapping="Wrap"
             />
           </StackPanel>
-
-          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
-            <TextBlock Text="Server" VerticalAlignment="Center" Classes="secondary" />
-            <TextBox
-              Grid.Column="1"
-              Text="{Binding ServerText, Mode=TwoWay}"
-              Watermark="https://noto.example.com"
-              AutomationProperties.Name="Server address"
+          <StackPanel DataContext="{Binding Account}" x:DataType="vm:AccountViewModel" Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="Connected apps" Classes="section" />
+              <TextBlock
+                Text="Sign in with your browser where the provider allows it, or paste a token. Noto checks the connection with the provider, then keeps the credentials in your keychain."
+                Classes="hint"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+            <TextBlock
+              Text="No apps connected yet."
+              IsVisible="{Binding !HasConnections}"
+              Classes="hint"
             />
-            <Button Grid.Column="2" Content="Save" Command="{Binding SaveServerCommand}" />
+            <ItemsControl ItemsSource="{Binding Connections}" IsVisible="{Binding HasConnections}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:ConnectionRow">
+                  <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8" Margin="0,3">
+                    <TextBlock Text="{Binding Provider}" VerticalAlignment="Center" />
+                    <TextBlock
+                      Grid.Column="1"
+                      Text="{Binding Label}"
+                      VerticalAlignment="Center"
+                      Classes="hint"
+                    />
+                    <Button
+                      Grid.Column="2"
+                      Content="Disconnect"
+                      Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).DisconnectCommand}"
+                      CommandParameter="{Binding}"
+                    />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Grid
+              ColumnDefinitions="140,*,Auto"
+              RowDefinitions="Auto,Auto,Auto"
+              ColumnSpacing="8"
+              RowSpacing="8"
+              IsVisible="{Binding HasOAuthOptions}"
+            >
+              <TextBlock Text="Sign in with" VerticalAlignment="Center" Classes="secondary" />
+              <ComboBox
+                Grid.Column="1"
+                ItemsSource="{Binding OAuthOptions}"
+                SelectedItem="{Binding SelectedOAuthOption, Mode=TwoWay}"
+                HorizontalAlignment="Stretch"
+                IsEnabled="{Binding !IsConnecting}"
+                AutomationProperties.Name="Browser sign-in provider"
+              >
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="svc:OAuthOption">
+                    <TextBlock Text="{Binding ProviderName}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                <Button
+                  Classes="accent"
+                  Content="Sign in"
+                  Command="{Binding ConnectOAuthCommand}"
+                  IsVisible="{Binding !IsConnecting}"
+                />
+                <Button
+                  Content="Cancel"
+                  Command="{Binding CancelOAuthCommand}"
+                  IsVisible="{Binding IsConnecting}"
+                />
+              </StackPanel>
+              <TextBlock
+                Grid.Row="1"
+                Text="Site"
+                VerticalAlignment="Center"
+                Classes="secondary"
+                IsVisible="{Binding ShowOAuthSite}"
+              />
+              <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                Text="{Binding ConnectOAuthSite, Mode=TwoWay}"
+                Watermark="Blank uses your first site"
+                IsVisible="{Binding ShowOAuthSite}"
+                AutomationProperties.Name="Browser sign-in site address"
+              />
+              <TextBlock
+                Grid.Row="2"
+                Grid.Column="1"
+                Text="Or paste a token below if the provider has no browser sign-in."
+                Classes="hint"
+                TextWrapping="Wrap"
+              />
+            </Grid>
+            <TextBlock
+              Text="{Binding OAuthSetupHint}"
+              IsVisible="{Binding !HasOAuthOptions}"
+              Classes="hint"
+              TextWrapping="Wrap"
+            />
+            <Grid
+              ColumnDefinitions="140,*,Auto"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+              ColumnSpacing="8"
+              RowSpacing="8"
+            >
+              <TextBlock Text="Provider" VerticalAlignment="Center" Classes="secondary" />
+              <ComboBox
+                Grid.Column="1"
+                ItemsSource="{Binding TokenOptions}"
+                SelectedItem="{Binding SelectedTokenOption, Mode=TwoWay}"
+                HorizontalAlignment="Stretch"
+                AutomationProperties.Name="Provider"
+              >
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="svc:TokenOption">
+                    <TextBlock Text="{Binding Label}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <TextBlock
+                Grid.Row="1"
+                Text="Site"
+                VerticalAlignment="Center"
+                Classes="secondary"
+                IsVisible="{Binding ShowSite}"
+              />
+              <TextBox
+                Grid.Row="1"
+                Grid.Column="1"
+                Text="{Binding ConnectSite, Mode=TwoWay}"
+                Watermark="https://your-site.example.com"
+                IsVisible="{Binding ShowSite}"
+                AutomationProperties.Name="Site address"
+              />
+              <TextBlock
+                Grid.Row="2"
+                Text="Email"
+                VerticalAlignment="Center"
+                Classes="secondary"
+                IsVisible="{Binding ShowEmail}"
+              />
+              <TextBox
+                Grid.Row="2"
+                Grid.Column="1"
+                Text="{Binding ConnectEmail, Mode=TwoWay}"
+                Watermark="The email on your account"
+                IsVisible="{Binding ShowEmail}"
+                AutomationProperties.Name="Account email"
+              />
+              <TextBlock Grid.Row="3" Text="Token" VerticalAlignment="Center" Classes="secondary" />
+              <TextBox
+                Grid.Row="3"
+                Grid.Column="1"
+                Text="{Binding Token, Mode=TwoWay}"
+                PasswordChar="•"
+                Watermark="Paste it here"
+                AutomationProperties.Name="Access token"
+              />
+              <Button
+                Grid.Row="3"
+                Grid.Column="2"
+                Classes="accent"
+                Content="Connect"
+                Command="{Binding ConnectCommand}"
+              />
+              <TextBlock
+                Grid.Row="4"
+                Grid.Column="1"
+                Text="{Binding ConnectionStatus}"
+                IsVisible="{Binding HasConnectionStatus}"
+                Classes="hint"
+                Classes.error="{Binding ConnectionStatusIsError}"
+                TextWrapping="Wrap"
+              />
+            </Grid>
+          </StackPanel>
+        </StackPanel>
+        <StackPanel IsVisible="{Binding ShowWorkspace}" Spacing="14">
+          <TextBlock Text="Workspace" Classes="section" />
+          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Name" VerticalAlignment="Center" Classes="secondary" />
+            <TextBox Grid.Column="1" Text="{Binding Name, Mode=TwoWay}" />
+            <Button Grid.Column="2" Content="Rename" Command="{Binding RenameCommand}" />
           </Grid>
-
-          <Grid IsVisible="{Binding IsSignedIn}" ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
-            <TextBlock Text="Signed in" VerticalAlignment="Center" Classes="secondary" />
-            <TextBlock Grid.Column="1" Text="{Binding SignedInText}" VerticalAlignment="Center" />
-            <Button Grid.Column="2" Content="Sign out" Command="{Binding SignOutCommand}" />
-          </Grid>
-
+          <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,12,0,0">
+            <TextBlock Text="Mode" Classes="section" VerticalAlignment="Center" />
+            <Button
+              Classes="info"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Modes}"
+              AutomationProperties.Name="What is a mode?"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+          </StackPanel>
           <Grid
-            IsVisible="{Binding !IsSignedIn}"
-            ColumnDefinitions="140,*"
+            ColumnDefinitions="140,*,Auto"
             RowDefinitions="Auto,Auto,Auto,Auto"
             ColumnSpacing="8"
             RowSpacing="8"
           >
-            <TextBlock Text="Email" VerticalAlignment="Center" Classes="secondary" />
-            <TextBox
-              Grid.Column="1"
-              Text="{Binding Email, Mode=TwoWay}"
-              AutomationProperties.Name="Email"
-            />
-            <TextBlock
-              Grid.Row="1"
-              Text="Password"
-              VerticalAlignment="Center"
-              Classes="secondary"
-            />
-            <TextBox
-              Grid.Row="1"
-              Grid.Column="1"
-              Text="{Binding Password, Mode=TwoWay}"
-              PasswordChar="•"
-              AutomationProperties.Name="Password"
-            />
-            <TextBlock
-              Grid.Row="2"
-              Text="Invite code"
-              VerticalAlignment="Center"
-              Classes="secondary"
-            />
-            <TextBox
-              Grid.Row="2"
-              Grid.Column="1"
-              Text="{Binding InviteCode, Mode=TwoWay}"
-              Watermark="Only if the server asks for one"
-              AutomationProperties.Name="Invite code"
-            />
-            <StackPanel
-              Grid.Row="3"
-              Grid.Column="1"
-              Orientation="Horizontal"
-              Spacing="8"
-              Margin="0,4,0,0"
-            >
-              <Button Classes="accent" Content="Sign in" Command="{Binding SignInCommand}" />
-              <Button Content="Create account" Command="{Binding SignUpCommand}" />
-            </StackPanel>
-          </Grid>
-
-          <TextBlock
-            Text="{Binding AccountStatus}"
-            IsVisible="{Binding HasAccountStatus}"
-            Classes="hint"
-            Classes.error="{Binding AccountStatusIsError}"
-            TextWrapping="Wrap"
-          />
-        </StackPanel>
-
-        <StackPanel DataContext="{Binding Account}" x:DataType="vm:AccountViewModel" Spacing="12">
-          <StackPanel Spacing="4">
-            <TextBlock Text="Connected apps" Classes="section" />
-            <TextBlock
-              Text="Sign in with your browser where the provider allows it, or paste a token. Noto checks the connection with the provider, then keeps the credentials in your keychain."
-              Classes="hint"
-              TextWrapping="Wrap"
-            />
-          </StackPanel>
-
-          <TextBlock
-            Text="No apps connected yet."
-            IsVisible="{Binding !HasConnections}"
-            Classes="hint"
-          />
-          <ItemsControl ItemsSource="{Binding Connections}" IsVisible="{Binding HasConnections}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:ConnectionRow">
-                <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8" Margin="0,3">
-                  <TextBlock Text="{Binding Provider}" VerticalAlignment="Center" />
-                  <TextBlock
-                    Grid.Column="1"
-                    Text="{Binding Label}"
-                    VerticalAlignment="Center"
-                    Classes="hint"
-                  />
-                  <Button
-                    Grid.Column="2"
-                    Content="Disconnect"
-                    Command="{Binding $parent[ItemsControl].((vm:AccountViewModel)DataContext).DisconnectCommand}"
-                    CommandParameter="{Binding}"
-                  />
-                </Grid>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <Grid
-            ColumnDefinitions="140,*,Auto"
-            RowDefinitions="Auto,Auto,Auto"
-            ColumnSpacing="8"
-            RowSpacing="8"
-            IsVisible="{Binding HasOAuthOptions}"
-          >
-            <TextBlock Text="Sign in with" VerticalAlignment="Center" Classes="secondary" />
+            <TextBlock Text="Preset" VerticalAlignment="Center" Classes="secondary" />
             <ComboBox
               Grid.Column="1"
-              ItemsSource="{Binding OAuthOptions}"
-              SelectedItem="{Binding SelectedOAuthOption, Mode=TwoWay}"
+              ItemsSource="{Binding Presets}"
+              SelectedItem="{Binding SelectedPreset, Mode=TwoWay}"
               HorizontalAlignment="Stretch"
-              IsEnabled="{Binding !IsConnecting}"
-              AutomationProperties.Name="Browser sign-in provider"
+              AutomationProperties.Name="Preset"
+              ToolTip.Tip="A bundle of layout, order and pressure."
             >
               <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="svc:OAuthOption">
-                  <TextBlock Text="{Binding ProviderName}" />
+                <DataTemplate x:DataType="p:Preset">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon
+                      Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}"
+                      Width="15"
+                      Height="15"
+                      VerticalAlignment="Center"
+                    />
+                    <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                    <TextBlock
+                      Text="{Binding Description}"
+                      Classes="hint"
+                      VerticalAlignment="Center"
+                      FontSize="12"
+                    />
+                  </StackPanel>
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-              <Button
-                Classes="accent"
-                Content="Sign in"
-                Command="{Binding ConnectOAuthCommand}"
-                IsVisible="{Binding !IsConnecting}"
-              />
-              <Button
-                Content="Cancel"
-                Command="{Binding CancelOAuthCommand}"
-                IsVisible="{Binding IsConnecting}"
-              />
-            </StackPanel>
-            <TextBlock
-              Grid.Row="1"
-              Text="Site"
+            <Button
+              Grid.Column="2"
+              Classes="info"
               VerticalAlignment="Center"
-              Classes="secondary"
-              IsVisible="{Binding ShowOAuthSite}"
-            />
-            <TextBox
-              Grid.Row="1"
-              Grid.Column="1"
-              Text="{Binding ConnectOAuthSite, Mode=TwoWay}"
-              Watermark="Blank uses your first site"
-              IsVisible="{Binding ShowOAuthSite}"
-              AutomationProperties.Name="Browser sign-in site address"
-            />
-            <TextBlock
-              Grid.Row="2"
-              Grid.Column="1"
-              Text="Or paste a token below if the provider has no browser sign-in."
-              Classes="hint"
-              TextWrapping="Wrap"
-            />
-          </Grid>
-
-          <TextBlock
-            Text="{Binding OAuthSetupHint}"
-            IsVisible="{Binding !HasOAuthOptions}"
-            Classes="hint"
-            TextWrapping="Wrap"
-          />
-
-          <Grid
-            ColumnDefinitions="140,*,Auto"
-            RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-            ColumnSpacing="8"
-            RowSpacing="8"
-          >
-            <TextBlock Text="Provider" VerticalAlignment="Center" Classes="secondary" />
-            <ComboBox
-              Grid.Column="1"
-              ItemsSource="{Binding TokenOptions}"
-              SelectedItem="{Binding SelectedTokenOption, Mode=TwoWay}"
-              HorizontalAlignment="Stretch"
-              AutomationProperties.Name="Provider"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Modes}"
+              AutomationProperties.Name="About presets"
             >
-              <ComboBox.ItemTemplate>
-                <DataTemplate x:DataType="svc:TokenOption">
-                  <TextBlock Text="{Binding Label}" />
-                </DataTemplate>
-              </ComboBox.ItemTemplate>
-            </ComboBox>
-
-            <TextBlock
-              Grid.Row="1"
-              Text="Site"
-              VerticalAlignment="Center"
-              Classes="secondary"
-              IsVisible="{Binding ShowSite}"
-            />
-            <TextBox
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+            <TextBlock Grid.Row="1" Text="Layout" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox
               Grid.Row="1"
               Grid.Column="1"
-              Text="{Binding ConnectSite, Mode=TwoWay}"
-              Watermark="https://your-site.example.com"
-              IsVisible="{Binding ShowSite}"
-              AutomationProperties.Name="Site address"
+              ItemsSource="{Binding LayoutOptions}"
+              SelectedItem="{Binding LayoutChoice, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Layout"
             />
-            <TextBlock
-              Grid.Row="2"
-              Text="Email"
+            <Button
+              Grid.Row="1"
+              Grid.Column="2"
+              Classes="info"
               VerticalAlignment="Center"
-              Classes="secondary"
-              IsVisible="{Binding ShowEmail}"
-            />
-            <TextBox
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Layouts}"
+              AutomationProperties.Name="About layouts"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+            <TextBlock Grid.Row="2" Text="Order" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox
               Grid.Row="2"
               Grid.Column="1"
-              Text="{Binding ConnectEmail, Mode=TwoWay}"
-              Watermark="The email on your account"
-              IsVisible="{Binding ShowEmail}"
-              AutomationProperties.Name="Account email"
+              ItemsSource="{Binding OrderOptions}"
+              SelectedItem="{Binding OrderChoice, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Order"
             />
-            <TextBlock Grid.Row="3" Text="Token" VerticalAlignment="Center" Classes="secondary" />
-            <TextBox
+            <Button
+              Grid.Row="2"
+              Grid.Column="2"
+              Classes="info"
+              VerticalAlignment="Center"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Order}"
+              AutomationProperties.Name="About order"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+            <TextBlock
+              Grid.Row="3"
+              Text="Pressure"
+              VerticalAlignment="Center"
+              Classes="secondary"
+            />
+            <ComboBox
               Grid.Row="3"
               Grid.Column="1"
-              Text="{Binding Token, Mode=TwoWay}"
-              PasswordChar="•"
-              Watermark="Paste it here"
-              AutomationProperties.Name="Access token"
+              ItemsSource="{Binding PressureOptions}"
+              SelectedItem="{Binding PressureChoice, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              AutomationProperties.Name="Pressure"
+              ToolTip.Tip="How loudly Noto reminds you."
             />
             <Button
               Grid.Row="3"
               Grid.Column="2"
-              Classes="accent"
-              Content="Connect"
-              Command="{Binding ConnectCommand}"
+              Classes="info"
+              VerticalAlignment="Center"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Pressure}"
+              AutomationProperties.Name="About pressure"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+          </Grid>
+          <TextBlock Text="{Binding PresetLabel, StringFormat='Preset: {0}'}" Classes="hint" />
+          <TextBlock Text="{Binding WhatChanges}" Classes="secondary" TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel IsVisible="{Binding ShowCapacity}" Spacing="14">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <TextBlock Text="Capacity &amp; day" Classes="section" VerticalAlignment="Center" />
+            <Button
+              Classes="info"
+              Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+              CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
+              AutomationProperties.Name="About capacity and the day"
+            >
+              <PathIcon Data="{v:Icon info}" />
+            </Button>
+          </StackPanel>
+          <Grid
+            ColumnDefinitions="140,*,Auto"
+            RowDefinitions="Auto,Auto,Auto,Auto"
+            ColumnSpacing="8"
+            RowSpacing="8"
+          >
+            <TextBlock Text="Unit" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox
+              Grid.Column="1"
+              ItemsSource="{Binding UnitOptions}"
+              SelectedItem="{Binding UnitChoice, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
             />
             <TextBlock
-              Grid.Row="4"
+              Grid.Row="1"
+              Text="Daily capacity"
+              VerticalAlignment="Center"
+              Classes="secondary"
+            />
+            <NumericUpDown
+              Grid.Row="1"
               Grid.Column="1"
-              Text="{Binding ConnectionStatus}"
-              IsVisible="{Binding HasConnectionStatus}"
-              Classes="hint"
-              Classes.error="{Binding ConnectionStatusIsError}"
-              TextWrapping="Wrap"
+              Value="{Binding Capacity, Mode=TwoWay}"
+              Minimum="1"
+              Maximum="10000"
+              FormatString="0"
+            />
+            <TextBlock
+              Grid.Row="2"
+              Text="Day starts at"
+              VerticalAlignment="Center"
+              Classes="secondary"
+            />
+            <TextBox
+              Grid.Row="2"
+              Grid.Column="1"
+              Text="{Binding DayBoundary, Mode=TwoWay}"
+              Watermark="HH:mm"
+              ToolTip.Tip="When a new day begins — 04:00 keeps a 01:00 finish on the previous day."
+            />
+            <Button
+              Grid.Row="2"
+              Grid.Column="2"
+              Content="Apply"
+              Command="{Binding ApplyDayBoundaryCommand}"
+            />
+            <TextBlock
+              Grid.Row="3"
+              Text="Time zone"
+              VerticalAlignment="Center"
+              Classes="secondary"
+            />
+            <TextBox
+              Grid.Row="3"
+              Grid.Column="1"
+              Text="{Binding TimeZone, Mode=TwoWay}"
+              Watermark="Europe/Berlin"
+            />
+            <Button
+              Grid.Row="3"
+              Grid.Column="2"
+              Content="Apply"
+              Command="{Binding ApplyTimeZoneCommand}"
             />
           </Grid>
+          <!-- A labelled row, not a switch with its own caption stacked above it. -->
+          <Grid ColumnDefinitions="140,*" ColumnSpacing="8">
+            <TextBlock
+              Text="Time zone source"
+              VerticalAlignment="Center"
+              Classes="secondary"
+              ToolTip.Tip="Follow this Mac's zone, or pin the workspace to a fixed one."
+            />
+            <ToggleSwitch
+              Grid.Column="1"
+              IsChecked="{Binding FollowsDevice, Mode=TwoWay}"
+              HorizontalAlignment="Left"
+              AutomationProperties.Name="Follow this device's time zone"
+            />
+          </Grid>
+          <TextBlock
+            Text="{Binding Error}"
+            Classes="error"
+            TextWrapping="Wrap"
+            IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+          />
         </StackPanel>
-      </StackPanel>
-
-      <TextBlock Text="Workspace" Classes="section" />
-      <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
-        <TextBlock Text="Name" VerticalAlignment="Center" Classes="secondary" />
-        <TextBox Grid.Column="1" Text="{Binding Name, Mode=TwoWay}" />
-        <Button Grid.Column="2" Content="Rename" Command="{Binding RenameCommand}" />
-      </Grid>
-
-      <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,12,0,0">
-        <TextBlock Text="Mode" Classes="section" VerticalAlignment="Center" />
-        <Button
-          Classes="info"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Modes}"
-          AutomationProperties.Name="What is a mode?"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-      </StackPanel>
-      <Grid
-        ColumnDefinitions="140,*,Auto"
-        RowDefinitions="Auto,Auto,Auto,Auto"
-        ColumnSpacing="8"
-        RowSpacing="8"
-      >
-        <TextBlock Text="Preset" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Column="1"
-          ItemsSource="{Binding Presets}"
-          SelectedItem="{Binding SelectedPreset, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-          AutomationProperties.Name="Preset"
-          ToolTip.Tip="A bundle of layout, order and pressure."
-        >
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="p:Preset">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <PathIcon
-                  Data="{Binding Icon, Converter={x:Static v:RowConverters.Icon}}"
-                  Width="15"
-                  Height="15"
-                  VerticalAlignment="Center"
-                />
-                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+        <StackPanel IsVisible="{Binding ShowAppearance}" Spacing="20">
+          <!-- Device-level: theme, density and text size -->
+          <StackPanel
+            Spacing="14"
+            DataContext="{Binding Appearance}"
+            x:DataType="vm:AppearanceViewModel"
+          >
+            <TextBlock Text="THIS DEVICE" Classes="section" />
+            <Grid
+              ColumnDefinitions="140,*"
+              RowDefinitions="Auto,Auto,Auto"
+              ColumnSpacing="8"
+              RowSpacing="8"
+            >
+              <TextBlock Text="Theme" VerticalAlignment="Center" Classes="secondary" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
+                <Border Classes="raised" Padding="2" CornerRadius="9" HorizontalAlignment="Left">
+                  <StackPanel Orientation="Horizontal" Spacing="2">
+                    <Button
+                      Classes="seg"
+                      Classes.selected="{Binding IsSystemTheme}"
+                      Content="System"
+                      Command="{Binding SetThemeCommand}"
+                      CommandParameter="{x:Static vm:ThemeChoice.System}"
+                      ToolTip.Tip="Follow this Mac's light/dark setting"
+                    />
+                    <Button
+                      Classes="seg"
+                      Classes.selected="{Binding IsLightTheme}"
+                      Content="Light"
+                      Command="{Binding SetThemeCommand}"
+                      CommandParameter="{x:Static vm:ThemeChoice.Light}"
+                    />
+                    <Button
+                      Classes="seg"
+                      Classes.selected="{Binding IsDarkTheme}"
+                      Content="Dark"
+                      Command="{Binding SetThemeCommand}"
+                      CommandParameter="{x:Static vm:ThemeChoice.Dark}"
+                    />
+                  </StackPanel>
+                </Border>
                 <TextBlock
-                  Text="{Binding Description}"
+                  Text="{Binding ThemeDescription}"
                   Classes="hint"
                   VerticalAlignment="Center"
-                  FontSize="12"
                 />
               </StackPanel>
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
-        <Button
-          Grid.Column="2"
-          Classes="info"
-          VerticalAlignment="Center"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Modes}"
-          AutomationProperties.Name="About presets"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-
-        <TextBlock Grid.Row="1" Text="Layout" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Row="1"
-          Grid.Column="1"
-          ItemsSource="{Binding LayoutOptions}"
-          SelectedItem="{Binding LayoutChoice, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-          AutomationProperties.Name="Layout"
-        />
-        <Button
-          Grid.Row="1"
-          Grid.Column="2"
-          Classes="info"
-          VerticalAlignment="Center"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Layouts}"
-          AutomationProperties.Name="About layouts"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-
-        <TextBlock Grid.Row="2" Text="Order" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Row="2"
-          Grid.Column="1"
-          ItemsSource="{Binding OrderOptions}"
-          SelectedItem="{Binding OrderChoice, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-          AutomationProperties.Name="Order"
-        />
-        <Button
-          Grid.Row="2"
-          Grid.Column="2"
-          Classes="info"
-          VerticalAlignment="Center"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Order}"
-          AutomationProperties.Name="About order"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-
-        <TextBlock Grid.Row="3" Text="Pressure" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Row="3"
-          Grid.Column="1"
-          ItemsSource="{Binding PressureOptions}"
-          SelectedItem="{Binding PressureChoice, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-          AutomationProperties.Name="Pressure"
-          ToolTip.Tip="How loudly Noto reminds you."
-        />
-        <Button
-          Grid.Row="3"
-          Grid.Column="2"
-          Classes="info"
-          VerticalAlignment="Center"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Pressure}"
-          AutomationProperties.Name="About pressure"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-      </Grid>
-      <TextBlock Text="{Binding PresetLabel, StringFormat='Preset: {0}'}" Classes="hint" />
-      <TextBlock Text="{Binding WhatChanges}" Classes="secondary" TextWrapping="Wrap" />
-
-      <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,12,0,0">
-        <TextBlock Text="Capacity &amp; day" Classes="section" VerticalAlignment="Center" />
-        <Button
-          Classes="info"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Workspaces}"
-          AutomationProperties.Name="About capacity and the day"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-      </StackPanel>
-      <Grid
-        ColumnDefinitions="140,*,Auto"
-        RowDefinitions="Auto,Auto,Auto,Auto"
-        ColumnSpacing="8"
-        RowSpacing="8"
-      >
-        <TextBlock Text="Unit" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Column="1"
-          ItemsSource="{Binding UnitOptions}"
-          SelectedItem="{Binding UnitChoice, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-        />
-        <TextBlock
-          Grid.Row="1"
-          Text="Daily capacity"
-          VerticalAlignment="Center"
-          Classes="secondary"
-        />
-        <NumericUpDown
-          Grid.Row="1"
-          Grid.Column="1"
-          Value="{Binding Capacity, Mode=TwoWay}"
-          Minimum="1"
-          Maximum="10000"
-          FormatString="0"
-        />
-        <TextBlock
-          Grid.Row="2"
-          Text="Day starts at"
-          VerticalAlignment="Center"
-          Classes="secondary"
-        />
-        <TextBox
-          Grid.Row="2"
-          Grid.Column="1"
-          Text="{Binding DayBoundary, Mode=TwoWay}"
-          Watermark="HH:mm"
-          ToolTip.Tip="When a new day begins — 04:00 keeps a 01:00 finish on the previous day."
-        />
-        <Button
-          Grid.Row="2"
-          Grid.Column="2"
-          Content="Apply"
-          Command="{Binding ApplyDayBoundaryCommand}"
-        />
-        <TextBlock Grid.Row="3" Text="Time zone" VerticalAlignment="Center" Classes="secondary" />
-        <TextBox
-          Grid.Row="3"
-          Grid.Column="1"
-          Text="{Binding TimeZone, Mode=TwoWay}"
-          Watermark="Europe/Berlin"
-        />
-        <Button
-          Grid.Row="3"
-          Grid.Column="2"
-          Content="Apply"
-          Command="{Binding ApplyTimeZoneCommand}"
-        />
-      </Grid>
-      <ToggleSwitch
-        IsChecked="{Binding FollowsDevice, Mode=TwoWay}"
-        Content="Follow this device's time zone"
-      />
-      <TextBlock
-        Text="{Binding Error}"
-        Classes="error"
-        TextWrapping="Wrap"
-        IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
-      />
-
-      <TextBlock Text="Appearance (this device)" Classes="section" Margin="0,12,0,0" />
-      <Grid
-        ColumnDefinitions="140,*"
-        RowDefinitions="Auto,Auto,Auto"
-        ColumnSpacing="8"
-        RowSpacing="8"
-        DataContext="{Binding Appearance}"
-        x:DataType="vm:AppearanceViewModel"
-      >
-        <TextBlock Text="Theme" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Column="1"
-          ItemsSource="{x:Static vm:AppearanceViewModel.ThemeChoices}"
-          SelectedItem="{Binding Theme, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-        />
-        <TextBlock Grid.Row="1" Text="Density" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Row="1"
-          Grid.Column="1"
-          ItemsSource="{x:Static vm:AppearanceViewModel.DensityChoices}"
-          SelectedItem="{Binding Density, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-        />
-        <TextBlock Grid.Row="2" Text="Text size" VerticalAlignment="Center" Classes="secondary" />
-        <Slider
-          Grid.Row="2"
-          Grid.Column="1"
-          Minimum="13"
-          Maximum="18"
-          Value="{Binding BodySize, Mode=TwoWay}"
-          TickFrequency="1"
-          IsSnapToTickEnabled="True"
-        />
-      </Grid>
-
-      <TextBlock Text="Import &amp; export" Classes="section" Margin="0,12,0,0" />
-      <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
-        <TextBlock Text="Import from" VerticalAlignment="Center" Classes="secondary" />
-        <ComboBox
-          Grid.Column="1"
-          ItemsSource="{Binding ImportFormats}"
-          SelectedItem="{Binding ImportFormat, Mode=TwoWay}"
-          HorizontalAlignment="Stretch"
-          ToolTip.Tip="Imported items start with no carry, so old history never counts against you."
-        />
-        <Button Grid.Column="2" Content="Choose file…" Click="OnImportClick" />
-      </Grid>
-      <WrapPanel Orientation="Horizontal">
-        <Button Content="Export JSON…" Click="OnExportJsonClick" Margin="0,0,8,0" />
-        <Button Content="Export items CSV…" Click="OnExportCsvClick" />
-      </WrapPanel>
-      <TextBlock
-        Text="{Binding DataStatus}"
-        Classes="secondary"
-        IsVisible="{Binding DataStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
-        TextWrapping="Wrap"
-      />
-
-      <TextBlock Text="This device" Classes="section" Margin="0,12,0,0" />
-      <ItemsControl ItemsSource="{Binding Capabilities}">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="vm:CapabilityRow">
-            <Grid ColumnDefinitions="180,*" ColumnSpacing="8" Margin="0,3">
               <TextBlock
-                Text="{Binding Name}"
+                Grid.Row="1"
+                Text="Density"
+                VerticalAlignment="Center"
                 Classes="secondary"
-                TextTrimming="CharacterEllipsis"
               />
-              <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" />
+              <ComboBox
+                Grid.Row="1"
+                Grid.Column="1"
+                ItemsSource="{x:Static vm:AppearanceViewModel.DensityChoices}"
+                SelectedItem="{Binding Density, Mode=TwoWay}"
+                HorizontalAlignment="Stretch"
+              />
+              <TextBlock
+                Grid.Row="2"
+                Text="Text size"
+                VerticalAlignment="Center"
+                Classes="secondary"
+              />
+              <Slider
+                Grid.Row="2"
+                Grid.Column="1"
+                Minimum="13"
+                Maximum="18"
+                Value="{Binding BodySize, Mode=TwoWay}"
+                TickFrequency="1"
+                IsSnapToTickEnabled="True"
+              />
             </Grid>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-    </StackPanel>
-  </ScrollViewer>
+          </StackPanel>
+          <!-- Workspace-level: the accent ink. This is workspace data, not a device setting, so each
+            workspace can look different and a template's colour adapts per theme (docs/07 §11.1). -->
+          <StackPanel Spacing="10">
+            <TextBlock Text="THIS WORKSPACE" Classes="section" />
+            <TextBlock
+              Text="The accent colours this workspace's bars, selection and primary buttons. It is saved with the workspace."
+              Classes="hint"
+              FontSize="12"
+              TextWrapping="Wrap"
+            />
+            <ItemsControl
+              ItemsSource="{Binding Accents}"
+              AutomationProperties.Name="Workspace accent"
+            >
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel ItemSpacing="8" LineSpacing="8" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:AccentSwatchViewModel">
+                  <Button
+                    Classes="swatch"
+                    Classes.selected="{Binding IsSelected}"
+                    Command="{Binding $parent[UserControl].((vm:SettingsViewModel)DataContext).PickAccentCommand}"
+                    CommandParameter="{Binding}"
+                    ToolTip.Tip="{Binding Label}"
+                    AutomationProperties.Name="{Binding Label}"
+                  >
+                    <Border
+                      Classes="swatchDot"
+                      Background="{Binding Name, Converter={x:Static v:RowConverters.Accent}}"
+                    />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <TextBox
+                Text="{Binding CustomAccent, Mode=TwoWay}"
+                Watermark="Or a hex colour, e.g. #C2410C"
+                AutomationProperties.Name="Custom accent colour"
+              />
+              <Button
+                Grid.Column="1"
+                Content="Use colour"
+                Command="{Binding ApplyCustomAccentCommand}"
+              />
+            </Grid>
+            <TextBlock
+              Text="{Binding Error}"
+              Classes="error"
+              TextWrapping="Wrap"
+              IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+            />
+          </StackPanel>
+        </StackPanel>
+        <StackPanel IsVisible="{Binding ShowDevice}" Spacing="14">
+          <TextBlock Text="Import &amp; export" Classes="section" />
+          <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="8">
+            <TextBlock Text="Import from" VerticalAlignment="Center" Classes="secondary" />
+            <ComboBox
+              Grid.Column="1"
+              ItemsSource="{Binding ImportFormats}"
+              SelectedItem="{Binding ImportFormat, Mode=TwoWay}"
+              HorizontalAlignment="Stretch"
+              ToolTip.Tip="Imported items start with no carry, so old history never counts against you."
+            />
+            <Button Grid.Column="2" Content="Choose file…" Click="OnImportClick" />
+          </Grid>
+          <WrapPanel Orientation="Horizontal">
+            <Button Content="Export JSON…" Click="OnExportJsonClick" Margin="0,0,8,0" />
+            <Button Content="Export items CSV…" Click="OnExportCsvClick" />
+          </WrapPanel>
+          <TextBlock
+            Text="{Binding DataStatus}"
+            Classes="secondary"
+            IsVisible="{Binding DataStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
+            TextWrapping="Wrap"
+          />
+          <TextBlock Text="This device" Classes="section" />
+          <ItemsControl ItemsSource="{Binding Capabilities}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CapabilityRow">
+                <Grid ColumnDefinitions="180,*" ColumnSpacing="8" Margin="0,3">
+                  <TextBlock
+                    Text="{Binding Name}"
+                    Classes="secondary"
+                    TextTrimming="CharacterEllipsis"
+                  />
+                  <TextBlock Grid.Column="1" Text="{Binding Text}" TextWrapping="Wrap" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
 </UserControl>

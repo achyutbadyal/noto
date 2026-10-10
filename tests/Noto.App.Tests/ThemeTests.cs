@@ -87,11 +87,18 @@ public class ThemeTests
     [Fact]
     public void Accent_lookup_falls_back_sensibly()
     {
-        ThemeTokens.AccentFor("teal", dark: true).ShouldBe("#3CCBB8");
-        ThemeTokens.AccentFor("teal", dark: false).ShouldBe("#0F7F70");
+        ThemeTokens.AccentFor("teal", dark: true).ShouldBe("#4FC9C0");
+        ThemeTokens.AccentFor("teal", dark: false).ShouldBe("#0F6F6B");
         ThemeTokens.AccentFor("#123456", dark: true).ShouldBe("#123456");
+        // An unknown or missing name falls back to the default ink, not to a stale key.
         ThemeTokens
             .AccentFor("nonsense", dark: true)
-            .ShouldBe(ThemeTokens.AccentFor("blue", dark: true));
+            .ShouldBe(ThemeTokens.AccentFor("ink", dark: true));
+        ThemeTokens
+            .AccentFor(null, dark: false)
+            .ShouldBe(ThemeTokens.AccentFor("ink", dark: false));
+        // A literal colour is its own key, so it is shared and repainted like any other accent.
+        ThemeTokens.AccentKey("#123456").ShouldBe("#123456");
+        ThemeTokens.AccentKey("nonsense").ShouldBe(ThemeTokens.DefaultAccent);
     }
 }

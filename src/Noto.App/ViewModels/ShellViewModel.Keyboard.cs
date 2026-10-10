@@ -157,6 +157,10 @@ public sealed partial class ShellViewModel
             case AppAction.Undo:
                 await UndoAsync();
                 break;
+            case AppAction.CycleTheme:
+                Appearance.CycleTheme();
+                Toast.Show($"Appearance: {Appearance.ThemeLabel}", canUndo: false);
+                break;
             case AppAction.SelectAll when Content is ItemListViewModel list:
                 list.SelectAll();
                 break;

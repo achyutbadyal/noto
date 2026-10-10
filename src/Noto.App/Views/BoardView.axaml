@@ -23,10 +23,14 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:SectionViewModel">
             <Border
-              Classes="panel appear"
-              Width="236"
+              Classes="panel column appear"
+              Width="260"
+              MinHeight="120"
               Padding="8"
               Background="{DynamicResource SurfaceBrush}"
+              DragDrop.AllowDrop="True"
+              DragDrop.DragOver="OnColumnDragOver"
+              DragDrop.Drop="OnColumnDrop"
             >
               <DockPanel>
                 <TextBlock
@@ -56,19 +60,37 @@
       </ItemsControl>
     </ScrollViewer>
 
-    <Grid Grid.Row="2" ColumnDefinitions="*,80,Auto" ColumnSpacing="8" Margin="0,8,0,0">
-      <TextBox
-        Text="{Binding NewColumnName, Mode=TwoWay}"
-        Watermark="+ New column (between Backlog and Today)"
-        AutomationProperties.Name="New column name"
-      />
-      <TextBox
-        Grid.Column="1"
-        Text="{Binding NewColumnWip, Mode=TwoWay}"
-        Watermark="WIP"
-        AutomationProperties.Name="WIP limit"
-      />
-      <Button Grid.Column="2" Content="Add column" Command="{Binding AddColumnCommand}" />
-    </Grid>
+    <!-- A ghost "+ Column" instead of a raw form bolted under the board (docs/07 §9.1). -->
+    <Button
+      Grid.Row="2"
+      Content="+ Column"
+      HorizontalAlignment="Left"
+      Margin="0,8,0,0"
+      AutomationProperties.Name="Add column"
+    >
+      <Button.Flyout>
+        <Flyout Placement="Top">
+          <StackPanel Spacing="8" Width="230">
+            <TextBlock Text="New column" Classes="headline" />
+            <TextBox
+              Text="{Binding NewColumnName, Mode=TwoWay}"
+              Watermark="Column name"
+              AutomationProperties.Name="New column name"
+            />
+            <TextBox
+              Text="{Binding NewColumnWip, Mode=TwoWay}"
+              Watermark="WIP limit (optional)"
+              AutomationProperties.Name="WIP limit"
+            />
+            <Button
+              Classes="accent"
+              Content="Add column"
+              Command="{Binding AddColumnCommand}"
+              HorizontalAlignment="Right"
+            />
+          </StackPanel>
+        </Flyout>
+      </Button.Flyout>
+    </Button>
   </Grid>
 </UserControl>

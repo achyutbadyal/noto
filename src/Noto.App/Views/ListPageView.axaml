@@ -4,11 +4,43 @@
   xmlns:vm="using:Noto.App.ViewModels"
   xmlns:v="using:Noto.App.Views"
   x:Class="Noto.App.Views.ListPageView"
-  x:DataType="vm:ItemListViewModel"
+  x:DataType="vm:TimelineViewModel"
 >
-  <!-- Plain sectioned list: Timeline lanes and anything else without extra chrome -->
-  <Grid RowDefinitions="Auto,*" Margin="24,8,24,16">
+  <!--
+    Deadline layout. Every row draws a bar on the same 14-day axis, so the lanes read as a timeline
+    rather than a list with dates in the margins (docs/07 §9.1).
+  -->
+  <Grid RowDefinitions="Auto,Auto,*" Margin="24,8,24,16">
     <v:PromptBar Grid.Row="0" DataContext="{Binding Decisions}" Margin="0,0,0,8" />
-    <v:SectionsList Grid.Row="1" DataContext="{Binding}" />
+
+    <StackPanel Grid.Row="1" Spacing="2" Margin="0,0,0,6">
+      <TextBlock Text="{Binding AxisHint}" Classes="hint" FontSize="11" />
+      <!--
+        The axis mirrors the row grid exactly — same 3px bar column, same 28px status slot, same 200px
+        bar slot — so the weekday labels sit under the bars they describe.
+      -->
+      <Grid ColumnDefinitions="3,Auto,*,200,Auto" ColumnSpacing="8">
+        <Border Grid.Column="1" Width="28" Height="1" Background="Transparent" />
+        <ItemsControl
+          Grid.Column="3"
+          Width="200"
+          ItemsSource="{Binding AxisLabels}"
+          AutomationProperties.Name="Day axis"
+        >
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="14" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding}" Classes="hint" FontSize="10" TextAlignment="Center" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Grid>
+    </StackPanel>
+
+    <v:SectionsList Grid.Row="2" DataContext="{Binding}" />
   </Grid>
 </UserControl>

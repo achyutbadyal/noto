@@ -12,25 +12,43 @@ public sealed record InsightCard(
     string Headline,
     string? Detail,
     IReadOnlyList<InsightRow> Rows,
-    string? Suggestion = null
-);
+    string? Suggestion = null,
+    IReadOnlyList<InsightRow>? Sparkline = null
+)
+{
+    public bool HasRows => Rows.Count > 0;
+    public bool HasSparkline => Sparkline is { Count: > 0 };
+}
 
-// Narrative first, charts second: each card is a sentence backed by a few bars (docs/07 §8.2).
+// An insight that is still gathering samples. Shown greyed with a progress-to-unlock meter, so the page
+// teaches what it will do rather than showing a sentence on an empty page (docs/07 §8.2).
+public sealed record LockedInsight(string Title, int Sample, int Required, double Progress)
+{
+    public string ProgressText => $"{Sample} / {Required}";
+}
+
+// Narrative first, charts second: each card is a sentence backed by a small chart (docs/07 §8.2).
 public sealed partial class InsightsViewModel(WorkspaceReader reader, Guid workspaceId)
     : ObservableObject
 {
     public const int WindowDays = 56;
 
     public ObservableCollection<InsightCard> Cards { get; } = [];
+    public ObservableCollection<LockedInsight> Locked { get; } = [];
     public ObservableCollection<InsightRow> OldestOpen { get; } = [];
 
     [ObservableProperty]
     string _streakText = "";
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasEmpty))]
-    string _emptyText = "";
+    [ObservableProperty]
+    string _learningText = "";
 
-    public bool HasEmpty => EmptyText.Length > 0;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasOldest), nameof(HasCards), nameof(HasLocked))]
+    int _cardCount;
+
+    public bool HasCards => Cards.Count > 0;
+    public bool HasLocked => Locked.Count > 0;
     public bool HasOldest => OldestOpen.Count > 0;
 
     public async Task LoadAsync()
@@ -49,20 +67,28 @@ public sealed partial class InsightsViewModel(WorkspaceReader reader, Guid works
         );
 
         Cards.Clear();
+        Locked.Clear();
         OldestOpen.Clear();
         foreach (var card in Build(report))
             Cards.Add(card);
         foreach (var o in report.OldestOpen)
             OldestOpen.Add(new(o.Item.Title, 0, $"{o.Age}d · carried {o.Carry}×"));
 
+        // What is still learning. The locked ones are the catalogue; nothing here is a placeholder.
+        foreach (var s in report.Samples.Where(s => !s.Unlocked))
+            Locked.Add(new(s.Title, s.Sample, s.Required, s.Progress));
+
         var streak = CompletionStreak.Current(stats);
         StreakText =
             streak == 0 ? "" : $"Completion streak: {streak} day{(streak == 1 ? "" : "s")}";
+        LearningText =
+            Locked.Count == 0 ? ""
+            : Locked.Count == 1 ? "One more insight is still gathering history."
+            : $"{Locked.Count} more insights unlock as history builds.";
+        CardCount = Cards.Count;
+        OnPropertyChanged(nameof(HasCards));
+        OnPropertyChanged(nameof(HasLocked));
         OnPropertyChanged(nameof(HasOldest));
-        EmptyText =
-            Cards.Count == 0
-                ? $"Insights appear once there are at least {InsightsEngine.MinSample} samples to learn from."
-                : "";
     }
 
     public static IEnumerable<InsightCard> Build(InsightsReport r)
@@ -146,7 +172,8 @@ public sealed partial class InsightsViewModel(WorkspaceReader reader, Guid works
         if (weeks.Count == 0)
             return null;
         var max = Math.Max(0.01, weeks.Max(w => w.Rate));
-        var rows = weeks
+        // A trend reads as a sparkline, not as a list of bars with labels (docs/07 §8.2).
+        var spark = weeks
             .Select(w => new InsightRow(
                 w.WeekStart.ToString("MMM d", System.Globalization.CultureInfo.InvariantCulture),
                 w.Rate / max,
@@ -154,7 +181,13 @@ public sealed partial class InsightsViewModel(WorkspaceReader reader, Guid works
             ))
             .ToList();
         if (weeks.Count < 2)
-            return new InsightCard($"Rollover this week: {Pct(weeks[0].Rate)}.", null, rows);
+            return new InsightCard(
+                $"Rollover this week: {Pct(weeks[0].Rate)}.",
+                null,
+                [],
+                null,
+                spark
+            );
 
         var (first, last) = (weeks[0].Rate, weeks[^1].Rate);
         var verb =
@@ -165,7 +198,11 @@ public sealed partial class InsightsViewModel(WorkspaceReader reader, Guid works
             verb == "steady"
                 ? $"Rollover rate is steady at {Pct(last)}."
                 : $"Rollover rate is {verb}: {Pct(first)} → {Pct(last)} over {weeks.Count} weeks.";
-        return new InsightCard(headline, null, rows);
+        var detail =
+            verb == "down" ? "Lower is better — this is the loop working."
+            : verb == "up" ? "Higher means more is being carried than planned."
+            : $"Across {weeks.Count} weeks.";
+        return new InsightCard(headline, detail, [], null, spark);
     }
 
     static InsightCard StuckCard(IReadOnlyDictionary<string, int> mix)

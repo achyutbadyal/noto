@@ -46,6 +46,46 @@ public abstract partial class ItemListViewModel : ObservableObject
     public IReadOnlyList<ItemRowViewModel> FlatRows =>
         Sections.Where(s => !s.IsCollapsed).SelectMany(s => s.Rows).ToList();
 
+    // The list as one flat sequence — a header, then its rows while expanded. The view renders this with
+    // a virtualizing panel, so a very large backlog only realises the rows on screen (docs/07 §15).
+    //
+    // Every section is watched the first time it is seen here, so a `Replace` (which raises VisibleRows
+    // and IsEmpty) or a collapse re-raises this property without each subclass having to remember to.
+    readonly HashSet<SectionViewModel> _watchedSections = [];
+
+    public IReadOnlyList<object> FlatEntries
+    {
+        get
+        {
+            var entries = new List<object>();
+            foreach (var section in Sections)
+            {
+                if (_watchedSections.Add(section))
+                    section.PropertyChanged += (_, _) => OnPropertyChanged(nameof(FlatEntries));
+                if (section.IsEmpty)
+                    continue;
+                entries.Add(section);
+                if (!section.IsCollapsed)
+                    entries.AddRange(section.Rows);
+            }
+            return entries;
+        }
+    }
+
+    // Collapsing a section changes the flat sequence, so the view has to rebuild it.
+    public void ToggleSection(SectionViewModel section)
+    {
+        section.IsCollapsed = !section.IsCollapsed;
+        OnPropertyChanged(nameof(FlatEntries));
+    }
+
+    // Subclasses call this after rebuilding their sections, so the flat virtualized view stays in step.
+    protected void NotifySectionsChanged()
+    {
+        OnPropertyChanged(nameof(Sections));
+        OnPropertyChanged(nameof(FlatEntries));
+    }
+
     public IReadOnlyList<ItemRowViewModel> SelectedRows =>
         FlatRows.Where(r => r.IsSelected).ToList();
 

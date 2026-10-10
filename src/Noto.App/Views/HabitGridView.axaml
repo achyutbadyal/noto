@@ -61,9 +61,9 @@
                           Classes="habitCell"
                           ToolTip.Tip="{Binding Description}"
                           AutomationProperties.Name="{Binding Description}"
-                          IsEnabled="{Binding IsToday}"
-                          Command="{Binding $parent[UserControl].((vm:HabitGridViewModel)DataContext).ToggleTodayCommand}"
-                          CommandParameter="{Binding $parent[ItemsControl].((vm:HabitRowViewModel)DataContext)}"
+                          IsEnabled="{Binding IsEditable}"
+                          Command="{Binding $parent[UserControl].((vm:HabitGridViewModel)DataContext).ToggleCellCommand}"
+                          CommandParameter="{Binding}"
                         >
                           <Border
                             Classes="habit"

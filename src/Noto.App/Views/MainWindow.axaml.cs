@@ -27,6 +27,10 @@ public partial class MainWindow : Window
 
         DataContextChanged += (_, _) => Attach(DataContext as ShellViewModel);
         SizeChanged += OnSizeChanged;
+
+        // "System" follows the OS: when the platform flips variant, repaint the accents for it.
+        if (Application.Current is { } currentApp)
+            currentApp.ActualThemeVariantChanged += (_, _) => ReapplyAccents();
         _tick.Tick += async (_, _) =>
         {
             if (_shell is not null)
@@ -124,6 +128,18 @@ public partial class MainWindow : Window
         FontSize = shell.Appearance.BodySize;
         app.Resources["RowHeight"] = shell.Appearance.RowHeight;
         SetMotion(!ReduceMotion);
+        ReapplyAccents();
+    }
+
+    // Accents are theme-dependent, so both the global accent resources and the shared per-workspace
+    // brushes have to be re-derived whenever the variant changes — including when "System" follows the
+    // OS to a new variant, which is why this also runs on ActualThemeVariantChanged (docs/11 gap).
+    void ReapplyAccents()
+    {
+        if (_shell is not { } shell || Application.Current is not { } app)
+            return;
+        ThemeBuilder.SetAccent(app, shell.Selected?.Color);
+        ThemeBuilder.RefreshAccentBrushes(app);
     }
 
     // Set by the host from IReduceMotion; transitions only run when this is false.

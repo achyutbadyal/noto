@@ -79,7 +79,7 @@ public sealed partial class TodayAllViewModel : ItemListViewModel
         Snapshot = _snapshots.Values.FirstOrDefault();
 
         _sections = sections;
-        OnPropertyChanged(nameof(Sections));
+        NotifySectionsChanged();
         BannerText =
             view.TotalNeedsDecision == 0
                 ? null

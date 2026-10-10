@@ -15,26 +15,29 @@
     PointerPressed="OnPointerPressed"
     DoubleTapped="OnDoubleTapped"
   >
-    <Grid ColumnDefinitions="3,3,Auto,*,Auto" ColumnSpacing="8">
-      <!-- 3px pressure bar: hot and stale only, never the only signal (the carry icon says it too) -->
-      <Border
-        Grid.Column="0"
-        Classes="bar"
-        Classes.hot="{Binding BarHot}"
-        Classes.stale="{Binding BarStale}"
-      />
-
-      <Border
-        Grid.Column="1"
-        Width="3"
-        CornerRadius="2"
-        IsVisible="{Binding HasWorkspaceAccent}"
-        Background="{Binding WorkspaceAccent, Converter={x:Static v:RowConverters.Accent}}"
-      />
+    <Grid ColumnDefinitions="3,Auto,*,Auto,Auto" ColumnSpacing="8">
+      <!--
+        One 3px bar, not two. Pressure wins over the workspace tick when both apply, so a row never
+        shows two adjacent bars whose meanings have to be decoded (docs/07 §10.1).
+      -->
+      <Panel Grid.Column="0">
+        <Border
+          Classes="bar"
+          Classes.hot="{Binding BarHot}"
+          Classes.stale="{Binding BarStale}"
+          IsVisible="{Binding ShowBar}"
+        />
+        <Border
+          Width="3"
+          CornerRadius="2"
+          IsVisible="{Binding HasAccentBar}"
+          Background="{Binding WorkspaceAccent, Converter={x:Static v:RowConverters.Accent}}"
+        />
+      </Panel>
 
       <!-- status icon doubles as the complete toggle -->
       <Button
-        Grid.Column="2"
+        Grid.Column="1"
         Classes="status"
         Command="{Binding ToggleCompleteCommand}"
         Focusable="False"
@@ -52,7 +55,7 @@
         />
       </Button>
 
-      <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="0,4" MinWidth="0">
+      <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,4" MinWidth="0">
         <TextBlock
           Text="{Binding Breadcrumb}"
           IsVisible="{Binding HasBreadcrumb}"
@@ -61,6 +64,7 @@
           TextTrimming="CharacterEllipsis"
         />
         <TextBlock
+          Classes="rowTitle"
           Text="{Binding Title}"
           TextTrimming="CharacterEllipsis"
           IsVisible="{Binding !IsEditing}"
@@ -73,6 +77,14 @@
           FontSize="12"
           TextTrimming="CharacterEllipsis"
         />
+        <!-- The Timeline layout has no trailing rail, so the due label rides under the title. -->
+        <TextBlock
+          Text="{Binding ExtraText}"
+          IsVisible="{Binding IsTimeline}"
+          Classes="hint"
+          FontSize="11"
+          TextTrimming="CharacterEllipsis"
+        />
         <TextBox
           x:Name="EditBox"
           Text="{Binding Owner.EditText, Mode=TwoWay}"
@@ -83,18 +95,125 @@
         />
       </StackPanel>
 
-      <!-- trailing metadata stays right-aligned and trims before the title does -->
-      <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+      <!--
+        Timeline strip: a bar from today to the due date, drawn on the same 14-day axis for every row so
+        the shapes line up into a timeline (docs/07 §9.1). Only the Timeline layout sets a bar, and an
+        Auto column collapses to nothing when it is hidden.
+      -->
+      <Grid
+        Grid.Column="3"
+        Width="200"
+        Height="16"
+        ColumnDefinitions="*,*,*,*,*,*,*,*,*,*,*,*,*,*"
+        ColumnSpacing="0"
+        VerticalAlignment="Center"
+        IsVisible="{Binding HasTimelineBar}"
+        ToolTip.Tip="{Binding ExtraText}"
+      >
+        <Border
+          Grid.Column="{Binding TimelineStart}"
+          Grid.ColumnSpan="{Binding TimelineSpan}"
+          CornerRadius="4"
+          Background="{DynamicResource AccentBrush}"
+          Opacity="0.85"
+        />
+        <Border
+          Grid.Column="{Binding TimelineStart}"
+          Grid.ColumnSpan="{Binding TimelineSpan}"
+          CornerRadius="4"
+          IsVisible="{Binding TimelineOverdue}"
+          Background="{DynamicResource PressureHotBrush}"
+        />
+      </Grid>
+
+      <!--
+        Trailing rail, wide layout: fixed-width columns so carry, estimate and priority line up down the
+        list instead of smearing into one grey run (docs/07 §10.1).
+      -->
+      <Grid
+        Grid.Column="4"
+        ColumnDefinitions="*,Auto,34,46,26"
+        ColumnSpacing="8"
+        VerticalAlignment="Center"
+        IsVisible="{Binding ShowRail}"
+      >
         <TextBlock
+          Grid.Column="0"
           Text="{Binding ExtraText}"
           IsVisible="{Binding HasExtra}"
           Classes="hint"
           FontSize="12"
           TextTrimming="CharacterEllipsis"
-          MaxWidth="160"
+          HorizontalAlignment="Right"
         />
-        <Border Classes="stuck" IsVisible="{Binding IsStuck}" VerticalAlignment="Center">
-          <TextBlock Text="stuck?" FontSize="11" Classes="carry stale" />
+        <!-- "Needs a decision": a quiet ask in the warm ramp, never a red alarm (docs/07 §5). -->
+        <Border
+          Grid.Column="1"
+          Classes="why"
+          IsVisible="{Binding IsStuck}"
+          ToolTip.Tip="Carried a long time — pick a reason so Noto can help."
+        >
+          <TextBlock Text="Why?" />
+        </Border>
+        <StackPanel
+          Grid.Column="2"
+          Orientation="Horizontal"
+          Spacing="3"
+          HorizontalAlignment="Right"
+          IsVisible="{Binding HasCarry}"
+          VerticalAlignment="Center"
+          ToolTip.Tip="Carry — planned days that passed undone."
+        >
+          <PathIcon
+            Width="12"
+            Height="12"
+            Data="{v:Icon carry}"
+            Classes="carry"
+            Classes.warm="{Binding IsWarm}"
+            Classes.hot="{Binding IsHot}"
+            Classes.stale="{Binding IsStale}"
+          />
+          <TextBlock
+            Text="{Binding CarryText}"
+            Classes="carry"
+            Classes.warm="{Binding IsWarm}"
+            Classes.hot="{Binding IsHot}"
+            Classes.stale="{Binding IsStale}"
+          />
+        </StackPanel>
+        <TextBlock
+          Grid.Column="3"
+          Text="{Binding EstimateText}"
+          IsVisible="{Binding HasEstimate}"
+          VerticalAlignment="Center"
+          Classes="hint"
+          HorizontalAlignment="Right"
+        />
+        <TextBlock
+          Grid.Column="4"
+          Text="{Binding PriorityText}"
+          IsVisible="{Binding HasPriority}"
+          VerticalAlignment="Center"
+          Classes="hint"
+          HorizontalAlignment="Right"
+          ToolTip.Tip="Priority — 1 is highest."
+        />
+      </Grid>
+
+      <!--
+        Trailing rail, compact (board columns): just the ask and the count. A hidden child still
+        reserves its grid column, so this is a separate container rather than hidden columns.
+      -->
+      <StackPanel
+        Grid.Column="4"
+        Orientation="Horizontal"
+        Spacing="6"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Center"
+        IsVisible="{Binding IsCompact}"
+      >
+        <Border Classes="why" IsVisible="{Binding IsStuck}">
+          <TextBlock Text="Why?" />
         </Border>
         <StackPanel
           Orientation="Horizontal"
@@ -120,19 +239,6 @@
             Classes.stale="{Binding IsStale}"
           />
         </StackPanel>
-        <TextBlock
-          Text="{Binding EstimateText}"
-          IsVisible="{Binding HasEstimate}"
-          VerticalAlignment="Center"
-          Classes="hint"
-        />
-        <TextBlock
-          Text="{Binding PriorityText}"
-          IsVisible="{Binding HasPriority}"
-          VerticalAlignment="Center"
-          Classes="hint"
-          ToolTip.Tip="Priority — 1 is highest."
-        />
       </StackPanel>
     </Grid>
   </Border>

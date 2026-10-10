@@ -56,6 +56,26 @@ public sealed partial class ItemRowViewModel : ObservableObject
     public bool IsStale => Pressure == PressureState.Stale;
     public bool BarHot => ShowBar && Pressure == PressureState.Hot;
     public bool BarStale => ShowBar && Pressure == PressureState.Stale;
+
+    // One bar, two possible meanings, with a defined precedence: pressure wins. A workspace tick is only
+    // drawn when there is no pressure bar, so a row never shows two adjacent 3px bars (docs/07 §10.1).
+    public bool HasAccentBar => HasWorkspaceAccent && !ShowBar;
+
+    // Board columns are narrow, so the row swaps to a compact trailing rail there (just the ask and the
+    // carry count) and the title keeps its room (docs/07 §9.1). Set before binding, so no notification.
+    public bool IsCompact { get; set; }
+
+    // Timeline layout: where this row sits on the day axis. A bar runs from today to the due date, and
+    // an overdue item is pinned to the left edge in the warm ramp (docs/07 §9.1). Set before binding.
+    public bool HasTimelineBar { get; set; }
+    public bool TimelineOverdue { get; set; }
+    public int TimelineStart { get; set; }
+    public int TimelineSpan { get; set; } = 1;
+
+    // The Timeline layout drops the trailing rail entirely: the bar carries the date, and a variable
+    // rail would shift the shared `*` column so the bars could not line up with the day axis.
+    public bool IsTimeline { get; set; }
+    public bool ShowRail => !IsCompact && !IsTimeline;
     public bool IsDone => Item.Status == ItemStatus.Done;
     public bool IsWaiting => Item.Status == ItemStatus.Waiting;
     public bool IsDropped => Item.Status == ItemStatus.Dropped;

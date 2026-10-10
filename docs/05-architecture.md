@@ -138,7 +138,7 @@ Noto/
 | **Sync**             | Op-log with per-field LWW ordered by hybrid logical clocks                   | See ADR-07                                                                                                      |
 | **Serialization**    | System.Text.Json source generators                                           | AOT-safe                                                                                                        |
 | **Testing**          | xUnit + Shouldly (or AwesomeAssertions)                                      | FluentAssertions v8+ requires a paid license for commercial use                                                 |
-| **Theming**          | Avalonia Fluent theme + Noto token dictionaries                              | Tokens in [07 › Visual System](07-ui-ux-design.md#11-visual-system)                                             |
+| **Theming**          | Avalonia Fluent theme + Noto token dictionaries                              | Tokens in [07 › Visual System](07-ui-ux-design.md#11-visual-system--ledger)                                   |
 
 ---
 

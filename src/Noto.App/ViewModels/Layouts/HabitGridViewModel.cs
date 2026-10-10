@@ -11,7 +11,13 @@ using Noto.Core.Recurrence;
 
 namespace Noto.App.ViewModels;
 
-public sealed record HabitCellViewModel(DateOnly Day, HabitDayState State, bool IsToday)
+public sealed record HabitCellViewModel(
+    DateOnly Day,
+    HabitDayState State,
+    bool IsToday,
+    Guid RuleId,
+    bool IsEditable
+)
 {
     // A missed day is an empty square, never a red cross (docs/07 §9.1). Rendered as a rounded
     // square in the view, so the state is exposed rather than a text glyph.
@@ -35,8 +41,6 @@ public sealed partial class HabitRowViewModel : ObservableObject
     public required string Name { get; init; }
     public required IReadOnlyList<HabitCellViewModel> Cells { get; init; }
     public required string StreakText { get; init; }
-    public Guid? TodayInstanceId { get; init; }
-    public bool TodayDone { get; init; }
 
     [ObservableProperty]
     bool _isFocused;
@@ -105,12 +109,15 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
                 .Range(0, 7)
                 .Select(n => weekStart.AddDays(n))
                 .Select(day =>
-                    stats.Heatmap.FirstOrDefault(c => c.Day == day)?.State is { } state
-                        ? new HabitCellViewModel(day, state, day == snap.Today)
-                        : new HabitCellViewModel(day, HabitDayState.NotScheduled, day == snap.Today)
-                )
+                {
+                    var state =
+                        stats.Heatmap.FirstOrDefault(c => c.Day == day)?.State
+                        ?? HabitDayState.NotScheduled;
+                    // Any day up to today can be ticked; the future cannot (docs/07 §9.1).
+                    var editable = state is not HabitDayState.NotScheduled && day <= snap.Today;
+                    return new HabitCellViewModel(day, state, day == snap.Today, rule.Id, editable);
+                })
                 .ToList();
-            var todayInstance = instances.FirstOrDefault(i => i.OccurrenceDate == snap.Today);
 
             Habits.Add(
                 new HabitRowViewModel
@@ -119,8 +126,6 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
                     Name = rule.Template.Title,
                     Cells = week,
                     StreakText = $"streak {stats.CurrentStreak} (best {stats.LongestStreak})",
-                    TodayInstanceId = todayInstance?.Id,
-                    TodayDone = todayInstance?.Status == ItemStatus.Done,
                 }
             );
         }
@@ -137,7 +142,7 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
                 )
                 .Select(i => Wire(ItemRowFactory.Create(i, snap, false, byId)))
         );
-        OnPropertyChanged(nameof(Sections));
+        NotifySectionsChanged();
         RestoreFocus(keep);
     }
 
@@ -167,23 +172,34 @@ public sealed partial class HabitGridViewModel : ItemListViewModel
                     SetHabitFocus();
                     return true;
                 case "x" or "Enter":
-                    await ToggleTodayAsync(Habits[_focusedHabit]);
+                    if (Habits[_focusedHabit].Cells.FirstOrDefault(c => c.IsToday) is { } today)
+                        await ToggleCellAsync(today);
                     return true;
             }
         }
         return await base.HandleKeyAsync(chord);
     }
 
-    // Only today's instance exists for a skip rule, so only today's cell can be ticked (docs/04 §2.5).
+    // Any scheduled day up to today can be ticked. A day with no instance yet (a missed skip-rule day)
+    // is materialised first, so the grid can be corrected after the fact (docs/07 §9.1).
     [RelayCommand]
-    public async Task ToggleTodayAsync(HabitRowViewModel habit)
+    public async Task ToggleCellAsync(HabitCellViewModel cell)
     {
-        if (habit.TodayInstanceId is not { } id)
+        if (!cell.IsEditable)
             return;
-        ItemCommand command = habit.TodayDone ? new ReopenItem(id) : new CompleteItem(id);
+        var habit = Habits.FirstOrDefault(h => h.RuleId == cell.RuleId);
+        if (habit is null)
+            return;
+
+        var item = await _recurrence.EnsureOccurrenceAsync(cell.RuleId, cell.Day);
+        if (item is null)
+            return;
+
+        var done = item.Status == ItemStatus.Done;
+        ItemCommand command = done ? new ReopenItem(item.Id) : new CompleteItem(item.Id);
         await Services.Runner.RunAsync(
             command,
-            habit.TodayDone ? $"Unticked {habit.Name}" : $"Ticked {habit.Name}"
+            done ? $"Unticked {habit.Name}" : $"Ticked {habit.Name}"
         );
     }
 }

@@ -226,7 +226,39 @@ public sealed class LayoutTests : IDisposable
 
         await _app.Services.Undo.UndoLastAsync();
         await grid.ReloadAsync();
-        grid.Habits[0].TodayDone.ShouldBeFalse();
+        grid.Habits[0].Cells.Single(c => c.IsToday).IsDone.ShouldBeFalse();
+    }
+
+    // A habit day can be corrected after the fact: a missed skip-rule day has no instance yet, so the
+    // grid materialises one before completing it (docs/07 §9.1).
+    [Fact]
+    public async Task Habit_grid_can_tick_a_past_day()
+    {
+        await _app.Services.Recurrence.CreateRuleAsync(
+            _app.Workspace.Id,
+            "FREQ=DAILY",
+            new RuleTemplate("Morning run"),
+            AppFixture.Today.AddDays(-3),
+            MissedBehavior.Skip
+        );
+        var grid = _app.Vms.HabitGrid(_app.Workspace.Id);
+        await grid.ReloadAsync();
+
+        var habit = grid.Habits.Single(h => h.Name == "Morning run");
+        var past = habit.Cells.First(c => c.Day == AppFixture.Today.AddDays(-2));
+        past.IsEditable.ShouldBeTrue();
+        past.IsDone.ShouldBeFalse();
+
+        await grid.ToggleCellAsync(past);
+        await grid.ReloadAsync();
+
+        grid.Habits.Single(h => h.Name == "Morning run")
+            .Cells.Single(c => c.Day == AppFixture.Today.AddDays(-2))
+            .IsDone.ShouldBeTrue();
+
+        // The future is never editable.
+        grid.Habits.Single(h => h.Name == "Morning run")
+            .Cells.ShouldAllBe(c => c.Day > AppFixture.Today ? !c.IsEditable : true);
     }
 
     [Fact]

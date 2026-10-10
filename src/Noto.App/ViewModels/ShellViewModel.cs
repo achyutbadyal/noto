@@ -109,8 +109,9 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     // Below ~880px the sidebar collapses to its icon rail and the toolbar drops its labels.
     public bool IsCompact => ViewportWidth < 880;
 
-    // Below ~1000px the inspector is hidden so the list keeps a usable width.
-    public bool IsNarrow => ViewportWidth < 1000;
+    // Below ~1160px the inspector is hidden so the list keeps a usable width. The default window is
+    // wider than this, so the inspector is visible out of the box (docs/07 §3.1).
+    public bool IsNarrow => ViewportWidth < 1160;
     public bool ShowToolbarLabels => !IsCompact;
 
     public bool EffectiveSidebarExpanded => IsSidebarExpanded && !IsCompact;

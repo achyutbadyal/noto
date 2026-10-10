@@ -54,13 +54,19 @@ public sealed partial class BoardViewModel : ItemListViewModel
         _columns = _model
             .Select(col =>
             {
-                var section = new SectionViewModel(col.Name) { WipLimit = col.WipLimit };
+                var section = new SectionViewModel(col.Name)
+                {
+                    WipLimit = col.WipLimit,
+                    ColumnId = col.Id,
+                };
                 section.Replace(
                     col.Items.Select(i =>
                     {
                         var row = Wire(
                             ItemRowFactory.Create(i, snap, snap.Workspace.NowItemId == i.Id, byId)
                         );
+                        // Board columns are narrow: drop estimate/priority/extra so the title keeps room.
+                        row.IsCompact = true;
                         if (stuck.Contains(i.Id))
                             row.ExtraText =
                                 $"⏸ {(snap.Today.DayNumber - LastMoveDay(records, i, snap)).ToString()}d here";
@@ -71,7 +77,7 @@ public sealed partial class BoardViewModel : ItemListViewModel
             })
             .ToList();
         OnPropertyChanged(nameof(Columns));
-        OnPropertyChanged(nameof(Sections));
+        NotifySectionsChanged();
         RestoreFocus(keep);
     }
 

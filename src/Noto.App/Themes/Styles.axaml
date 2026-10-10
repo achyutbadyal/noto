@@ -18,30 +18,30 @@
       -->
       <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="ComboBoxBackground" Color="#2C2C2E" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#38383C" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#35353A" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#2C2C2E" />
-          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#35353A" />
-          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#35353A" />
-          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#35353A" />
-          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#2C2C2E" />
-          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#35353A" />
-          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#38383C" />
-          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#38383C" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#232120" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#322E2A" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#2C2825" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#232120" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#2C2825" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#2C2825" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#2C2825" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#232120" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#2C2825" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#322E2A" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#322E2A" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="ComboBoxBackground" Color="#ECECF0" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EAEAEF" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#DCDCE1" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#ECECF0" />
-          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#DCDCE1" />
-          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#DCDCE1" />
-          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#DCDCE1" />
-          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#ECECF0" />
-          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#DCDCE1" />
-          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#EAEAEF" />
-          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#EAEAEF" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#F1EDE6" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#EBE6DC" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPressed" Color="#E0DACE" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundDisabled" Color="#F1EDE6" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#E0DACE" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPointerOver" Color="#E0DACE" />
+          <SolidColorBrush x:Key="ComboBoxBorderBrushPressed" Color="#E0DACE" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#F1EDE6" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBorderBrush" Color="#E0DACE" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundPointerOver" Color="#EBE6DC" />
+          <SolidColorBrush x:Key="ComboBoxItemBackgroundSelected" Color="#EBE6DC" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
@@ -75,6 +75,32 @@
     <Setter Property="FontSize" Value="15" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="LetterSpacing" Value="-0.1" />
+  </Style>
+  <!--
+    The one loud element on a page: a display day header in an editorial face, so content outranks
+    chrome. No font is bundled — the stack falls back to a system serif (docs/07 §11.2).
+  -->
+  <Style Selector="TextBlock.display">
+    <Setter
+      Property="FontFamily"
+      Value="Newsreader, Fraunces, Iowan Old Style, Palatino, Georgia, serif"
+    />
+    <Setter Property="FontSize" Value="30" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="LetterSpacing" Value="-0.5" />
+  </Style>
+  <Style Selector="TextBlock.displaySmall">
+    <Setter
+      Property="FontFamily"
+      Value="Newsreader, Fraunces, Iowan Old Style, Palatino, Georgia, serif"
+    />
+    <Setter Property="FontSize" Value="20" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <!-- Row titles outrank chrome: 14px medium, up from 13px. -->
+  <Style Selector="TextBlock.rowTitle">
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontWeight" Value="Medium" />
   </Style>
   <Style Selector="TextBlock.error">
     <Setter Property="Foreground" Value="{DynamicResource PressureStaleBrush}" />
@@ -130,6 +156,18 @@
   </Style>
   <Style Selector="PathIcon.done">
     <Setter Property="Foreground" Value="{DynamicResource DoneBrush}" />
+  </Style>
+  <!-- Completing an item fills its glyph rather than snapping (docs/07 §11.3). -->
+  <Style Selector="Window.motion PathIcon.done">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition
+          Property="Foreground"
+          Duration="0:0:0.6"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
+    </Setter>
   </Style>
   <Style Selector="PathIcon.now">
     <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
@@ -192,16 +230,45 @@
     <Setter Property="CornerRadius" Value="999" />
     <Setter Property="Padding" Value="8,2" />
   </Style>
-  <Style Selector="Border.stuck">
-    <Setter Property="BorderBrush" Value="{DynamicResource PressureStaleBrush}" />
+  <!--
+    "Needs a decision". A quiet ask in the warm end of the ramp — never a red outlined alarm, which
+    read as an error and contradicted the "honest, not harsh" principle (docs/07 §5).
+  -->
+  <Style Selector="Border.why">
+    <Setter Property="Background" Value="{DynamicResource PressureWarmSoftBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="8,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.why TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" />
+  </Style>
+  <!-- A keyboard hint is a chip, not bare "⌘K" text floating in the layout. -->
+  <Style Selector="Border.kbd">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="CornerRadius" Value="6" />
-    <Setter Property="Padding" Value="6,0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+    <Setter Property="Padding" Value="5,1" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Border.kbd TextBlock">
+    <Setter Property="FontFamily" Value="SF Mono, Menlo, Consolas, monospace" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
   </Style>
   <Style Selector="Border.hairline">
     <Setter Property="Background" Value="{DynamicResource HairlineBrush}" />
     <Setter Property="Height" Value="1" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+
+  <!-- Board column under a dragged card: the accent edge is the drop affordance. -->
+  <Style Selector="Border.column:dragover">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
   </Style>
 
   <!-- Habit week grid: rounded squares, never coloured crosses -->
@@ -290,6 +357,23 @@
   </Style>
   <Style Selector="Button:pressed /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+  </Style>
+
+  <!--
+    A visible focus ring for keyboard users. The border is already 1px everywhere, so recolouring it
+    gives a clear ring without reflowing the layout (docs/07 §15).
+  -->
+  <Style Selector="Button:focus-visible /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}" />
+  </Style>
+  <Style Selector="Button:focus-visible Border">
+    <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:focus-visible /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}" />
+  </Style>
+  <Style Selector="ToggleSwitch:focus-visible /template/ Border#SwitchKnobBounds">
+    <Setter Property="BorderBrush" Value="{DynamicResource LinkBrush}" />
   </Style>
 
   <!-- Primary action: filled with the workspace accent -->
@@ -482,6 +566,17 @@
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Padding" Value="8,4" />
   </Style>
+  <!--
+    Mirror behind a transparent capture field. A TextBox cannot style runs, so recognised tokens are
+    drawn by a TextBlock and the field itself renders transparent text (docs/07 §7.1). Same padding as
+    TextBox.bare, so the two align.
+  -->
+  <Style Selector="TextBlock.mirror">
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+  </Style>
   <Style Selector="TextBox.bare /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
@@ -503,6 +598,72 @@
   </Style>
   <Style Selector="Border.composer ComboBox /template/ Border#Background">
     <Setter Property="BorderThickness" Value="0" />
+  </Style>
+
+  <!--
+    Read-first fields. A value should read as text until you touch it: the inspector shows the current
+    value, and the control only announces itself on hover or focus (docs/07 §10.2).
+  -->
+  <Style Selector="ComboBox.quiet">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="6,3" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="ComboBox.quiet /template/ Border#Background">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ComboBox.quiet:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+  <Style Selector="ComboBox.quiet:focus /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+  </Style>
+
+  <Style Selector="TextBox.quiet">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="6,3" />
+    <Setter Property="MinHeight" Value="28" />
+  </Style>
+  <Style Selector="TextBox.quiet /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.quiet:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.quiet:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <!-- Accent swatch: the colour is the label, and the ring marks the current one. -->
+  <Style Selector="Button.swatch">
+    <Setter Property="Padding" Value="3" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.swatch /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="2" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="9" />
+  </Style>
+  <Style Selector="Button.swatch:pointerover /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+  </Style>
+  <Style Selector="Button.swatch.selected /template/ ContentPresenter">
+    <Setter Property="BorderBrush" Value="{DynamicResource Text1Brush}" />
+  </Style>
+  <Style Selector="Border.swatchDot">
+    <Setter Property="Width" Value="22" />
+    <Setter Property="Height" Value="22" />
+    <Setter Property="CornerRadius" Value="6" />
   </Style>
 
   <!-- macOS-style search field -->
@@ -824,6 +985,24 @@
         <DoubleTransition
           Property="Opacity"
           Duration="0:0:0.16"
+          Easing="{StaticResource EaseOut}"
+        />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <!-- Review card: leaves toward the decision (←defer, ↑someday, ↓drop, →today) -->
+  <Style Selector="Window.motion Border.exit">
+    <Setter Property="Transitions">
+      <Transitions>
+        <ThicknessTransition
+          Property="Margin"
+          Duration="0:0:0.18"
+          Easing="{StaticResource EaseOutExpo}"
+        />
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.18"
           Easing="{StaticResource EaseOut}"
         />
       </Transitions>

@@ -83,7 +83,7 @@ This table is the **single source** of escalation thresholds. It replaces the pe
 | honest     | 0         | 1–2  | 3–5   | 6+    | carry ≥ 3 or defers ≥ 3  | Morning Review on.                                                                                                                |
 | relentless | 0         | 1    | 2–3   | 4+    | carry ≥ 2 or defers ≥ 2  | The 3 highest-carry items are pinned on top. Morning Review can't be skipped as a whole (individual items can still be deferred). |
 
-`pressure_overrides` can replace any number. How each state looks is defined in [07 › Row anatomy](07-ui-ux-design.md#101-row-anatomy-comfortable-density-36px).
+`pressure_overrides` can replace any number. How each state looks is defined in [07 › Row anatomy](07-ui-ux-design.md#101-row-anatomy-comfortable-density-38px).
 
 In the `board` layout under `gentle`, the only signal is **stuck-in-column**: an unscheduled item has had no `ColumnChanged`/`Planned` event for N days (default 7, set in `layout_settings`).
 

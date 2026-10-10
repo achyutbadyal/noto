@@ -39,7 +39,15 @@ public sealed partial class ShutdownViewModel : ObservableObject
     public ReviewViewModel Review { get; }
     public ObservableCollection<ItemRowViewModel> DoneRows { get; } = [];
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(StepTitle), nameof(StepNumber))]
+    [
+        ObservableProperty,
+        NotifyPropertyChangedFor(
+            nameof(StepTitle),
+            nameof(StepNumber),
+            nameof(StepProgress),
+            nameof(StepLabel)
+        )
+    ]
     ShutdownStep _step;
 
     [ObservableProperty]
@@ -56,6 +64,11 @@ public sealed partial class ShutdownViewModel : ObservableObject
         };
 
     public int StepNumber => (int)Step + 1;
+
+    // Drives the step rail, so a three-step flow shows where you are without counting labels.
+    public const int StepCount = 3;
+    public double StepProgress => StepNumber / (double)StepCount;
+    public string StepLabel => $"Shutdown · step {StepNumber} of {StepCount}";
 
     public async Task LoadAsync()
     {

@@ -7,220 +7,249 @@
   x:DataType="vm:WeeklyReviewViewModel"
 >
   <ScrollViewer>
-    <StackPanel MaxWidth="680" Margin="24" Spacing="14" HorizontalAlignment="Stretch">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock Text="{Binding Heading}" Classes="section" VerticalAlignment="Center" />
-        <Button
-          Grid.Column="1"
-          Classes="info"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Weekly}"
-          AutomationProperties.Name="About the weekly review"
-        >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-      </Grid>
-      <TextBlock Text="{Binding StepNumber, StringFormat='Step {0} of 5'}" Classes="hint" />
-      <TextBlock Text="{Binding StepTitle}" Classes="title" TextWrapping="Wrap" />
-
-      <!-- 1 wins -->
-      <StackPanel
-        Spacing="8"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsWins}}"
-      >
-        <TextBlock
-          Text="{Binding FinallyText}"
-          Foreground="{DynamicResource DoneBrush}"
-          TextWrapping="Wrap"
-          IsVisible="{Binding FinallyText, Converter={x:Static ObjectConverters.IsNotNull}}"
-        />
-        <ItemsControl ItemsSource="{Binding Wins}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:ItemRowViewModel">
-              <v:ItemRowView />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock
-          Text="Nothing completed this week yet."
-          Classes="secondary"
-          IsVisible="{Binding !Wins.Count}"
-        />
-      </StackPanel>
-
-      <!-- 2 someday sweep -->
-      <StackPanel
-        Spacing="6"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsSomeday}}"
-      >
-        <TextBlock
-          Text="Promote it, keep it, or drop it. Items untouched for 60+ days are pre-selected for dropping."
-          Classes="secondary"
-          TextWrapping="Wrap"
-        />
-        <ItemsControl ItemsSource="{Binding Sweep}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:SweepEntryViewModel">
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4">
-                <StackPanel MinWidth="0">
-                  <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                  <TextBlock Text="{Binding Age}" Classes="hint" FontSize="11" />
-                </StackPanel>
-                <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                  <Button
-                    Classes="key"
-                    Margin="4,0,0,0"
-                    Content="Promote"
-                    Command="{Binding PickCommand}"
-                    CommandParameter="Promote"
-                    Classes.accent="{Binding IsPromote}"
-                  />
-                  <Button
-                    Classes="key"
-                    Margin="4,0,0,0"
-                    Content="Keep"
-                    Command="{Binding PickCommand}"
-                    CommandParameter="Keep"
-                    Classes.accent="{Binding IsKeep}"
-                  />
-                  <Button
-                    Classes="key"
-                    Margin="4,0,0,0"
-                    Content="Drop"
-                    Command="{Binding PickCommand}"
-                    CommandParameter="Drop"
-                    Classes.accent="{Binding IsDrop}"
-                  />
-                </WrapPanel>
-              </Grid>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock
-          Text="Nothing in Someday."
-          Classes="secondary"
-          IsVisible="{Binding !Sweep.Count}"
-        />
-      </StackPanel>
-
-      <!-- 3 stuck -->
-      <StackPanel
-        Spacing="8"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsStuck}}"
-      >
-        <TextBlock Text="{Binding StuckSummary}" TextWrapping="Wrap" />
-        <ItemsControl ItemsSource="{Binding StuckRows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:InsightRow">
-              <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="12" Margin="0,3">
-                <TextBlock
-                  Text="{Binding Label}"
-                  Classes="secondary"
-                  TextTrimming="CharacterEllipsis"
-                />
-                <ProgressBar
-                  Grid.Column="1"
-                  Minimum="0"
-                  Maximum="1"
-                  Value="{Binding Fraction}"
-                  MinWidth="60"
-                  VerticalAlignment="Center"
-                />
-                <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
-              </Grid>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <Grid
-          ColumnDefinitions="Auto,*"
-          ColumnSpacing="6"
-          IsVisible="{Binding StuckSuggestion, Converter={x:Static ObjectConverters.IsNotNull}}"
-        >
-          <PathIcon
-            Data="{v:Icon arrow-right}"
-            Width="14"
-            Height="14"
-            Foreground="{DynamicResource LinkBrush}"
-            VerticalAlignment="Top"
-            Margin="0,2,0,0"
-          />
-          <TextBlock
+    <!-- Same card treatment as the morning review: a step is a card, not a loose column on a page. -->
+    <Border
+      Classes="panel appear"
+      MaxWidth="680"
+      Margin="24"
+      Padding="28"
+      VerticalAlignment="Top"
+      HorizontalAlignment="Center"
+    >
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding Heading}" Classes="section" VerticalAlignment="Center" />
+          <Button
             Grid.Column="1"
-            Text="{Binding StuckSuggestion}"
-            Foreground="{DynamicResource LinkBrush}"
+            Classes="info"
+            Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+            CommandParameter="{x:Static vm:HelpTopicIds.Weekly}"
+            AutomationProperties.Name="About the weekly review"
+          >
+            <PathIcon Data="{v:Icon info}" />
+          </Button>
+        </Grid>
+        <ProgressBar
+          Minimum="0"
+          Maximum="1"
+          Value="{Binding StepProgress}"
+          Height="3"
+          AutomationProperties.Name="Weekly review progress"
+        />
+        <TextBlock Text="{Binding StepLabel}" Classes="hint" FontSize="12" />
+        <TextBlock Text="{Binding StepTitle}" Classes="displaySmall" TextWrapping="Wrap" />
+
+        <!-- 1 wins -->
+        <StackPanel
+          Spacing="8"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsWins}}"
+        >
+          <TextBlock
+            Text="{Binding FinallyText}"
+            Foreground="{DynamicResource DoneBrush}"
+            TextWrapping="Wrap"
+            IsVisible="{Binding FinallyText, Converter={x:Static ObjectConverters.IsNotNull}}"
+          />
+          <ItemsControl ItemsSource="{Binding Wins}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ItemRowViewModel">
+                <v:ItemRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock
+            Text="Nothing completed this week yet."
+            Classes="secondary"
+            IsVisible="{Binding !Wins.Count}"
+          />
+        </StackPanel>
+
+        <!-- 2 someday sweep -->
+        <StackPanel
+          Spacing="6"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsSomeday}}"
+        >
+          <TextBlock
+            Text="Promote it, keep it, or drop it. Items untouched for 60+ days are pre-selected for dropping."
+            Classes="secondary"
             TextWrapping="Wrap"
           />
-        </Grid>
-      </StackPanel>
+          <ItemsControl ItemsSource="{Binding Sweep}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SweepEntryViewModel">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4">
+                  <StackPanel MinWidth="0">
+                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Age}" Classes="hint" FontSize="11" />
+                  </StackPanel>
+                  <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button
+                      Classes="key"
+                      Margin="4,0,0,0"
+                      Content="Promote"
+                      Command="{Binding PickCommand}"
+                      CommandParameter="Promote"
+                      Classes.accent="{Binding IsPromote}"
+                    />
+                    <Button
+                      Classes="key"
+                      Margin="4,0,0,0"
+                      Content="Keep"
+                      Command="{Binding PickCommand}"
+                      CommandParameter="Keep"
+                      Classes.accent="{Binding IsKeep}"
+                    />
+                    <Button
+                      Classes="key"
+                      Margin="4,0,0,0"
+                      Content="Drop"
+                      Command="{Binding PickCommand}"
+                      CommandParameter="Drop"
+                      Classes.accent="{Binding IsDrop}"
+                    />
+                  </WrapPanel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock
+            Text="Nothing in Someday."
+            Classes="secondary"
+            IsVisible="{Binding !Sweep.Count}"
+          />
+        </StackPanel>
 
-      <!-- 4 estimates -->
-      <StackPanel
-        Spacing="6"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsEstimates}}"
-      >
-        <ItemsControl ItemsSource="{Binding EstimateRows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:InsightRow">
-              <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="12" Margin="0,3">
-                <TextBlock
-                  Text="{Binding Label}"
-                  Classes="secondary"
-                  TextTrimming="CharacterEllipsis"
-                />
-                <ProgressBar
-                  Grid.Column="1"
-                  Minimum="0"
-                  Maximum="1"
-                  Value="{Binding Fraction}"
-                  MinWidth="60"
-                  VerticalAlignment="Center"
-                />
-                <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
-              </Grid>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-        <TextBlock
-          Text="Not enough estimated, focused items yet."
-          Classes="secondary"
-          IsVisible="{Binding !EstimateRows.Count}"
-        />
-      </StackPanel>
+        <!-- 3 stuck -->
+        <StackPanel
+          Spacing="8"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsStuck}}"
+        >
+          <TextBlock Text="{Binding StuckSummary}" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding StuckRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:InsightRow">
+                <Grid ColumnDefinitions="140,*,Auto" ColumnSpacing="12" Margin="0,3">
+                  <TextBlock
+                    Text="{Binding Label}"
+                    Classes="secondary"
+                    TextTrimming="CharacterEllipsis"
+                  />
+                  <ProgressBar
+                    Grid.Column="1"
+                    Minimum="0"
+                    Maximum="1"
+                    Value="{Binding Fraction}"
+                    MinWidth="60"
+                    VerticalAlignment="Center"
+                  />
+                  <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Grid
+            ColumnDefinitions="Auto,*"
+            ColumnSpacing="6"
+            IsVisible="{Binding StuckSuggestion, Converter={x:Static ObjectConverters.IsNotNull}}"
+          >
+            <PathIcon
+              Data="{v:Icon arrow-right}"
+              Width="14"
+              Height="14"
+              Foreground="{DynamicResource LinkBrush}"
+              VerticalAlignment="Top"
+              Margin="0,2,0,0"
+            />
+            <TextBlock
+              Grid.Column="1"
+              Text="{Binding StuckSuggestion}"
+              Foreground="{DynamicResource LinkBrush}"
+              TextWrapping="Wrap"
+            />
+          </Grid>
+        </StackPanel>
 
-      <!-- 5 next week -->
-      <StackPanel
-        Spacing="8"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNextWeek}}"
-      >
-        <TextBlock
-          Text="Top 3 outcomes for next week (optional). They're pinned to the header all week."
-          Classes="secondary"
-          TextWrapping="Wrap"
-        />
-        <TextBox Text="{Binding Outcome1, Mode=TwoWay}" Watermark="1" />
-        <TextBox Text="{Binding Outcome2, Mode=TwoWay}" Watermark="2" />
-        <TextBox Text="{Binding Outcome3, Mode=TwoWay}" Watermark="3" />
-      </StackPanel>
+        <!-- 4 estimates -->
+        <StackPanel
+          Spacing="6"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsEstimates}}"
+        >
+          <ItemsControl ItemsSource="{Binding EstimateRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:InsightRow">
+                <Grid ColumnDefinitions="100,*,Auto" ColumnSpacing="12" Margin="0,3">
+                  <TextBlock
+                    Text="{Binding Label}"
+                    Classes="secondary"
+                    TextTrimming="CharacterEllipsis"
+                  />
+                  <ProgressBar
+                    Grid.Column="1"
+                    Minimum="0"
+                    Maximum="1"
+                    Value="{Binding Fraction}"
+                    MinWidth="60"
+                    VerticalAlignment="Center"
+                  />
+                  <TextBlock Grid.Column="2" Text="{Binding Value}" Classes="hint" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock
+            Text="Not enough estimated, focused items yet."
+            Classes="secondary"
+            IsVisible="{Binding !EstimateRows.Count}"
+          />
+        </StackPanel>
 
-      <WrapPanel Orientation="Horizontal">
-        <Button Content="Back" Command="{Binding BackCommand}" Margin="0,0,8,8" />
-        <Button
-          Classes="accent"
-          Content="Next"
-          Command="{Binding NextCommand}"
-          IsVisible="{Binding !IsLast}"
-          Padding="14,6"
-          Margin="0,0,8,8"
-        />
-        <Button
-          Classes="accent"
-          Content="Finish"
-          Command="{Binding FinishCommand}"
-          IsVisible="{Binding IsLast}"
-          Padding="14,6"
-          Margin="0,0,8,8"
-        />
-      </WrapPanel>
-    </StackPanel>
+        <!-- 5 next week -->
+        <StackPanel
+          Spacing="8"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNextWeek}}"
+        >
+          <TextBlock
+            Text="Top 3 outcomes for next week (optional). They're pinned to the header all week."
+            Classes="secondary"
+            TextWrapping="Wrap"
+          />
+          <TextBox Text="{Binding Outcome1, Mode=TwoWay}" Watermark="1" />
+          <TextBox Text="{Binding Outcome2, Mode=TwoWay}" Watermark="2" />
+          <TextBox Text="{Binding Outcome3, Mode=TwoWay}" Watermark="3" />
+        </StackPanel>
+
+        <WrapPanel Orientation="Horizontal">
+          <Button Content="Back" Command="{Binding BackCommand}" Margin="0,0,8,8" />
+          <Button
+            Classes="accent"
+            Command="{Binding NextCommand}"
+            IsVisible="{Binding !IsLast}"
+            Padding="14,6"
+            Margin="0,0,8,8"
+          >
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Next" VerticalAlignment="Center" />
+              <Border Classes="kbd">
+                <TextBlock Text="Enter" />
+              </Border>
+            </StackPanel>
+          </Button>
+          <Button
+            Classes="accent"
+            Command="{Binding FinishCommand}"
+            IsVisible="{Binding IsLast}"
+            Padding="14,6"
+            Margin="0,0,8,8"
+          >
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Finish" VerticalAlignment="Center" />
+              <Border Classes="kbd">
+                <TextBlock Text="Enter" />
+              </Border>
+            </StackPanel>
+          </Button>
+        </WrapPanel>
+      </StackPanel>
+    </Border>
   </ScrollViewer>
 </UserControl>

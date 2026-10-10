@@ -12,30 +12,32 @@ public sealed record WorkspaceTemplate(
 
 public static class WorkspaceTemplates
 {
-    // Icon is a semantic name resolved to a monochrome vector in the UI (never a coloured emoji).
+    // Color is an accent name resolved per light/dark by the theme (ThemeTokens.Accents), not a literal
+    // hex — a hex would be frozen to one theme. Icon is a semantic name resolved to a monochrome vector
+    // in the UI (never a coloured emoji).
     public static readonly WorkspaceTemplate Work = new(
         "Work",
         "work",
-        "#4F7DF3",
+        "ink",
         BuiltInPresets.Sprint,
         FocusHours.Weekdays(new TimeOnly(9, 0), new TimeOnly(18, 0))
     );
     public static readonly WorkspaceTemplate Personal = new(
         "Personal",
         "personal",
-        "#3FB68B",
+        "moss",
         BuiltInPresets.Zen
     );
     public static readonly WorkspaceTemplate Health = new(
         "Health",
         "health",
-        "#E8744F",
+        "rust",
         BuiltInPresets.Habit
     );
     public static readonly WorkspaceTemplate SideProjects = new(
         "Side Projects",
         "side",
-        "#9B6BF2",
+        "plum",
         BuiltInPresets.Kanban
     );
 

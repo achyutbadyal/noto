@@ -102,4 +102,36 @@ public sealed class RecurrenceService(IUnitOfWork uow, IClock clock)
             }
             return (IReadOnlyList<TodoItem>)created;
         });
+
+    // Materialises the instance for one occurrence date if it does not exist yet, so a habit day can be
+    // ticked retroactively (docs/07 §9.1). Returns null when the rule is not scheduled that day — a
+    // weekday habit must not gain an instance on a Saturday.
+    public Task<TodoItem?> EnsureOccurrenceAsync(Guid ruleId, DateOnly day) =>
+        uow.RunAsync(async store =>
+        {
+            var rule = await store.Rules.GetAsync(ruleId);
+            if (rule is null || !RecurrenceEngine.Scheduled(rule, day))
+                return null;
+
+            var existing = await store.Items.GetAsync(RecurrenceEngine.InstanceId(rule, day));
+            if (existing is not null)
+                return existing;
+
+            var ws = await store.Workspaces.GetAsync(rule.WorkspaceId);
+            if (ws is null)
+                return null;
+            var tz = LogicalDate.EffectiveZone(ws, clock);
+
+            var item = RecurrenceEngine.BuildInstance(rule, day, ws, tz);
+            var violations = ItemInvariants.Check(item);
+            if (violations.Count > 0)
+                throw new InvariantViolationException(violations);
+
+            await store.Items.UpsertAsync(item);
+            await store.Events.AppendAsync(RecurrenceEngine.CreatedEvent(item));
+            if (rule.Template.TagIds is { Count: > 0 } tags)
+                await store.Tags.SetItemTagsAsync(item.Id, tags);
+            await store.Caches.InvalidateDayStatsFromAsync(rule.WorkspaceId, day);
+            return item;
+        });
 }

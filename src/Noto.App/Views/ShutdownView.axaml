@@ -7,79 +7,104 @@
   x:DataType="vm:ShutdownViewModel"
 >
   <ScrollViewer>
-    <StackPanel MaxWidth="680" Margin="24" Spacing="16" HorizontalAlignment="Stretch">
-      <Grid ColumnDefinitions="*,Auto">
-        <TextBlock
-          Text="{Binding StepNumber, StringFormat='Shutdown · step {0} of 3'}"
-          Classes="section"
-          VerticalAlignment="Center"
+    <!-- Same card treatment as the morning review: a step is a card, not a loose column on a page. -->
+    <Border
+      Classes="panel appear"
+      MaxWidth="680"
+      Margin="24"
+      Padding="28"
+      VerticalAlignment="Top"
+      HorizontalAlignment="Center"
+    >
+      <StackPanel Spacing="16">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBlock Text="{Binding StepLabel}" Classes="section" VerticalAlignment="Center" />
+          <Button
+            Grid.Column="1"
+            Classes="info"
+            Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
+            CommandParameter="{x:Static vm:HelpTopicIds.Shutdown}"
+            AutomationProperties.Name="About shutdown"
+          >
+            <PathIcon Data="{v:Icon info}" />
+          </Button>
+        </Grid>
+        <ProgressBar
+          Minimum="0"
+          Maximum="1"
+          Value="{Binding StepProgress}"
+          Height="3"
+          AutomationProperties.Name="Shutdown progress"
         />
-        <Button
-          Grid.Column="1"
-          Classes="info"
-          Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).OpenHelpCommand}"
-          CommandParameter="{x:Static vm:HelpTopicIds.Shutdown}"
-          AutomationProperties.Name="About shutdown"
+        <TextBlock Text="{Binding StepTitle}" Classes="displaySmall" TextWrapping="Wrap" />
+
+        <!-- 1. done today -->
+        <StackPanel
+          Spacing="8"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsDoneStep}}"
         >
-          <PathIcon Data="{v:Icon info}" />
-        </Button>
-      </Grid>
-      <TextBlock Text="{Binding StepTitle}" Classes="title" TextWrapping="Wrap" />
+          <ItemsControl ItemsSource="{Binding DoneRows}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:ItemRowViewModel">
+                <v:ItemRowView />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <Button
+            Classes="accent"
+            Padding="14,6"
+            HorizontalAlignment="Left"
+            Command="{Binding NextCommand}"
+          >
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <TextBlock Text="Continue" VerticalAlignment="Center" />
+              <Border Classes="kbd">
+                <TextBlock Text="Enter" />
+              </Border>
+            </StackPanel>
+          </Button>
+        </StackPanel>
 
-      <!-- 1. done today -->
-      <StackPanel
-        Spacing="8"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsDoneStep}}"
-      >
-        <ItemsControl ItemsSource="{Binding DoneRows}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:ItemRowViewModel">
-              <v:ItemRowView />
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- 2. decide what's left -->
+        <ContentControl
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNotDoneStep}}"
+          Content="{Binding Review}"
+          IsTabStop="False"
+          x:Name="ReviewHost"
+        />
         <Button
-          Classes="accent"
-          Content="Continue  Enter"
           HorizontalAlignment="Left"
-          Padding="14,6"
           Command="{Binding NextCommand}"
-        />
-      </StackPanel>
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNotDoneStep}}"
+        >
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="Continue" VerticalAlignment="Center" />
+            <Border Classes="kbd">
+              <TextBlock Text="Enter" />
+            </Border>
+          </StackPanel>
+        </Button>
 
-      <!-- 2. decide what's left -->
-      <ContentControl
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNotDoneStep}}"
-        Content="{Binding Review}"
-        IsTabStop="False"
-        x:Name="ReviewHost"
-      />
-      <Button
-        Content="Continue  Enter"
-        HorizontalAlignment="Left"
-        Command="{Binding NextCommand}"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNotDoneStep}}"
-      />
-
-      <!-- 3. one line for tomorrow -->
-      <StackPanel
-        Spacing="8"
-        IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNoteStep}}"
-      >
-        <TextBox
-          Text="{Binding Note, Mode=TwoWay}"
-          Watermark="Anything to remember for tomorrow? (optional)"
-          v:Behaviors.FocusWhenVisible="True"
-          AutomationProperties.Name="Note for tomorrow"
-        />
-        <Button
-          Classes="accent"
-          Content="Finish shutdown"
-          HorizontalAlignment="Left"
-          Padding="14,6"
-          Command="{Binding FinishCommand}"
-        />
+        <!-- 3. one line for tomorrow -->
+        <StackPanel
+          Spacing="8"
+          IsVisible="{Binding Step, Converter={x:Static v:RowConverters.IsNoteStep}}"
+        >
+          <TextBox
+            Text="{Binding Note, Mode=TwoWay}"
+            Watermark="Anything to remember for tomorrow? (optional)"
+            v:Behaviors.FocusWhenVisible="True"
+            AutomationProperties.Name="Note for tomorrow"
+          />
+          <Button
+            Classes="accent"
+            Content="Finish shutdown"
+            HorizontalAlignment="Left"
+            Padding="14,6"
+            Command="{Binding FinishCommand}"
+          />
+        </StackPanel>
       </StackPanel>
-    </StackPanel>
+    </Border>
   </ScrollViewer>
 </UserControl>

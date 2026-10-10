@@ -1,7 +1,10 @@
+using System.Collections.ObjectModel;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Noto.App.Logic;
 using Noto.App.Services;
+using Noto.App.Themes;
 using Noto.Core.Export;
 using Noto.Core.Import;
 using Noto.Core.Models;
@@ -13,6 +16,24 @@ namespace Noto.App.ViewModels;
 public sealed record CapabilityRow(string Name, bool IsSupported, string? Reason)
 {
     public string Text => IsSupported ? "Available" : Reason ?? "Not available";
+}
+
+// A category in the settings rail. One pane is shown at a time, so the page reads as a settings window
+// rather than a 600-line scroll (docs/07 §10.2).
+public sealed record SettingsCategory(string Key, string Title);
+
+// One accent swatch. IsSelected is observable so the ring follows the workspace without the view having
+// to compare strings.
+//
+// The swatch deliberately holds no brush: an Avalonia brush is a UI-thread object, and a view-model can
+// be built on any thread. The view resolves the colour through RowConverters.Accent at layout time.
+public sealed partial class AccentSwatchViewModel(string name, string label) : ObservableObject
+{
+    public string Name { get; } = name;
+    public string Label { get; } = label;
+
+    [ObservableProperty]
+    bool _isSelected;
 }
 
 // A dropdown entry: the value we store plus the words a person reads. The label is deliberately the
@@ -52,6 +73,20 @@ public sealed partial class SettingsViewModel : ObservableObject
         _workspaceId = workspaceId;
         Appearance = appearance;
         Account = account;
+
+        // "Account" only exists when the host has an account service.
+        Categories =
+        [
+            .. new[]
+            {
+                account is not null ? new SettingsCategory("account", "Account & sync") : null,
+                new SettingsCategory("workspace", "Workspace & modes"),
+                new SettingsCategory("capacity", "Capacity & day"),
+                new SettingsCategory("appearance", "Appearance"),
+                new SettingsCategory("device", "Data & this device"),
+            }.OfType<SettingsCategory>(),
+        ];
+        _category = Categories[0];
         Capabilities =
         [
             new(
@@ -82,6 +117,25 @@ public sealed partial class SettingsViewModel : ObservableObject
     // Null when the host has no sync server or account service (tests, offline-only builds).
     public AccountViewModel? Account { get; }
     public bool HasAccount => Account is not null;
+
+    // The rail. One pane shows at a time; each Show* flag drives exactly one pane's IsVisible.
+    public IReadOnlyList<SettingsCategory> Categories { get; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(
+        nameof(ShowAccount),
+        nameof(ShowWorkspace),
+        nameof(ShowCapacity),
+        nameof(ShowAppearance),
+        nameof(ShowDevice)
+    )]
+    SettingsCategory _category;
+
+    public bool ShowAccount => HasAccount && Category.Key == "account";
+    public bool ShowWorkspace => Category.Key == "workspace";
+    public bool ShowCapacity => Category.Key == "capacity";
+    public bool ShowAppearance => Category.Key == "appearance";
+    public bool ShowDevice => Category.Key == "device";
     public IReadOnlyList<Noto.Core.Import.ImportFormat> ImportFormats { get; } =
         Enum.GetValues<Noto.Core.Import.ImportFormat>();
 
@@ -146,6 +200,35 @@ public sealed partial class SettingsViewModel : ObservableObject
     public IReadOnlyList<ThemeChoice> Themes { get; } = Enum.GetValues<ThemeChoice>();
     public IReadOnlyList<Density> Densities { get; } = Enum.GetValues<Density>();
 
+    // The ten editorial inks. A workspace stores the *name*, so its colour adapts per theme.
+    public ObservableCollection<AccentSwatchViewModel> Accents { get; } =
+    [
+        .. ThemeTokens.Accents.Keys.Select(name => new AccentSwatchViewModel(
+            name,
+            char.ToUpperInvariant(name[0]) + name[1..]
+        )),
+    ];
+
+    [ObservableProperty]
+    string _customAccent = "";
+
+    // The accent is workspace data, not a device setting: each workspace keeps its own ink.
+    [RelayCommand]
+    async Task PickAccentAsync(AccentSwatchViewModel choice) =>
+        await SaveAsync(ws => ws.Color = choice.Name);
+
+    [RelayCommand]
+    async Task ApplyCustomAccentAsync()
+    {
+        var value = CustomAccent.Trim();
+        if (!value.StartsWith('#') || !Color.TryParse(value, out _))
+        {
+            Error = "Use a hex colour like #C2410C";
+            return;
+        }
+        await SaveAsync(ws => ws.Color = value.ToUpperInvariant());
+    }
+
     [ObservableProperty]
     string _name = "";
 
@@ -203,6 +286,13 @@ public sealed partial class SettingsViewModel : ObservableObject
         SelectedPreset = BuiltInPresets.Find(ws.Preset.Replace(" (custom)", ""));
         PresetLabel = BuiltInPresets.Label(ws);
         WhatChanges = Describe(ws.Pressure, ws.SortOrderMode);
+
+        // AccentKey normalises a name or a literal #rrggbb, so an unknown name falls back to the default
+        // and a literal colour simply matches no swatch.
+        var accent = ThemeTokens.AccentKey(ws.Color);
+        foreach (var swatch in Accents)
+            swatch.IsSelected = swatch.Name == accent;
+        CustomAccent = ws.Color?.StartsWith('#') == true ? ws.Color : "";
         _loading = false;
     }
 

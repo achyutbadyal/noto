@@ -69,6 +69,11 @@ public static class RecurrenceEngine
         && day >= rule.StartDate
         && (rule.EndDate is null || day <= rule.EndDate);
 
+    // Active *and* actually scheduled by the RRULE — a weekday rule is not active on a Saturday even
+    // though it is inside its start/end window.
+    public static bool Scheduled(RecurrenceRule rule, DateOnly day) =>
+        Active(rule, day) && RRule.Parse(rule.RRule).Between(day, day, rule.StartDate).Any();
+
     public static TodoItem BuildInstance(
         RecurrenceRule rule,
         DateOnly day,
