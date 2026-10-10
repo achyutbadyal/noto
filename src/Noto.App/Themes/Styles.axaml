@@ -577,18 +577,12 @@
     <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     <Setter Property="IsHitTestVisible" Value="False" />
   </Style>
-  <Style Selector="TextBox.bare /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
-  </Style>
-  <Style Selector="TextBox.bare:pointerover /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
-  </Style>
-  <Style Selector="TextBox.bare:focus /template/ Border#PART_BorderElement">
-    <Setter Property="Background" Value="Transparent" />
-    <Setter Property="BorderThickness" Value="0" />
-  </Style>
+  <!--
+    The borderless-field overrides live further down, AFTER the generic `TextBox:pointerover/:focus`
+    rules below. Avalonia resolves competing `/template/` styles in document order, so a `.bare`
+    override declared here would lose to the generic rule that follows and the field's inner border
+    would paint an opaque surface over the mirror (the capture text would vanish on hover/focus).
+  -->
   <!-- Inside the composer the dropdown is a quiet chip, not a second boxed control -->
   <Style Selector="Border.composer ComboBox">
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
@@ -711,6 +705,26 @@
   <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <!--
+    The borderless capture field (docs/07 §7.1). These MUST come after the two generic state rules
+    above: Avalonia resolves competing `/template/` setters in document order, so the generic
+    `:pointerover`/`:focus` backgrounds would otherwise repaint the field's inner border opaque and
+    hide the mirror TextBlock behind it — the typed title would go invisible on hover or focus.
+  -->
+  <Style Selector="TextBox.bare /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.bare:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="TextBox.bare:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
   </Style>
 
   <!-- Fluent's own dropdown state brushes are translucent overlays (see ThemeBuilder.DropdownOverrides,

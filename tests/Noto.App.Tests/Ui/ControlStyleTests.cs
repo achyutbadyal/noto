@@ -124,6 +124,79 @@ public sealed class ControlStyleTests
         failures.ShouldBeEmpty();
     }
 
+    // Regression: the capture field is a transparent `TextBox` with a mirror `TextBlock` behind it
+    // drawing the glyphs (docs/07 §7.1). The generic `TextBox:pointerover` / `:focus` rules repaint the
+    // field's inner `PART_BorderElement` opaque, which covered the mirror — so the typed title went
+    // invisible the moment you hovered it or clicked in. The `.bare` overrides must win in every state;
+    // this pins the rendered background, and that a normal `TextBox` keeps its opaque fill.
+    [AvaloniaFact]
+    public void The_borderless_capture_field_stays_transparent_in_every_state()
+    {
+        var app = Application.Current!;
+        var failures = new List<string>();
+
+        foreach (
+            var (name, variant) in new[]
+            {
+                ("dark", ThemeVariant.Dark),
+                ("light", ThemeVariant.Light),
+            }
+        )
+        {
+            app.RequestedThemeVariant = variant;
+
+            var bare = new TextBox { Classes = { "bare" } };
+            var normal = new TextBox();
+            var window = new Window
+            {
+                Width = 320,
+                Height = 120,
+                Content = new StackPanel { Children = { bare, normal } },
+            };
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var barePart = Part(bare);
+            var normalPart = Part(normal);
+
+            CheckTransparent(name, "normal", barePart, failures);
+            CheckOpaque(name, "normal", normalPart, failures);
+
+            ((IPseudoClasses)bare.Classes).Set(":pointerover", true);
+            ((IPseudoClasses)normal.Classes).Set(":pointerover", true);
+            Dispatcher.UIThread.RunJobs();
+            CheckTransparent(name, "hover", barePart, failures);
+            CheckOpaque(name, "hover", normalPart, failures);
+
+            ((IPseudoClasses)bare.Classes).Set(":focus", true);
+            ((IPseudoClasses)normal.Classes).Set(":focus", true);
+            Dispatcher.UIThread.RunJobs();
+            CheckTransparent(name, "focus", barePart, failures);
+            CheckOpaque(name, "focus", normalPart, failures);
+        }
+
+        failures.ShouldBeEmpty();
+    }
+
+    static Border Part(TextBox box) =>
+        box.GetVisualDescendants().OfType<Border>().First(b => b.Name == "PART_BorderElement");
+
+    static void CheckTransparent(string theme, string state, Border part, List<string> failures)
+    {
+        var actual = (part.Background as ISolidColorBrush)?.Color;
+        if (actual != Colors.Transparent)
+            failures.Add(
+                $"{theme} bare {state}: inner border {actual} is opaque — it hides the mirror"
+            );
+    }
+
+    static void CheckOpaque(string theme, string state, Border part, List<string> failures)
+    {
+        var actual = (part.Background as ISolidColorBrush)?.Color;
+        if (actual is null || actual.Value.A == 0)
+            failures.Add($"{theme} plain {state}: inner border lost its fill");
+    }
+
     static readonly string[] FrameworkAccentKeys =
     [
         "SliderTrackValueFill",
