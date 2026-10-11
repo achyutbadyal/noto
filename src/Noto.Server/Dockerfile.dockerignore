@@ -1,4 +1,17 @@
+# Read by `docker build -f src/Noto.Server/Dockerfile .` (context = repo root). A file named .dockerignore
+# inside src/Noto.Server would be ignored, because Docker looks next to the Dockerfile for <name>.dockerignore.
+.git
+.github
+docs
+tests
+assets
+scripts
 **/bin/
 **/obj/
+**/.vs/
+**/node_modules/
 **/*.db
+**/*.db-*
+**/noto-data/
 **/.env
+**/.env.*
