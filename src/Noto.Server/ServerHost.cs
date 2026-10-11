@@ -28,6 +28,8 @@ public static class ServerHost
         var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.AddCommandLine(args, SwitchMappings);
         ConfigureServices(builder.Services);
+        // Sync pushes are the largest legitimate request; endpoints with small payloads tighten this further.
+        builder.WebHost.ConfigureKestrel(k => k.Limits.MaxRequestBodySize = 8 * 1024 * 1024);
         if (builder.Configuration["PORT"] is { } port)
             builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
@@ -148,6 +150,17 @@ public static class ServerHost
             };
             forwarded.KnownIPNetworks.Clear();
             forwarded.KnownProxies.Clear();
+            // Only the last hop is read (ForwardLimit 1), and with TRUSTED_PROXIES set only those addresses may
+            // supply the header. Without it any peer is trusted: safe only when nothing but the proxy can connect.
+            forwarded.ForwardLimit = 1;
+            foreach (
+                var ip in (app.Configuration["TRUSTED_PROXIES"] ?? "").Split(
+                    ',',
+                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+                )
+            )
+                if (System.Net.IPAddress.TryParse(ip, out var proxy))
+                    forwarded.KnownProxies.Add(proxy);
             app.UseForwardedHeaders(forwarded);
         }
 

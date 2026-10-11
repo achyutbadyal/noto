@@ -973,9 +973,17 @@ public sealed class GatewayTests : IDisposable
     }
 
     [Fact]
-    public async Task Gitlab_oauth_targets_the_instance_given_by_the_client()
+    public async Task Gitlab_oauth_targets_only_instances_the_operator_allows()
     {
-        var s = await _f.RegisterAsync();
+        using var open = new ServerFactory(
+            new()
+            {
+                ["GATEWAY_ALLOW_PRIVATE_HOSTS"] = "gitlab.acme.dev",
+                ["GITLAB_CLIENT_ID"] = "id",
+                ["GITLAB_CLIENT_SECRET"] = "gl-secret",
+            }
+        );
+        var s = await open.RegisterAsync();
 
         var json = await Body(
             await s.Client.PostAsync(
@@ -983,10 +991,25 @@ public sealed class GatewayTests : IDisposable
                 Json(new { instance_url = "https://gitlab.acme.dev" })
             )
         );
-
         json.GetProperty("authorize_url")
             .GetString()!
             .ShouldStartWith("https://gitlab.acme.dev/oauth/authorize?");
+
+        // A host the client picked never receives the server's client secret, on start or on refresh.
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/gitlab/start",
+                Json(new { instance_url = "https://evil.example.com" })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (
+            await s.Client.PostAsync(
+                "/v1/gateway/oauth/gitlab/refresh",
+                Json(new { refresh_token = "x", instance_url = "https://evil.example.com" })
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        open.Upstream.Requests.ShouldBeEmpty();
+
         (
             await s.Client.PostAsync(
                 "/v1/gateway/oauth/github/start",

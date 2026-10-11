@@ -25,6 +25,8 @@ public static class AccountEndpoints
                     CreatedAt = time.GetUtcNow().UtcDateTime,
                     Content = await BuildExportAsync(db, userId, ct),
                 };
+                // One export per user: an earlier copy is replaced, not kept alongside.
+                await db.Exports.Where(e => e.UserId == userId).ExecuteDeleteAsync(ct);
                 db.Exports.Add(job);
                 await db.SaveChangesAsync(ct);
                 return Results.Accepted($"/v1/account/export/{job.Id}", new { export_id = job.Id });
@@ -43,12 +45,30 @@ public static class AccountEndpoints
             }
         );
 
-        // Deletes server data and revokes all devices. Local data on devices is untouched.
+        // Deletes server data and revokes all devices. Local data on devices is untouched. A stolen access token
+        // is not enough: the account password must be given again.
         account.MapDelete(
             "",
-            async (HttpContext http, ServerDbContext db, CancellationToken ct) =>
+            async (
+                [Microsoft.AspNetCore.Mvc.FromBody] ConfirmDelete? body,
+                HttpContext http,
+                ServerDbContext db,
+                Argon2PasswordHasher hasher,
+                CancellationToken ct
+            ) =>
             {
                 var userId = http.User.UserId();
+                var hash = await db
+                    .Users.Where(u => u.Id == userId)
+                    .Select(u => u.PasswordHash)
+                    .FirstOrDefaultAsync(ct);
+                if (
+                    hash is null
+                    || string.IsNullOrEmpty(body?.Password)
+                    || body.Password.Length > 256
+                    || !hasher.Verify(body.Password, hash)
+                )
+                    throw ApiException.Forbidden("PASSWORD_REQUIRED", "Confirm with your password");
                 await db.Ops.Where(o => o.UserId == userId).ExecuteDeleteAsync(ct);
                 await db.CurrentRows.Where(r => r.UserId == userId).ExecuteDeleteAsync(ct);
                 await db.WorkspaceSyncs.Where(w => w.UserId == userId).ExecuteDeleteAsync(ct);
@@ -60,21 +80,32 @@ public static class AccountEndpoints
             }
         );
 
-        account.MapPut(
-            "/digest",
-            async (JsonElement prefs, HttpContext http, ServerDbContext db, CancellationToken ct) =>
-            {
-                var userId = http.User.UserId();
-                await db
-                    .Users.Where(u => u.Id == userId)
-                    .ExecuteUpdateAsync(
-                        s => s.SetProperty(u => u.DigestPrefsJson, prefs.GetRawText()),
-                        ct
-                    );
-                return Results.NoContent();
-            }
-        );
+        account
+            .MapPut(
+                "/digest",
+                async (
+                    JsonElement prefs,
+                    HttpContext http,
+                    ServerDbContext db,
+                    CancellationToken ct
+                ) =>
+                {
+                    var userId = http.User.UserId();
+                    await db
+                        .Users.Where(u => u.Id == userId)
+                        .ExecuteUpdateAsync(
+                            s => s.SetProperty(u => u.DigestPrefsJson, prefs.GetRawText()),
+                            ct
+                        );
+                    return Results.NoContent();
+                }
+            )
+            .WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(16 * 1024));
     }
+
+    public sealed record ConfirmDelete(
+        [property: System.Text.Json.Serialization.JsonPropertyName("password")] string? Password
+    );
 
     static async Task<string> BuildExportAsync(
         ServerDbContext db,

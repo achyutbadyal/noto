@@ -156,6 +156,9 @@ public sealed class AccountServiceTests
 
         Should.Throw<ArgumentException>(() => account.SetServer("ftp://noto.example.com"));
         Should.Throw<ArgumentException>(() => account.SetServer("noto.example.com"));
+        // Passwords and tokens must not cross the network in the clear.
+        Should.Throw<ArgumentException>(() => account.SetServer("http://noto.example.com"));
+        account.SetServer("http://127.0.0.1:8080");
 
         account.SetServer("  https://noto.example.com/some/path  ");
         ui.Get("server.url").ShouldBe("https://noto.example.com/");

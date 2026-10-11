@@ -115,6 +115,11 @@ public sealed class AccountService(
             || uri.Scheme is not ("http" or "https")
         )
             throw new ArgumentException("Enter a full http:// or https:// address");
+        // The password and session tokens travel to this address.
+        if (!Noto.Providers.Transport.SafeHttp.IsSecureOrLoopback(uri))
+            throw new ArgumentException(
+                "Use an https:// address (plain http is only for this computer)"
+            );
         ui.Set(ServerKey, uri.GetLeftPart(UriPartial.Authority) + "/");
     }
 

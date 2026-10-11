@@ -37,7 +37,12 @@ sealed class Composition : IDisposable
         var ui = new FileUiState(Path.Combine(dir, "ui-state.json"));
 
         // One provider stack, shared by connecting, token handling and link previews.
-        var http = new HttpClient();
+        var http = new HttpClient(SafeHttp.ProviderHandler());
+        // Link previews fetch arbitrary pages from notes, so they use a client that refuses non-public addresses.
+        var previewHttp = new HttpClient(SafeHttp.PreviewHandler())
+        {
+            Timeout = TimeSpan.FromSeconds(10),
+        };
         var registry = new ProviderRegistry([
             new FigmaProvider(),
             new GitHubProvider(),
@@ -50,7 +55,11 @@ sealed class Composition : IDisposable
             new OpenGraphProvider(),
         ]);
         var credentials = new CredentialStore(new KeyringAdapter(Platform.Keyring));
-        var transports = new DirectTransportFactory(http, NullLogger<DirectTransport>.Instance);
+        var transports = new DirectTransportFactory(
+            http,
+            NullLogger<DirectTransport>.Instance,
+            previewHttp
+        );
         // Provider sign-in runs on the Noto server, which holds the provider secrets. The session is the
         // account's, so the account is read when a request is made, not when the gateway is built.
         var gateway = new ServerOAuthGateway(

@@ -27,7 +27,8 @@ public sealed class DirectTransport(
     AuthMethod method,
     ICredentialSource credentials,
     ILogger logger,
-    string? apiBaseUrl = null
+    string? apiBaseUrl = null,
+    HttpClient? previewHttp = null
 ) : IProviderHttp
 {
     public async Task<ProviderResponse> SendAsync(ProviderRequest request, CancellationToken ct)
@@ -72,9 +73,12 @@ public sealed class DirectTransport(
 
     public async Task<OpenGraphData?> OpenGraphAsync(Uri url, CancellationToken ct)
     {
+        if (url.Scheme is not ("http" or "https"))
+            return null;
         using var message = new HttpRequestMessage(HttpMethod.Get, url);
         message.Headers.UserAgent.ParseAdd("Mozilla/5.0 (compatible; NotoLinkPreview/1.0)");
-        using var response = await http.SendAsync(
+        // A client that refuses non-public addresses when one is supplied (the desktop always supplies one).
+        using var response = await (previewHttp ?? http).SendAsync(
             message,
             HttpCompletionOption.ResponseHeadersRead,
             ct
@@ -97,12 +101,42 @@ public sealed class DirectTransport(
     Uri ApiRootFor(string? instanceUrl) =>
         apiBaseUrl is null ? provider.ApiRoot(instanceUrl) : new Uri(apiBaseUrl);
 
+    static readonly string[] CrossHostAllowed = ["api.atlassian.com"];
+
+    bool IsTrustedHost(string host)
+    {
+        if (CrossHostAllowed.Contains(host, StringComparer.OrdinalIgnoreCase))
+            return true;
+        try
+        {
+            return string.Equals(
+                ApiRootFor(instanceUrl).Host,
+                host,
+                StringComparison.OrdinalIgnoreCase
+            );
+        }
+        catch (Exception e) when (e is NullReferenceException or UriFormatException)
+        {
+            return false; // no API root to compare with yet
+        }
+    }
+
     Uri Resolve(ProviderRequest request, IReadOnlyList<KeyValuePair<string, string>> authQuery)
     {
         var path = request.Path;
-        var baseUri = path.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-            ? new Uri(path)
-            : new Uri(ApiRootFor(instanceUrl), path.TrimStart('/'));
+        Uri baseUri;
+        if (path.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            baseUri = new Uri(path);
+            // Credentials ride on every request, so an absolute URL may only name https on a host that is
+            // the connection's own API host or the one fixed cross-host call (Atlassian site discovery).
+            if (baseUri.Scheme != Uri.UriSchemeHttps || !IsTrustedHost(baseUri.Host))
+                throw new InvalidOperationException(
+                    "Request target is outside the provider's API host"
+                );
+        }
+        else
+            baseUri = new Uri(ApiRootFor(instanceUrl), path.TrimStart('/'));
         var all = (request.Query ?? new Dictionary<string, string>()).Concat(authQuery).ToList();
         if (all.Count == 0)
             return baseUri;
@@ -119,8 +153,11 @@ public sealed class DirectTransport(
     }
 }
 
-public sealed class DirectTransportFactory(HttpClient http, ILogger<DirectTransport> logger)
-    : IProviderHttpFactory
+public sealed class DirectTransportFactory(
+    HttpClient http,
+    ILogger<DirectTransport> logger,
+    HttpClient? previewHttp = null
+) : IProviderHttpFactory
 {
     public IProviderHttp Create(
         IAppProvider provider,
@@ -128,7 +165,17 @@ public sealed class DirectTransportFactory(HttpClient http, ILogger<DirectTransp
         AuthMethod method,
         ICredentialSource credentials,
         string? apiBaseUrl = null
-    ) => new DirectTransport(http, provider, instanceUrl, method, credentials, logger, apiBaseUrl);
+    ) =>
+        new DirectTransport(
+            http,
+            provider,
+            instanceUrl,
+            method,
+            credentials,
+            logger,
+            apiBaseUrl,
+            previewHttp
+        );
 }
 
 // Browser client: requests go through the Noto backend (docs/06 › Gateway). The provider token travels

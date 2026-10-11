@@ -37,6 +37,13 @@ public sealed class OpenAiCompatibleProvider(HttpClient http) : IAiProvider
         if (!Uri.TryCreate(endpoint + "/chat/completions", UriKind.Absolute, out var url))
             throw new AiSuggestionException($"'{endpoint}' isn't a valid address.");
 
+        // An API key must not cross the network in the clear; plain http is only for a model on this machine.
+        if (
+            !string.IsNullOrWhiteSpace(connection.ApiKey)
+            && !Transport.SafeHttp.IsSecureOrLoopback(url)
+        )
+            throw new AiSuggestionException("Use an https:// endpoint when an API key is set.");
+
         var body = new JsonObject
         {
             ["model"] = connection.Model,

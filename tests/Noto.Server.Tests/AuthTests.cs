@@ -16,6 +16,40 @@ public sealed class AuthTests : IDisposable
         await r.Content.ReadFromJsonAsync<JsonElement>();
 
     [Fact]
+    public async Task A_very_long_password_is_refused_before_hashing()
+    {
+        var r = await _f.CreateClient()
+            .PostAsJsonAsync(
+                "/v1/auth/login",
+                new
+                {
+                    email = "a@example.com",
+                    password = new string('x', 300),
+                    device = ServerFactory.Device(Guid.NewGuid()),
+                }
+            );
+
+        r.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task Parallel_use_of_one_refresh_token_lets_only_one_through()
+    {
+        var s = await _f.RegisterAsync();
+
+        var results = await Task.WhenAll(
+            Enumerable
+                .Range(0, 4)
+                .Select(_ =>
+                    _f.CreateClient()
+                        .PostAsJsonAsync("/v1/auth/refresh", new { refresh_token = s.RefreshToken })
+                )
+        );
+
+        results.Count(r => r.StatusCode == HttpStatusCode.OK).ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Register_returns_201_with_tokens_and_the_device_is_listed()
     {
         var s = await _f.RegisterAsync();

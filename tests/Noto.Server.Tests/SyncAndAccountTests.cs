@@ -366,7 +366,24 @@ public sealed class SyncAndAccountTests : IDisposable
             .GetValue<string>()
             .ShouldBe("Exported");
 
-        (await a.Client.DeleteAsync("/v1/account")).StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        // A bearer token alone cannot delete the account.
+        (await a.Client.DeleteAsync("/v1/account")).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (
+            await a.Client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Delete, "/v1/account")
+                {
+                    Content = JsonContent.Create(new { password = "wrong password here" }),
+                }
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (
+            await a.Client.SendAsync(
+                new HttpRequestMessage(HttpMethod.Delete, "/v1/account")
+                {
+                    Content = JsonContent.Create(new { password = "correct horse battery" }),
+                }
+            )
+        ).StatusCode.ShouldBe(HttpStatusCode.NoContent);
 
         (await a.Client.GetAsync("/v1/devices")).StatusCode.ShouldBe(HttpStatusCode.Forbidden); // device is gone
         (

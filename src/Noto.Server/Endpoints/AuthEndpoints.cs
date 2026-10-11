@@ -8,7 +8,9 @@ public static class AuthEndpoints
 {
     public static void MapAuth(this RouteGroupBuilder v1)
     {
-        var auth = v1.MapGroup("/auth").RequireRateLimiting("auth");
+        var auth = v1.MapGroup("/auth")
+            .RequireRateLimiting("auth")
+            .WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(16 * 1024));
 
         auth.MapPost(
             "/register",

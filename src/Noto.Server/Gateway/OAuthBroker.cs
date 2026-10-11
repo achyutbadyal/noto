@@ -364,8 +364,10 @@ public sealed class OAuthBroker(
         return (provider, provider.OAuth, credentials.ClientId, credentials.Secret);
     }
 
-    // Self-hosted providers (GitLab, Atlassian DC) carry their own instance host in the OAuth URLs.
-    static string? InstanceBase(ProviderDef provider, string? instanceUrl)
+    // Self-hosted providers (GitLab, Atlassian DC) carry their own instance host in the OAuth URLs. The token
+    // request carries this server's client secret, so the secret only goes to a host the operator vouches for:
+    // listed in GATEWAY_ALLOW_PRIVATE_HOSTS, or the provider's own fixed host. Never a host the client chose.
+    string? InstanceBase(ProviderDef provider, string? instanceUrl)
     {
         if (string.IsNullOrWhiteSpace(instanceUrl))
             return null;
@@ -382,6 +384,16 @@ public sealed class OAuthBroker(
             throw ApiException.BadRequest(
                 "INVALID_INSTANCE_URL",
                 "instance_url must be an absolute https URL"
+            );
+        var trusted =
+            config.AllowPrivateHosts.Contains(uri.Host)
+            || provider.Hosts.Any(h =>
+                !h.StartsWith('*') && string.Equals(h, uri.Host, StringComparison.OrdinalIgnoreCase)
+            );
+        if (!trusted)
+            throw ApiException.Forbidden(
+                "INSTANCE_NOT_ALLOWED",
+                "This server is not set up to sign in to that instance"
             );
         return uri.GetLeftPart(UriPartial.Authority);
     }

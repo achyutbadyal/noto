@@ -40,11 +40,13 @@ public sealed class AuthService(
     Argon2PasswordHasher hasher,
     JwtService jwt,
     ServerConfig config,
-    TimeProvider time
+    TimeProvider time,
+    RateGate gate
 )
 {
     static readonly TimeSpan RefreshLifetime = TimeSpan.FromDays(90);
     const int MinPasswordLength = 10;
+    const int MaxPasswordLength = 256;
 
     public async Task<RegisterResponse> RegisterAsync(AuthRequest req, CancellationToken ct)
     {
@@ -85,6 +87,19 @@ public sealed class AuthService(
     public async Task<TokenPair> LoginAsync(AuthRequest req, CancellationToken ct)
     {
         var (email, password, device) = Validate(req);
+        // The per-IP limit does not stop a spread-out guesser; this caps attempts on one account.
+        if (
+            !gate.TryAcquire(
+                $"login:{email}",
+                config.Limits.AuthPerMinute * 2,
+                TimeSpan.FromMinutes(1)
+            )
+        )
+            throw new ApiException(
+                429,
+                "RATE_LIMITED",
+                "Too many sign-in attempts for this account"
+            );
         var user = await db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
         if (user is null)
         {
@@ -123,7 +138,18 @@ public sealed class AuthService(
         if (device is null || device.RevokedAt is not null)
             throw ApiException.Forbidden("DEVICE_REVOKED", "Device revoked");
 
-        token.UsedAt = now;
+        // Atomic claim: of two parallel refreshes with the same token, only one may win.
+        var claimed = await db
+            .RefreshTokens.Where(t => t.Id == token.Id && t.UsedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UsedAt, now), ct);
+        if (claimed == 0)
+        {
+            await RevokeDeviceAsync(token.UserId, token.DeviceId, ct);
+            throw ApiException.Unauthorized(
+                "REFRESH_TOKEN_REUSED",
+                "Refresh token reuse detected; device revoked"
+            );
+        }
         return await IssueAsync(token.UserId, token.DeviceId, ct);
     }
 
@@ -217,6 +243,8 @@ public sealed class AuthService(
             throw ApiException.BadRequest("INVALID_EMAIL", "Invalid email");
         if (string.IsNullOrEmpty(req.Password))
             throw ApiException.BadRequest("INVALID_PASSWORD", "Password required");
+        if (req.Password.Length > MaxPasswordLength)
+            throw ApiException.BadRequest("INVALID_PASSWORD", "Password too long");
         if (req.Device is null || req.Device.Id == Guid.Empty)
             throw ApiException.BadRequest("INVALID_DEVICE", "Device id required");
         return (email, req.Password, req.Device);

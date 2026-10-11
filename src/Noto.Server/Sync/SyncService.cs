@@ -19,6 +19,13 @@ public sealed class SyncService(ServerDbContext db, TimeProvider time, ServerClo
     // Seq must be visible in commit order, so ingest is serialized per process (single-instance server).
     static readonly SemaphoreSlim IngestLock = new(1, 1);
 
+    // The lock is process-wide, so one slow writer must not starve everyone: give up with a retryable error.
+    static async Task AcquireIngestAsync(CancellationToken ct)
+    {
+        if (!await IngestLock.WaitAsync(TimeSpan.FromSeconds(15), ct))
+            throw new ApiException(503, "SERVER_BUSY", "Server busy, retry shortly");
+    }
+
     public async Task<SyncResponse> SyncAsync(
         Guid userId,
         Guid deviceId,
@@ -34,7 +41,7 @@ public sealed class SyncService(ServerDbContext db, TimeProvider time, ServerClo
                 $"At most {MaxOpsPerPush} ops per push"
             );
 
-        await IngestLock.WaitAsync(ct);
+        await AcquireIngestAsync(ct);
         try
         {
             var maxSeq = await db.Ops.MaxAsync(o => (long?)o.Seq, ct) ?? 0;
@@ -342,7 +349,7 @@ public sealed class SyncService(ServerDbContext db, TimeProvider time, ServerClo
     public async Task DeleteWorkspaceAsync(Guid userId, Guid workspaceId, CancellationToken ct)
     {
         await EnsureOwnerAsync(userId, workspaceId, ct);
-        await IngestLock.WaitAsync(ct);
+        await AcquireIngestAsync(ct);
         try
         {
             await db.Ops.Where(o => o.WorkspaceId == workspaceId).ExecuteDeleteAsync(ct);
