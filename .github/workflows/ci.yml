@@ -1,39 +1,67 @@
 name: ci
 
+# Runs only when something that can change the build changes (docs, screenshots, icons and the other
+# workflow do not). Pushes build main only; branch work is covered by its pull request, so a PR branch is
+# not built twice.
 on:
   push:
-    # branches: [main]
+    branches: [main]
+    paths:
+      - src/**
+      - tests/**
+      - tools/**
+      - scripts/**
+      - Noto.sln
+      - Directory.Build.props
+      - global.json
+      - mise.toml
+      - .config/**
+      - .editorconfig
+      - .github/workflows/ci.yml
   pull_request:
+    paths:
+      - src/**
+      - tests/**
+      - tools/**
+      - scripts/**
+      - Noto.sln
+      - Directory.Build.props
+      - global.json
+      - mise.toml
+      - .config/**
+      - .editorconfig
+      - .github/workflows/ci.yml
 
 # Least privilege: jobs only read the repository; artifacts upload with the run's own token.
 permissions:
   contents: read
 
+# A newer push to the same PR supersedes the old run. Runs on main are never cancelled, so every
+# main commit still gets its tests and installers.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-test:
-    name: build + test (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    # Linux only. macOS and Windows run in ci-platforms.yml when OS-specific code changes.
+    name: build + test (linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
       - name: Linux native libraries
-        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libsecret-tools libnotify-bin xvfb
       - run: dotnet build Noto.sln
-      # Linux runs headless under Xvfb so the X11 hotkey and Avalonia headless tests have a display.
-      - if: runner.os == 'Linux'
-        run: xvfb-run -a dotnet test Noto.sln --no-build
-      - if: runner.os != 'Linux'
-        run: dotnet test Noto.sln --no-build
+      # Headless under Xvfb so the X11 hotkey and Avalonia headless tests have a display.
+      - run: xvfb-run -a dotnet test Noto.sln --no-build
 
   format:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
@@ -65,6 +93,7 @@ jobs:
             artifact: noto-windows-win-x64
             file: dist/noto-windows-win-x64.zip
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4

@@ -1,0 +1,53 @@
+name: ci-platforms
+
+# macOS and Windows runners cost several times a Linux minute, and most changes behave the same on every OS,
+# so ci.yml tests Linux only. This workflow adds the other two when code that talks to the operating system
+# (keychain, hotkeys, notifications, app startup, the Swift helper) or the toolchain changes.
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/Noto.Platform/**
+      - src/Noto.Desktop/**
+      - tests/Noto.Platform.Tests/**
+      - tools/**
+      - Directory.Build.props
+      - global.json
+      - Noto.sln
+      - .github/workflows/ci-platforms.yml
+  pull_request:
+    paths:
+      - src/Noto.Platform/**
+      - src/Noto.Desktop/**
+      - tests/Noto.Platform.Tests/**
+      - tools/**
+      - Directory.Build.props
+      - global.json
+      - Noto.sln
+      - .github/workflows/ci-platforms.yml
+
+# Least privilege: jobs only read the repository.
+permissions:
+  contents: read
+
+# A newer push to the same PR supersedes the old run; main is never cancelled.
+concurrency:
+  group: ci-platforms-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build-test:
+    name: build + test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+      - run: dotnet build Noto.sln
+      - run: dotnet test Noto.sln --no-build
