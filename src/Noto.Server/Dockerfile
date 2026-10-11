@@ -23,7 +23,7 @@ RUN dotnet publish src/Noto.Server/Noto.Server.csproj -c Release -a $TARGETARCH 
 RUN mkdir /data-seed && chown $APP_UID /data-seed
 
 # Use Chiseled Ubuntu for an ultra-small, highly secure distroless runtime
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-jammy-chiseled AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled AS runtime
 ARG APP_UID
 WORKDIR /app
 COPY --from=build /out .
