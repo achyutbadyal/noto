@@ -259,6 +259,25 @@ public class LinearProviderTests
 
 public class SlackProviderTests
 {
+    [Theory]
+    [InlineData("xapp-1-A0123-456-abc")]
+    [InlineData("xoxb-123-456-abc")]
+    public void Tokens_that_cannot_read_as_the_user_are_rejected_with_guidance(string token)
+    {
+        new SlackProvider()
+            .CheckToken(token, AuthMethod.PersonalToken)
+            .ShouldNotBeNull()
+            .ShouldContain("xoxp-");
+    }
+
+    [Fact]
+    public void User_tokens_are_accepted_and_named_as_such()
+    {
+        var p = new SlackProvider();
+        p.CheckToken("xoxp-123-456-abc", AuthMethod.PersonalToken).ShouldBeNull();
+        p.TokenLabel(AuthMethod.PersonalToken).ShouldContain("xoxp-");
+    }
+
     static FakeHttp Http() =>
         new FakeHttp()
             .OnPath("conversations.replies", Fixture.Load("slack_replies.json"))

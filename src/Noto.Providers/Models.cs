@@ -159,6 +159,12 @@ public interface IAppProvider
     // True when this auth method sends an account name with the token (Basic auth), so a connection needs one.
     bool UsesUsername(AuthMethod method);
 
+    // What the secret is called for this method, e.g. "personal access token". Shown in the connect form.
+    string TokenLabel(AuthMethod method);
+
+    // Rejects a pasted secret that can never work (wrong token type) with a message saying what to paste. Null means fine.
+    string? CheckToken(string token, AuthMethod method);
+
     // `connection` resolves instance hosts; null means "match by the provider's fixed hosts only".
     bool CanHandle(Uri url, AppConnection? connection);
 

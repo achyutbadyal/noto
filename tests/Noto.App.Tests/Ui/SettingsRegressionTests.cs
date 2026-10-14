@@ -45,7 +45,8 @@ public sealed class SettingsRegressionTests : IDisposable
                         p.RequiresInstanceUrl ? SiteField.Required
                             : p.AcceptsSiteAddress ? SiteField.Optional
                             : SiteField.None,
-                        p.UsesUsername(m)
+                        p.UsesUsername(m),
+                        p.TokenLabel(m)
                     ))
             )
             .OrderBy(o => o.ProviderName, StringComparer.OrdinalIgnoreCase)

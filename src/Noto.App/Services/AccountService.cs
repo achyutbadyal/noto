@@ -23,10 +23,12 @@ public sealed record TokenOption(
     string ProviderName,
     AuthMethod Method,
     SiteField Site,
-    bool NeedsEmail
+    bool NeedsEmail,
+    string? SecretName = null
 )
 {
-    public string MethodLabel => Method == AuthMethod.ApiKey ? "API key" : "personal access token";
+    public string MethodLabel =>
+        SecretName ?? (Method == AuthMethod.ApiKey ? "API key" : "personal access token");
 
     public string Label => $"{ProviderName} · {MethodLabel}";
 }

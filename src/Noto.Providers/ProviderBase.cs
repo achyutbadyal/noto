@@ -20,6 +20,11 @@ public abstract class ProviderBase : IAppProvider
 
     public virtual bool UsesUsername(AuthMethod method) => false;
 
+    public virtual string TokenLabel(AuthMethod method) =>
+        method == AuthMethod.ApiKey ? "API key" : "personal access token";
+
+    public virtual string? CheckToken(string token, AuthMethod method) => null;
+
     public virtual bool OAuthAcceptsSite => false;
 
     public virtual bool OAuthNeedsInstance => false;

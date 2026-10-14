@@ -38,6 +38,15 @@ Provider consoles change their layout often. The paths below were current when w
 3. Basic Information → App Credentials: copy the Client ID and Client Secret.
 4. To let people in other workspaces connect, turn on **Manage Distribution** → public distribution. Until then, only members of the development workspace can authorize the app.
 
+**Slack without a Noto server.** Slack no longer issues personal access tokens, so create your own app and paste its user token:
+
+1. api.slack.com/apps → Create New App → From scratch, in the workspace you want to read.
+2. OAuth & Permissions → **User Token Scopes**: `channels:history`, `groups:history`, `im:history`, `mpim:history`, `channels:read`, `groups:read`, `users:read`.
+3. Install to Workspace, then copy the **User OAuth Token** (`xoxp-…`).
+4. In Noto: Settings → Connect with a token → **Slack · user token (xoxp-)**, and paste it.
+
+Ignore the app-level token (`xapp-…`; it only opens Socket Mode and cannot read messages) and the bot token (`xoxb-…`; it only sees channels the bot was invited to). Noto rejects both with a message pointing back here.
+
 **Atlassian**
 
 1. Create → OAuth 2.0 integration.

@@ -49,6 +49,17 @@ public sealed class SlackProvider(SlackOptions? options = null) : ProviderBase
     public override IReadOnlyList<UrlPattern> UrlPatterns { get; } =
     [new("{team}.slack.com", "/archives/{channel}/p{ts}")];
 
+    // Slack has no personal access tokens. Installing your own Slack app gives a user token (xoxp-) for
+    // reading as yourself, and an app-level token (xapp-) that only opens Socket Mode and can read nothing.
+    public override string TokenLabel(AuthMethod method) => "user token (xoxp-)";
+
+    public override string? CheckToken(string token, AuthMethod method) =>
+        token.StartsWith("xapp-", StringComparison.Ordinal)
+            ? "That is Slack's app-level token (xapp-), which cannot read messages. Paste the User OAuth Token (xoxp-) from OAuth & Permissions instead."
+        : token.StartsWith("xoxb-", StringComparison.Ordinal)
+            ? "That is a bot token (xoxb-), which only sees channels the bot was invited to. Paste the User OAuth Token (xoxp-) from OAuth & Permissions instead."
+        : null;
+
     public override AuthConfig GetAuthConfig() =>
         new(
             "https://slack.com/oauth/v2/authorize",

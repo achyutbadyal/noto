@@ -45,6 +45,9 @@ public sealed class ConnectionService(
                 $"Enter the email address on your {provider.DisplayName} account"
             );
 
+        if (provider.CheckToken(token.Trim(), method) is { } problem)
+            throw new ArgumentException(problem);
+
         return await FinishAsync(
             provider,
             new Credential(token.Trim(), Username: username?.Trim()),
