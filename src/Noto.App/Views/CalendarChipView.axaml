@@ -1,0 +1,59 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.CalendarChipView"
+  x:DataType="vm:ItemRowViewModel"
+>
+  <!--
+    A month-grid chip: one line, title first. The full row is built for width; a month cell is a
+    fraction of the page, so the status button and the trailing rail would leave the title nothing.
+  -->
+  <Border
+    Classes="row"
+    Classes.focused="{Binding IsFocused}"
+    Classes.selected="{Binding IsSelected}"
+    Margin="0,1"
+    Padding="0,3,6,3"
+    MinHeight="0"
+    AutomationProperties.Name="{Binding AutomationName}"
+    ClipToBounds="True"
+    ToolTip.Tip="{Binding Title}"
+    PointerPressed="OnPointerPressed"
+    DoubleTapped="OnDoubleTapped"
+  >
+    <Grid ColumnDefinitions="3,*" ColumnSpacing="6">
+      <Border
+        Classes="bar"
+        Classes.hot="{Binding BarHot}"
+        Classes.stale="{Binding BarStale}"
+        IsVisible="{Binding ShowBar}"
+      />
+      <Border
+        Width="3"
+        CornerRadius="2"
+        IsVisible="{Binding HasAccentBar}"
+        Background="{Binding WorkspaceAccent, Converter={x:Static v:RowConverters.Accent}}"
+      />
+      <TextBlock
+        Grid.Column="1"
+        FontSize="12"
+        Text="{Binding Title}"
+        TextTrimming="CharacterEllipsis"
+        TextDecorations="{Binding IsDone, Converter={x:Static v:RowConverters.Strike}}"
+        Classes.hint="{Binding IsDone}"
+        Classes.secondary="{Binding IsWaiting}"
+        IsVisible="{Binding !IsEditing}"
+      />
+      <TextBox
+        Grid.Column="1"
+        Text="{Binding Owner.EditText, Mode=TwoWay}"
+        IsVisible="{Binding IsEditing}"
+        v:Behaviors.FocusWhenVisible="True"
+        MinHeight="24"
+        Padding="4,1"
+      />
+    </Grid>
+  </Border>
+</UserControl>

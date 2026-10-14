@@ -114,6 +114,48 @@ public sealed class ScreenshotTests : IDisposable
         }
     }
 
+    // Both drag-and-drop layouts build a static payload format; an invalid identifier made the
+    // type initializer throw, so the page could never be shown.
+    [AvaloniaFact]
+    public void Board_and_calendar_views_can_be_constructed()
+    {
+        new BoardView().ShouldNotBeNull();
+        new CalendarView().ShouldNotBeNull();
+    }
+
+    [AvaloniaFact]
+    public async Task Calendar_renders_month_and_week_in_both_themes()
+    {
+        await SeedAsync();
+        await _app.AddAsync("Plan the offsite", AppFixture.Today.AddDays(1), 90);
+        await _app.AddAsync("Draft release notes", AppFixture.Today.AddDays(1), 45);
+        await _app.AddAsync("Dentist", AppFixture.Today.AddDays(2), 60);
+        await _app.AddAsync("Quarterly review", AppFixture.Today.AddDays(2));
+        await _app.AddAsync("Book flights", AppFixture.Today.AddDays(2), 20);
+        await _app.AddAsync("Send invoices", AppFixture.Today.AddDays(2), 15);
+        await _app.AddAsync("Renew passport", AppFixture.Today.AddDays(9), 30);
+        await _app.AddAsync("Someday-ish idea");
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.GoAsync(AppPage.Today);
+        await shell.SetScopeCommand.ExecuteAsync("Month");
+        var calendar = shell.Content.ShouldBeOfType<CalendarViewModel>();
+        await SettleAsync();
+        window.GetVisualDescendants().OfType<CalendarView>().ShouldNotBeEmpty();
+        window.GetVisualDescendants().OfType<CalendarChipView>().ShouldNotBeEmpty();
+        await SnapAsync(window, "calendar-month-dark");
+
+        Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Light;
+        await SnapAsync(window, "calendar-month-light");
+
+        await shell.SetScopeCommand.ExecuteAsync("Week");
+        await SnapAsync(window, "calendar-week-light");
+        calendar.ToggleTrayCommand.Execute(null);
+        await SnapAsync(window, "calendar-week-tray-light");
+        Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
+        await SnapAsync(window, "calendar-week-dark");
+    }
+
     [AvaloniaFact]
     public async Task Today_renders_in_both_themes_with_rows_and_the_inspector()
     {

@@ -42,6 +42,8 @@ public sealed class ViewModelFactory(AppServices s)
 
     public TimelineViewModel Timeline(Guid workspaceId) => new(_list, workspaceId);
 
+    public CalendarViewModel Calendar(Guid workspaceId) => new(_list, workspaceId);
+
     public HabitGridViewModel HabitGrid(Guid workspaceId) =>
         new(_list, s.Uow, s.Recurrence, workspaceId);
 

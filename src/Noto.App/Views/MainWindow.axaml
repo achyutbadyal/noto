@@ -437,28 +437,68 @@
           <StackPanel
             Grid.Column="1"
             Orientation="Horizontal"
-            Spacing="2"
-            IsVisible="{Binding IsListPage}"
+            Spacing="12"
             VerticalAlignment="Center"
           >
-            <Button
-              Classes="icon small"
-              Command="{Binding StepDayCommand}"
-              CommandParameter="-1"
-              AutomationProperties.Name="Previous day"
-              ToolTip.Tip="Previous day"
+            <StackPanel
+              Orientation="Horizontal"
+              Spacing="2"
+              IsVisible="{Binding ShowDayArrows}"
+              VerticalAlignment="Center"
             >
-              <PathIcon Data="{v:Icon chevron-left}" />
-            </Button>
-            <Button
-              Classes="icon small"
-              Command="{Binding StepDayCommand}"
-              CommandParameter="1"
-              AutomationProperties.Name="Next day"
-              ToolTip.Tip="Next day"
+              <Button
+                Classes="icon small"
+                Command="{Binding StepDayCommand}"
+                CommandParameter="-1"
+                AutomationProperties.Name="Previous day"
+                ToolTip.Tip="Previous day"
+              >
+                <PathIcon Data="{v:Icon chevron-left}" />
+              </Button>
+              <Button
+                Classes="icon small"
+                Command="{Binding StepDayCommand}"
+                CommandParameter="1"
+                AutomationProperties.Name="Next day"
+                ToolTip.Tip="Next day"
+              >
+                <PathIcon Data="{v:Icon chevron-right}" />
+              </Button>
+            </StackPanel>
+            <!-- How many days to look at. The layout still decides how a single day is arranged. -->
+            <Border
+              Classes="raised"
+              Padding="2"
+              CornerRadius="9"
+              IsVisible="{Binding ShowScope}"
+              AutomationProperties.Name="Days shown"
             >
-              <PathIcon Data="{v:Icon chevron-right}" />
-            </Button>
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button
+                  Classes="seg"
+                  Classes.selected="{Binding IsDayScope}"
+                  Content="Day"
+                  Command="{Binding SetScopeCommand}"
+                  CommandParameter="Day"
+                />
+                <Button
+                  Classes="seg"
+                  Classes.selected="{Binding IsWeekScope}"
+                  Content="Week"
+                  Command="{Binding SetScopeCommand}"
+                  CommandParameter="Week"
+                  ToolTip.Tip="Seven days at a time (W)"
+                />
+                <Button
+                  Classes="seg"
+                  Classes.selected="{Binding IsMonthScope}"
+                  Content="Month"
+                  Command="{Binding SetScopeCommand}"
+                  CommandParameter="Month"
+                  ToolTip.Tip="The whole month (M)"
+                />
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Grid>
 

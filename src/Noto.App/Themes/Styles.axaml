@@ -271,6 +271,54 @@
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
   </Style>
 
+  <!--
+    Calendar day cell (month grid and week column). A ledger rule, not a card: hairline-bordered, the
+    accent edge and a soft wash appear only while a card is over a day that can take it. Days that have
+    passed recede, so today and what is ahead carry the page.
+  -->
+  <Style Selector="Border.dayCell">
+    <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="6,4,6,6" />
+  </Style>
+  <Style Selector="Border.dayCell.weekend">
+    <Setter Property="Background" Value="{DynamicResource CanvasBrush}" />
+  </Style>
+  <Style Selector="Border.dayCell.past">
+    <Setter Property="Opacity" Value="0.62" />
+  </Style>
+  <Style Selector="Border.dayCell.outside">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+  <Style Selector="Border.dayCell:dragover">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+  </Style>
+  <Style Selector="Border.todayDot">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="CornerRadius" Value="3" />
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.dayNum">
+    <Setter Property="Padding" Value="4,1" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Foreground" Value="{DynamicResource Text2Brush}" />
+  </Style>
+  <Style Selector="Button.dayNum.today">
+    <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="Button.dayNum /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.dayNum:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+  </Style>
+
   <!-- Habit week grid: rounded squares, never coloured crosses -->
   <Style Selector="Button.habitCell">
     <Setter Property="Width" Value="30" />

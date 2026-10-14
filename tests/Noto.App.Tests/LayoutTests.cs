@@ -186,6 +186,147 @@ public sealed class LayoutTests : IDisposable
     }
 
     [Fact]
+    public async Task Week_and_month_scopes_show_the_calendar_over_any_day_based_layout()
+    {
+        await _shell.InitializeAsync();
+        _shell.ShowScope.ShouldBeTrue();
+
+        // List layout: Week and Month swap in the calendar, Day returns to the list.
+        await _shell.SetScopeCommand.ExecuteAsync("Week");
+        _shell.Content.ShouldBeOfType<CalendarViewModel>().IsWeek.ShouldBeTrue();
+        await _shell.SetScopeCommand.ExecuteAsync("Month");
+        _shell.Content.ShouldBeOfType<CalendarViewModel>().IsMonth.ShouldBeTrue();
+        _shell.ShowDayArrows.ShouldBeFalse();
+        await _shell.SetScopeCommand.ExecuteAsync("Day");
+        _shell.Content.ShouldBeOfType<TodayViewModel>();
+
+        // The same switch works over a board, and Day brings the board back.
+        await Layout(BuiltInPresets.Kanban);
+        await _shell.RefreshAsync();
+        await _shell.SetScopeCommand.ExecuteAsync("Week");
+        _shell.Content.ShouldBeOfType<CalendarViewModel>();
+        await _shell.SetScopeCommand.ExecuteAsync("Day");
+        _shell.Content.ShouldBeOfType<BoardViewModel>();
+    }
+
+    [Fact]
+    public async Task A_habit_grid_has_no_week_or_month_scope()
+    {
+        await Layout(BuiltInPresets.Habit);
+        await _shell.InitializeAsync();
+        _shell.ShowScope.ShouldBeFalse();
+
+        await _shell.SetScopeCommand.ExecuteAsync("Week");
+
+        _shell.Content.ShouldBeOfType<HabitGridViewModel>();
+    }
+
+    [Fact]
+    public async Task The_scope_is_remembered_per_workspace_and_never_writes_to_items()
+    {
+        await _app.AddAsync("A", AppFixture.Today);
+        var before = await _app.Db.RunAsync(async s =>
+            (await s.Events.ListForWorkspaceAsync(_app.Workspace.Id)).Count
+        );
+        await _shell.InitializeAsync();
+        await _shell.SetScopeCommand.ExecuteAsync("Week");
+
+        var again = new ShellViewModel(_app.Services);
+        await again.InitializeAsync();
+
+        again.Content.ShouldBeOfType<CalendarViewModel>().IsWeek.ShouldBeTrue();
+        var after = await _app.Db.RunAsync(async s =>
+            (await s.Events.ListForWorkspaceAsync(_app.Workspace.Id)).Count
+        );
+        after.ShouldBe(before);
+    }
+
+    [Fact]
+    public async Task Calendar_places_items_on_their_day_and_keeps_dateless_ones_in_the_tray()
+    {
+        var planned = await _app.AddAsync("Planned", AppFixture.Today.AddDays(2));
+        var late = await _app.AddAsync("Late", AppFixture.Today.AddDays(-1));
+        await _app.AddAsync("Whenever");
+
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        await calendar.ReloadAsync();
+
+        calendar
+            .Days.Single(d => d.Day == AppFixture.Today.AddDays(2))
+            .Rows.Single()
+            .Id.ShouldBe(planned);
+        calendar.Trays.Single(t => t.Title == "Overdue").Rows.Single().Id.ShouldBe(late);
+        calendar
+            .Trays.Single(t => t.Title == "Unscheduled")
+            .Rows.Single()
+            .Title.ShouldBe("Whenever");
+    }
+
+    [Fact]
+    public async Task Dropping_a_card_on_another_day_plans_it_and_undo_restores_it()
+    {
+        var id = await _app.AddAsync("Move me", AppFixture.Today);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        await calendar.ReloadAsync();
+        var target = AppFixture.Today.AddDays(3);
+
+        await calendar.MoveToDayAsync(calendar.FlatRows.Single(r => r.Id == id).Item, target);
+        await calendar.ReloadAsync();
+        calendar.Days.Single(d => d.Day == target).Rows.Single().Id.ShouldBe(id);
+
+        await _app.Services.Undo.UndoLastAsync();
+        await calendar.ReloadAsync();
+        calendar.Days.Single(d => d.Day == AppFixture.Today).Rows.Single().Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public async Task Dropping_on_a_past_day_changes_nothing_and_says_why()
+    {
+        var id = await _app.AddAsync("Stay", AppFixture.Today);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        await calendar.ReloadAsync();
+
+        await calendar.MoveToDayAsync(
+            calendar.FlatRows.Single(r => r.Id == id).Item,
+            AppFixture.Today.AddDays(-2)
+        );
+        await calendar.ReloadAsync();
+
+        calendar.Days.Single(d => d.Day == AppFixture.Today).Rows.Single().Id.ShouldBe(id);
+        calendar.Message.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task Dropping_on_the_unscheduled_tray_unplans_the_item()
+    {
+        var id = await _app.AddAsync("Unplan", AppFixture.Today.AddDays(1));
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        await calendar.ReloadAsync();
+
+        await calendar.MoveToDayAsync(calendar.FlatRows.Single(r => r.Id == id).Item, null);
+        await calendar.ReloadAsync();
+
+        calendar.Trays.Single(t => t.Title == "Unscheduled").Rows.Single().Id.ShouldBe(id);
+    }
+
+    [Fact]
+    public async Task Calendar_keyboard_nudges_the_focused_card_by_a_day()
+    {
+        var id = await _app.AddAsync("Nudge", AppFixture.Today.AddDays(1));
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        await calendar.ReloadAsync();
+        calendar.SetFocus(calendar.FlatRows.Single(r => r.Id == id));
+
+        await calendar.HandleKeyAsync(Key("shift+ArrowRight"));
+        await calendar.ReloadAsync();
+
+        calendar
+            .Days.Single(d => d.Day == AppFixture.Today.AddDays(2))
+            .Rows.Single()
+            .Id.ShouldBe(id);
+    }
+
+    [Fact]
     public async Task Habit_grid_shows_skip_rules_ticks_today_and_lists_other_items()
     {
         await Layout(BuiltInPresets.Habit);

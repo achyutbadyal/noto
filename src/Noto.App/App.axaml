@@ -42,6 +42,9 @@
     <DataTemplate DataType="vm:TimelineViewModel">
       <views:ListPageView />
     </DataTemplate>
+    <DataTemplate DataType="vm:CalendarViewModel">
+      <views:CalendarView />
+    </DataTemplate>
     <DataTemplate DataType="vm:HabitGridViewModel">
       <views:HabitGridView />
     </DataTemplate>

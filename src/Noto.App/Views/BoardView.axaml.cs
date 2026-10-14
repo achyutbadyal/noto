@@ -11,11 +11,6 @@ namespace Noto.App.Views;
 // does, so the WIP check and the undo toast behave identically (docs/07 §9.1).
 public partial class BoardView : UserControl
 {
-    // The drag payload: an item id under an application-scoped format.
-    static readonly DataFormat<string> ItemPayload = DataFormat.CreateStringApplicationFormat(
-        "noto/item"
-    );
-
     BoardViewModel? _vm;
     ItemRowViewModel? _candidate;
     Point _origin;
@@ -67,7 +62,7 @@ public partial class BoardView : UserControl
 
         _candidate = null;
         var transfer = new DataTransfer();
-        transfer.Add(DataTransferItem.Create(ItemPayload, row.Id.ToString()));
+        transfer.Add(DataTransferItem.Create(ItemDrag.Payload, row.Id.ToString()));
         await DragDrop.DoDragDropAsync(e, transfer, DragDropEffects.Move);
     }
 
@@ -82,7 +77,7 @@ public partial class BoardView : UserControl
             return;
         if ((sender as Control)?.DataContext is not SectionViewModel { ColumnId: { } columnId })
             return;
-        if (e.DataTransfer?.TryGetValue(ItemPayload) is not { } payload)
+        if (e.DataTransfer?.TryGetValue(ItemDrag.Payload) is not { } payload)
             return;
         if (!Guid.TryParse(payload, out var id))
             return;

@@ -20,6 +20,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     readonly Dictionary<Guid, TodayViewModel> _today = [];
     readonly Dictionary<Guid, BacklogViewModel> _backlogs = [];
     readonly Dictionary<Guid, ItemListViewModel> _layoutPages = [];
+    readonly Dictionary<Guid, CalendarViewModel> _calendars = [];
     readonly SemaphoreSlim _refreshGate = new(1, 1);
     readonly AccountService? _account;
     DateOnly _todayDate;
@@ -57,6 +58,8 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         NotifyPropertyChangedFor(
             nameof(ShowInspector),
             nameof(IsListPage),
+            nameof(ShowDayArrows),
+            nameof(ShowScope),
             nameof(IsToday),
             nameof(IsBacklog),
             nameof(IsTodayAll),
@@ -65,8 +68,15 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     ]
     AppPage _page = AppPage.Today;
 
-    [ObservableProperty]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowDayArrows))]
     object? _content;
+
+    // Day / Week / Month: how many days the home screen spans (per workspace, remembered locally).
+    [
+        ObservableProperty,
+        NotifyPropertyChangedFor(nameof(IsDayScope), nameof(IsWeekScope), nameof(IsMonthScope))
+    ]
+    ViewScope _scope = ViewScope.Day;
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowInspector))]
     bool _isInspectorOpen = true;
@@ -127,6 +137,19 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public bool IsListPage =>
         Page is AppPage.Today or AppPage.Backlog or AppPage.DayLog or AppPage.TodayAll;
     public bool IsToday => Page == AppPage.Today;
+
+    // Every layout that places items on days can be seen across several of them; a habit grid already
+    // has its own window, so it keeps the Day scope only.
+    public bool ShowScope => Page == AppPage.Today && SupportsScope;
+    bool SupportsScope => TodayPage?.Snapshot?.Workspace is { Layout: not Layout.HabitGrid };
+    public bool IsDayScope => Scope == ViewScope.Day;
+    public bool IsWeekScope => Scope == ViewScope.Week;
+    public bool IsMonthScope => Scope == ViewScope.Month;
+    public bool ShowDayArrows => IsListPage && Content is not CalendarViewModel;
+    ViewScope EffectiveScope => SupportsScope ? Scope : ViewScope.Day;
+
+    static string ScopeKey(Guid workspaceId) => $"scope.{workspaceId:N}";
+
     public bool IsBacklog => Page == AppPage.Backlog;
     public bool IsTodayAll => Page == AppPage.TodayAll;
     public bool IsHelp => Page == AppPage.Help;
@@ -211,6 +234,9 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         foreach (var w in Workspaces)
             w.IsSelected = w == tab;
         Selected = tab;
+        Scope = Enum.TryParse<ViewScope>(_services.UiState.Get(ScopeKey(id)), out var saved)
+            ? saved
+            : ViewScope.Day;
         ViewDay = null;
         Settings = null;
         Insights = null;
@@ -240,6 +266,14 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     async Task<object> HomeContentAsync(TodayViewModel today)
     {
         var ws = today.Snapshot!.Workspace;
+        if (EffectiveScope != ViewScope.Day)
+        {
+            var calendar = CalendarFor(ws.Id);
+            calendar.Mode =
+                EffectiveScope == ViewScope.Week ? CalendarMode.Week : CalendarMode.Month;
+            await calendar.ReloadAsync();
+            return calendar;
+        }
         if (ws.Layout == Layout.List)
             return today;
 
@@ -263,9 +297,12 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         };
 
     bool HomeMatchesLayout(Workspace ws) =>
-        ws.Layout == Layout.List
-            ? Content == TodayPage
-            : Content is ItemListViewModel list && MatchesLayout(list, ws.Layout);
+        EffectiveScope != ViewScope.Day
+            ? Content is CalendarViewModel c
+                && c.WorkspaceId == ws.Id
+                && c.IsWeek == (EffectiveScope == ViewScope.Week)
+        : ws.Layout == Layout.List ? Content == TodayPage
+        : Content is ItemListViewModel list && MatchesLayout(list, ws.Layout);
 
     async Task RefreshOutcomesAsync()
     {
@@ -286,6 +323,35 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         Attach(vm);
         vm.Add.Added += () => _ = RefreshAsync();
         return _today[id] = vm;
+    }
+
+    CalendarViewModel CalendarFor(Guid id)
+    {
+        if (_calendars.TryGetValue(id, out var existing))
+            return existing;
+        var vm = _vms.Calendar(id);
+        Attach(vm);
+        vm.ScopeRequested += scope => _ = SetScopeAsync(scope.ToString());
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CalendarViewModel.Title) && Content == vm)
+                UpdateHeader();
+        };
+        return _calendars[id] = vm;
+    }
+
+    [RelayCommand]
+    async Task SetScopeAsync(string scope)
+    {
+        if (!Enum.TryParse<ViewScope>(scope, out var next) || Selected is not { } ws)
+            return;
+        Scope = next;
+        _services.UiState.Set(ScopeKey(ws.Id), next.ToString());
+        if (Page != AppPage.Today || TodayPage is not { } home)
+            return;
+        Content = await HomeContentAsync(home);
+        await UpdateInspectorAsync();
+        UpdateHeader();
     }
 
     BacklogViewModel BacklogFor(Guid id)
@@ -604,9 +670,16 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         await _links.DecorateAsync();
     }
 
-    void UpdateHeader() =>
-        HeaderTitle = Page switch
+    void UpdateHeader()
+    {
+        OnPropertyChanged(nameof(ShowScope));
+        HeaderTitle = HeaderFor();
+    }
+
+    string HeaderFor() =>
+        Page switch
         {
+            AppPage.Today when Content is CalendarViewModel calendar => calendar.Title,
             AppPage.Today =>
                 $"Today · {Today.ToString("ddd MMM d", System.Globalization.CultureInfo.InvariantCulture)}",
             AppPage.Backlog => "Backlog",

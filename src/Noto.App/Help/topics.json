@@ -208,7 +208,7 @@
   {
     "id": "layouts",
     "title": "Layouts",
-    "summary": "List, board, timeline or habit grid.",
+    "summary": "List, board, timeline or habit grid, and how many days to view.",
     "icon": "kanban",
     "sections": [
       {
@@ -232,6 +232,10 @@
             "text": "Shows repeating rules with missed days skipped. Everything else is one click away under \"Not habits\"."
           }
         ]
+      },
+      {
+        "heading": "Day, Week and Month",
+        "body": "The switch beside the page title sets how many days you look at. Day is your layout. Week and Month show a calendar of the same items, whatever the layout. Drag a card to another day to plan it for that day; drag it to the Unplanned tray to clear its plan. Past days are closed. Shift+←/→ moves the focused card a day, PageUp/PageDown change week or month, Home returns to today, M and W switch scope and U shows the Unplanned tray. A habit grid keeps its own window and has no switch."
       },
       {
         "heading": "Each layout remembers its own setup",
