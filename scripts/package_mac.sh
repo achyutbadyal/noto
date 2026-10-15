@@ -28,4 +28,10 @@ fi
 cp src/Noto.Desktop/Assets/noto.icns "$APP_DIR/Contents/Resources/"
 cp src/Noto.Desktop/Assets/Info.plist "$APP_DIR/Contents/"
 
+# Ad-hoc sign (free, no developer account) so the bundle seal covers Info.plist and Resources, which
+# were copied in after dotnet publish signed the executable. Recipients still need to clear the
+# download quarantine flag (see README), since this is not a Developer ID signature.
+codesign --force --deep --sign - "$APP_DIR"
+codesign --verify --deep --strict "$APP_DIR"
+
 echo "Successfully created $APP_DIR"
