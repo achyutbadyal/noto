@@ -68,7 +68,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     ]
     AppPage _page = AppPage.Today;
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowDayArrows))]
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowDayArrows), nameof(ShowInspector))]
     object? _content;
 
     // Day / Week / Month: how many days the home screen spans (per workspace, remembered locally).
@@ -132,7 +132,10 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public bool ShowInspector =>
         IsInspectorOpen
         && !IsNarrow
-        && Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll;
+        && (
+            Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll
+            || Content is DayAheadViewModel
+        );
     public double SidebarWidth => EffectiveSidebarExpanded ? 232 : 73;
     public bool IsListPage =>
         Page is AppPage.Today or AppPage.Backlog or AppPage.DayLog or AppPage.TodayAll;
@@ -160,6 +163,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     public InsightsViewModel? Insights { get; private set; }
     public SettingsViewModel? Settings { get; private set; }
     public DayLogViewModel? DayLog { get; private set; }
+    public DayAheadViewModel? DayAhead { get; private set; }
     public OnboardingViewModel? Onboarding { get; private set; }
     public TodayAllViewModel? TodayAllPage { get; private set; }
     public WeeklyReviewViewModel? WeeklyReview { get; private set; }
@@ -332,6 +336,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         var vm = _vms.Calendar(id, Appearance);
         Attach(vm);
         vm.ScopeRequested += scope => _ = SetScopeAsync(scope.ToString());
+        vm.DayRequested += day => _ = OpenDayAsync(day);
         vm.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(CalendarViewModel.Title) && Content == vm)
@@ -536,11 +541,36 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         }
 
         ViewDay = day;
-        DayLog = _vms.DayLog(ws.Id);
-        await DayLog.LoadAsync(day);
         Page = AppPage.DayLog;
-        Content = DayLog;
+        if (day > Today)
+        {
+            // A day ahead is a plan you can work in: real rows, the inspector, the hover preview.
+            DayAhead = _vms.DayAhead(ws.Id, ResolveWorkspaceName);
+            Attach(DayAhead);
+            DayAhead.Add.Added += () => _ = RefreshAsync();
+            await DayAhead.LoadAsync(day);
+            Content = DayAhead;
+        }
+        else
+        {
+            DayLog = _vms.DayLog(ws.Id);
+            await DayLog.LoadAsync(day);
+            Content = DayLog;
+        }
+        await UpdateInspectorAsync();
         UpdateHeader();
+    }
+
+    // A date picked on the calendar opens that day's own page. Today is the Day scope of the home screen.
+    public async Task OpenDayAsync(DateOnly day)
+    {
+        if (day == Today)
+        {
+            ViewDay = null;
+            await SetScopeAsync(nameof(ViewScope.Day));
+            return;
+        }
+        await ShowDayAsync(day);
     }
 
     public Task ShiftDayAsync(int delta) => ShowDayAsync(CurrentDay.AddDays(delta));
@@ -687,6 +717,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
             AppPage.Shutdown => "Shutdown",
             AppPage.Insights => "Insights",
             AppPage.Settings => "Settings",
+            AppPage.DayLog when Content is DayAheadViewModel ahead => ahead.HeaderTitle,
             AppPage.DayLog => DayLog?.Title ?? "",
             AppPage.TodayAll => "Today · all workspaces",
             AppPage.WeeklyReview => "Weekly review",

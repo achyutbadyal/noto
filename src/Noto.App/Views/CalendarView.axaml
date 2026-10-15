@@ -114,8 +114,8 @@
                         Content="{Binding DayNumber}"
                         HorizontalAlignment="Left"
                         Click="OnOpenDay"
-                        AutomationProperties.Name="Open week"
-                        ToolTip.Tip="Open this week"
+                        AutomationProperties.Name="Open this day"
+                        ToolTip.Tip="Open this day"
                       />
                       <TextBlock
                         Grid.Column="2"
@@ -175,16 +175,25 @@
                 Padding="8"
               >
                 <DockPanel>
-                  <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,8">
-                    <Border Classes="todayDot" IsVisible="{Binding IsToday}" Margin="0,0,6,0" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                      <TextBlock Classes="headline" Text="{Binding DayNumber}" />
-                      <TextBlock
-                        Classes="section"
-                        Text="{Binding WeekdayLabel}"
-                        VerticalAlignment="Center"
-                      />
-                    </StackPanel>
+                  <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6">
+                    <Border Classes="todayDot" IsVisible="{Binding IsToday}" Margin="4,0,2,0" />
+                    <Button
+                      Grid.Column="1"
+                      Classes="dayNum"
+                      HorizontalAlignment="Left"
+                      Click="OnOpenDay"
+                      AutomationProperties.Name="Open this day"
+                      ToolTip.Tip="Open this day"
+                    >
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Classes="headline" Text="{Binding DayNumber}" />
+                        <TextBlock
+                          Classes="section"
+                          Text="{Binding WeekdayLabel}"
+                          VerticalAlignment="Center"
+                        />
+                      </StackPanel>
+                    </Button>
                     <TextBlock
                       Grid.Column="2"
                       Classes="hint"
@@ -192,20 +201,40 @@
                       FontFeatures="+tnum"
                       Text="{Binding LoadText}"
                       IsVisible="{Binding HasLoad}"
+                      Margin="0,0,4,0"
                       VerticalAlignment="Center"
                     />
                   </Grid>
+                  <!-- what is left of the day: a thin bar, and the same thing in words -->
+                  <StackPanel
+                    DockPanel.Dock="Top"
+                    Spacing="4"
+                    Margin="6,0,6,8"
+                    IsVisible="{Binding IsDropTarget}"
+                  >
+                    <TextBlock Text="{Binding FreeText}" Classes="hint" FontSize="11" />
+                  </StackPanel>
                   <ScrollViewer
                     VerticalScrollBarVisibility="Auto"
                     HorizontalScrollBarVisibility="Disabled"
                   >
-                    <ItemsControl ItemsSource="{Binding Rows}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ItemRowViewModel">
-                          <v:ItemRowView />
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel>
+                      <ItemsControl ItemsSource="{Binding Rows}">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate x:DataType="vm:ItemRowViewModel">
+                            <v:ItemRowView />
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Button
+                        Classes="link"
+                        Content="Plan this day"
+                        HorizontalAlignment="Left"
+                        Margin="2,4,0,0"
+                        IsVisible="{Binding OffersPlanDay}"
+                        Click="OnOpenDay"
+                      />
+                    </StackPanel>
                   </ScrollViewer>
                 </DockPanel>
               </Border>
@@ -232,7 +261,7 @@
                 Padding="14,10"
                 MinHeight="68"
               >
-                <Grid ColumnDefinitions="104,*" ColumnSpacing="12">
+                <Grid ColumnDefinitions="112,*" ColumnSpacing="12">
                   <StackPanel Spacing="1" VerticalAlignment="Top">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                       <Border
@@ -246,7 +275,16 @@
                         VerticalAlignment="Center"
                       />
                     </StackPanel>
-                    <TextBlock Classes="displaySmall" Text="{Binding DayNumber}" />
+                    <Button
+                      Classes="dayNum"
+                      HorizontalAlignment="Left"
+                      Margin="-4,0,0,0"
+                      Click="OnOpenDay"
+                      AutomationProperties.Name="Open this day"
+                      ToolTip.Tip="Open this day"
+                    >
+                      <TextBlock Classes="displaySmall" Text="{Binding DayNumber}" />
+                    </Button>
                     <TextBlock
                       Classes="hint"
                       FontSize="11"
@@ -254,6 +292,9 @@
                       Text="{Binding LoadText}"
                       IsVisible="{Binding HasLoad}"
                     />
+                    <StackPanel Spacing="4" Margin="0,6,0,0" IsVisible="{Binding IsDropTarget}">
+                      <TextBlock Text="{Binding FreeText}" Classes="hint" FontSize="11" />
+                    </StackPanel>
                   </StackPanel>
                   <Panel Grid.Column="1">
                     <ItemsControl ItemsSource="{Binding Rows}">
@@ -263,12 +304,24 @@
                         </DataTemplate>
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock
-                      Classes="hint"
-                      Text="{Binding IsDropTarget, Converter={x:Static v:RowConverters.EmptyDayText}}"
+                    <StackPanel
+                      Orientation="Horizontal"
+                      Spacing="10"
                       VerticalAlignment="Center"
                       IsVisible="{Binding IsEmpty}"
-                    />
+                    >
+                      <TextBlock
+                        Classes="hint"
+                        Text="{Binding IsDropTarget, Converter={x:Static v:RowConverters.EmptyDayText}}"
+                        VerticalAlignment="Center"
+                      />
+                      <Button
+                        Classes="link"
+                        Content="Plan this day"
+                        IsVisible="{Binding OffersPlanDay}"
+                        Click="OnOpenDay"
+                      />
+                    </StackPanel>
                   </Panel>
                 </Grid>
               </Border>

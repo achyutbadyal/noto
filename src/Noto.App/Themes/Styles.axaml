@@ -169,6 +169,10 @@
   <Style Selector="Button.status /template/ ContentPresenter">
     <Setter Property="Background" Value="Transparent" />
   </Style>
+  <Style Selector="Button.status.aligned">
+    <Setter Property="VerticalAlignment" Value="Top" />
+    <Setter Property="Margin" Value="0,3,0,0" />
+  </Style>
   <Style Selector="Button.status:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
   </Style>
@@ -271,6 +275,17 @@
         <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="{StaticResource EaseOut}" />
       </Transitions>
     </Setter>
+  </Style>
+  <Style Selector="Border.chip.fact.due">
+    <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+  </Style>
+  <Style Selector="Border.chip.fact.late">
+    <Setter Property="Background" Value="{DynamicResource PressureWarmSoftBrush}" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.chip.fact.late TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource PressureWarmBrush}" />
   </Style>
   <Style Selector="Ellipse.key">
     <Setter Property="Fill" Value="{DynamicResource Text3Brush}" />
@@ -982,17 +997,6 @@
         <DoubleTransition
           Property="Opacity"
           Duration="0:0:0.13"
-          Easing="{StaticResource EaseOut}"
-        />
-      </Transitions>
-    </Setter>
-  </Style>
-  <Style Selector="Window.motion Border.row">
-    <Setter Property="Transitions">
-      <Transitions>
-        <BrushTransition
-          Property="Background"
-          Duration="0:0:0.14"
           Easing="{StaticResource EaseOut}"
         />
       </Transitions>

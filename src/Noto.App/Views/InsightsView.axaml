@@ -177,7 +177,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:InsightRow">
               <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-                <TextBlock Text="{Binding Label}" TextTrimming="CharacterEllipsis" />
+                <v:LinkText Value="{Binding Label}" TextTrimming="CharacterEllipsis" />
                 <TextBlock Grid.Column="1" Text="{Binding Value}" Classes="hint" />
               </Grid>
             </DataTemplate>

@@ -3,6 +3,8 @@ using System.Text.RegularExpressions;
 
 namespace Noto.Core.Links;
 
+public readonly record struct LinkSpan(int Start, int Length, string Url);
+
 // todo_link semantics (docs/04 §6): lowercase scheme/host, tracking params stripped, no fragment.
 public static partial class LinkUrl
 {
@@ -44,6 +46,22 @@ public static partial class LinkUrl
                     found.Add(url);
         }
         return found;
+    }
+
+    // Where each web link sits in `text`, as written (not normalized), so a view can render it in place
+    // and open exactly what the user typed. Uses the same trimming as Scan.
+    public static IReadOnlyList<LinkSpan> Spans(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return [];
+        var spans = new List<LinkSpan>();
+        foreach (Match m in UrlPattern().Matches(text))
+        {
+            var url = TrimTrailing(m.Value);
+            if (url.Length > 0 && Normalize(url) is not null)
+                spans.Add(new LinkSpan(m.Index, url.Length, url));
+        }
+        return spans;
     }
 
     static bool IsTracking(string param)

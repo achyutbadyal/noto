@@ -79,7 +79,7 @@
               <DataTemplate x:DataType="vm:SweepEntryViewModel">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" Margin="0,4">
                   <StackPanel MinWidth="0">
-                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <v:LinkText Value="{Binding Title}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Age}" Classes="hint" FontSize="11" />
                   </StackPanel>
                   <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">

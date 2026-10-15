@@ -39,6 +39,30 @@ public sealed partial class SectionViewModel(string title, bool collapsible = tr
     public string LoadText { get; private set; } = "";
     public bool HasLoad => LoadText.Length > 0;
 
+    // The day's load against what a day holds, for days that have not passed: a thin bar, and in words
+    // what is left ("4h free", "1h over"). A day with nothing on it offers to be planned.
+    public double MeterPercent { get; private set; }
+    public bool HasMeter { get; private set; }
+    public bool IsOverMeter { get; private set; }
+    public string FreeText { get; private set; } = "";
+    public bool OffersPlanDay => IsDropTarget && Day is not null && IsEmpty;
+
+    public void SetMeter(int committed, int capacity, Noto.Core.Models.CapacityUnit unit)
+    {
+        HasMeter = committed > 0 && capacity > 0;
+        IsOverMeter = committed > capacity;
+        MeterPercent = capacity == 0 ? 0 : Math.Min(100, 100.0 * committed / capacity);
+        FreeText =
+            committed == 0 ? $"{Noto.App.Logic.DayAheadText.Amount(capacity, unit)} open"
+            : committed > capacity
+                ? $"{Noto.App.Logic.DayAheadText.Amount(committed - capacity, unit)} over"
+            : $"{Noto.App.Logic.DayAheadText.Amount(capacity - committed, unit)} free";
+        OnPropertyChanged(nameof(MeterPercent));
+        OnPropertyChanged(nameof(HasMeter));
+        OnPropertyChanged(nameof(IsOverMeter));
+        OnPropertyChanged(nameof(FreeText));
+    }
+
     // Month cells show a few chips and a "+N more" instead of growing.
     public int MaxShown { get; init; } = int.MaxValue;
     public IEnumerable<ItemRowViewModel> ShownRows => Rows.Take(MaxShown);
@@ -54,6 +78,13 @@ public sealed partial class SectionViewModel(string title, bool collapsible = tr
             ? $"{Title.ToUpperInvariant()} ({Rows.Count}/{limit})"
             : $"{Title.ToUpperInvariant()} ({Rows.Count})";
     public bool IsEmpty => Rows.Count == 0;
+
+    // A short note on the right of the header (the day planner shows what the section costs).
+    public string? HeaderDetail { get; init; }
+    public bool HasHeaderDetail => !string.IsNullOrEmpty(HeaderDetail);
+
+    // The day planner's "could go here" section: each row offers a Plan here button.
+    public bool OffersPlan { get; init; }
     public IEnumerable<ItemRowViewModel> VisibleRows => IsCollapsed ? [] : Rows;
 
     public void Replace(IEnumerable<ItemRowViewModel> rows)
@@ -64,6 +95,7 @@ public sealed partial class SectionViewModel(string title, bool collapsible = tr
         OnPropertyChanged(nameof(Header));
         OnPropertyChanged(nameof(IsOverWip));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(OffersPlanDay));
         OnPropertyChanged(nameof(VisibleRows));
         OnPropertyChanged(nameof(ShownRows));
         OnPropertyChanged(nameof(HiddenCount));

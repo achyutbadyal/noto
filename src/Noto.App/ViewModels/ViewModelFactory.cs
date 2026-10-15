@@ -69,6 +69,9 @@ public sealed class ViewModelFactory(AppServices s)
 
     public DayLogViewModel DayLog(Guid workspaceId) => new(s.Reader, workspaceId);
 
+    public DayAheadViewModel DayAhead(Guid workspaceId, Func<string, Guid?>? resolveWorkspace) =>
+        new(_list, workspaceId, resolveWorkspace);
+
     public WeeklyReviewViewModel WeeklyReview(Guid workspaceId) =>
         new(s.Reader, s.DayNoteService, s.Runner, workspaceId);
 

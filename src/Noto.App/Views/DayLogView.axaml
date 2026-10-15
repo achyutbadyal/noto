@@ -2,6 +2,7 @@
   xmlns="https://github.com/avaloniaui"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
   x:Class="Noto.App.Views.DayLogView"
   x:DataType="vm:DayLogViewModel"
 >
@@ -18,7 +19,7 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:DayLogEntry">
                     <Grid ColumnDefinitions="*,Auto" Margin="0,3">
-                      <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                      <v:LinkText Value="{Binding Title}" TextTrimming="CharacterEllipsis" />
                       <TextBlock Grid.Column="1" Text="{Binding Detail}" Classes="hint" />
                     </Grid>
                   </DataTemplate>

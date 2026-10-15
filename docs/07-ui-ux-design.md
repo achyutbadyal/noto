@@ -487,8 +487,27 @@ open items" and a large void, which makes it the weakest screen in the app.)_
 ### 8.3 Time travel
 
 The day strip and `[` / `]` navigate days. Past days are a **read-only log** (what was planned, done,
-carried, decided), reconstructed from item state and history. Future days show items planned or deferred
-to them (`planned_for`), so planning ahead is possible.
+carried, decided), reconstructed from item state and history.
+
+Future days are a **plan you can work in**, not a list of titles. The page opens with how heavy the day is
+(tasks and time against the workspace's capacity, in words: "A light day · 3h 10m free"), a five-part strip
+showing where the work sits (morning, midday, afternoon, evening, any time) and where it is free, and the
+pace forecast when there is enough history. Below it: the tasks grouped by part of the day, **Waiting on**,
+**Due this day** (deadlines that fall on it while the work is planned elsewhere), and **Could go here**: up
+to five proposals (deadlines near it, then undecided work whose day passed, then high-priority work with no
+day), each with a one-click **Plan here**. The composer at the bottom adds straight to that day. Rows are
+real rows, so the inspector, undo and the single-key decisions work exactly as on Today, and a row with room
+also shows a line of its notes, its facts (day part, deadline, who it waits on) and a chip for each linked
+page.
+
+Week and month show the same thing per day: a thin load bar against capacity, what is left in words, and
+**Plan this day** on an empty one. Clicking a date opens that day's page.
+
+### 8.4 Links
+
+Every web link in the app is a link: in titles, notes, the preview and the inspector. Press one and it opens
+in the browser; a press anywhere else in the text behaves as before (selects the row, or starts editing the
+notes). Notes that contain a link show as text with working links until you press in them.
 
 ---
 

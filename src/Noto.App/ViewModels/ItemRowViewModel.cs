@@ -35,7 +35,36 @@ public sealed partial class ItemRowViewModel : ObservableObject
     public bool HasWorkspaceAccent => WorkspaceAccent is not null;
     public string? ProgressText { get; init; }
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(LinkText), nameof(HasLinks))]
+    // What the screens with room say beyond the title: chips and a line of notes.
+    public IReadOnlyList<RowChip> Chips { get; set; } = [];
+    public string NotesPreview { get; init; } = "";
+    public bool HasChips => Chips.Count > 0;
+    public bool HasNotesPreview => NotesPreview.Length > 0;
+
+    // Set by the screen before binding: show the chips, notes line and link chips under the title.
+    public bool ShowDetail { get; set; }
+
+    // The day planner's suggestions: a Plan here button sits beside the row.
+    public bool OfferPlan { get; set; }
+
+    // The title is not alone, so the status dot lines up with its first line instead of the middle.
+    public bool HasDetailLines => ShowChipsLine || ShowNotesLine || ShowLinkChips;
+
+    public bool ShowChipsLine => ShowDetail && HasChips;
+    public bool ShowNotesLine => ShowDetail && HasNotesPreview;
+    public bool ShowSimpleLink => HasLinks && !ShowDetail;
+    public bool ShowLinkChips => HasLinks && ShowDetail;
+
+    [
+        ObservableProperty,
+        NotifyPropertyChangedFor(
+            nameof(LinkText),
+            nameof(HasLinks),
+            nameof(ShowSimpleLink),
+            nameof(ShowLinkChips),
+            nameof(HasDetailLines)
+        )
+    ]
     IReadOnlyList<LinkLine> _links = [];
 
     public bool HasLinks => Links.Count > 0;
@@ -79,7 +108,22 @@ public sealed partial class ItemRowViewModel : ObservableObject
     // The Timeline layout drops the trailing rail entirely: the bar carries the date, and a variable
     // rail would shift the shared `*` column so the bars could not line up with the day axis.
     public bool IsTimeline { get; set; }
-    public bool ShowRail => !IsCompact && !IsTimeline;
+
+    // The row is squeezed (a week lane with the tray open): the full rail would leave the title nothing, so
+    // it collapses to the compact one plus the estimate. Set from the row's width, so it follows resizing.
+    [
+        ObservableProperty,
+        NotifyPropertyChangedFor(
+            nameof(ShowRail),
+            nameof(ShowCompactRail),
+            nameof(ShowNarrowEstimate)
+        )
+    ]
+    bool _isNarrow;
+
+    public bool ShowRail => !IsCompact && !IsTimeline && !IsNarrow;
+    public bool ShowCompactRail => IsCompact || (IsNarrow && !IsTimeline);
+    public bool ShowNarrowEstimate => IsNarrow && !IsCompact && HasEstimate;
     public bool IsDone => Item.Status == ItemStatus.Done;
     public bool IsWaiting => Item.Status == ItemStatus.Waiting;
     public bool IsDropped => Item.Status == ItemStatus.Dropped;
@@ -195,6 +239,8 @@ public static class ItemRowFactory
                 usesFallback ? snap.FallbackMinutes : null
             ),
             Breadcrumb = breadcrumb,
+            Chips = ItemDetail.Chips(item, snap.Today, progress: null),
+            NotesPreview = ItemDetail.NotesPreview(item.Notes),
         };
     }
 

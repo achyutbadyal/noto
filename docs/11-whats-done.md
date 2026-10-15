@@ -61,7 +61,7 @@ GitHub (batched GraphQL), Jira, Linear, Slack (admin-approval flow), GitLab, Not
 
 ### `Noto.App` / `Noto.Desktop` / `Noto.Platform`
 
-Avalonia 11.3 with CommunityToolkit.Mvvm. Shell, sidebar, Today, Morning Review (keyboard-only), Shutdown, Backlog, inspector, command bar with search, undo toasts, time travel, Insights, Settings, Today (all), Weekly Review, Board, Timeline, Habit grid, quick capture, onboarding. VoiceOver label strings, theme tokens in one C# source shared with the contrast tests. Platform abstractions with macOS implementations (Keychain, Carbon hotkey, notifications, capture context); Windows/Linux stubs that explain what is unavailable.
+Avalonia 11.3 with CommunityToolkit.Mvvm. Shell, sidebar, Today, Morning Review (keyboard-only), Shutdown, Backlog, inspector, command bar with search, undo toasts, time travel (a day ahead is a plan page; docs/07 §8.3–8.4), Insights, Settings, Today (all), Weekly Review, Board, Timeline, Habit grid, quick capture, onboarding. VoiceOver label strings, theme tokens in one C# source shared with the contrast tests. Platform abstractions with macOS implementations (Keychain, Carbon hotkey, notifications, capture context); Windows/Linux stubs that explain what is unavailable.
 
 ## Acceptance criteria that are tested
 

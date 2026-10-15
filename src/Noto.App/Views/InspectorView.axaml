@@ -263,7 +263,16 @@
                       AutomationProperties.Name="Open link"
                     />
                   </Grid>
-                  <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                  <TextBlock
+                    Text="{Binding Title}"
+                    Classes="link"
+                    FontWeight="SemiBold"
+                    TextWrapping="Wrap"
+                    Cursor="Hand"
+                    Tag="{Binding Url}"
+                    PointerPressed="OnLinkTitlePressed"
+                    ToolTip.Tip="{Binding Url}"
+                  />
                   <TextBlock
                     Text="{Binding Subtitle}"
                     Classes="secondary"
@@ -311,7 +320,23 @@
 
         <StackPanel Spacing="4">
           <TextBlock Text="NOTES" Classes="section" />
+          <!-- Notes that hold web links read as text with working links; a press anywhere else in them
+               (or Tab into the field) turns them back into the editor. -->
+          <Border
+            x:Name="NotesRead"
+            Classes="raised"
+            Padding="10,8"
+            MinHeight="64"
+            IsVisible="False"
+            Cursor="IBeam"
+            Focusable="True"
+            GotFocus="OnNotesReadGotFocus"
+            PointerPressed="OnNotesReadPressed"
+          >
+            <v:LinkText Value="{Binding Notes}" TextWrapping="Wrap" />
+          </Border>
           <TextBox
+            x:Name="NotesBox"
             Text="{Binding Notes, Mode=TwoWay}"
             AcceptsReturn="True"
             TextWrapping="Wrap"

@@ -54,8 +54,8 @@
             IsVisible="{Binding !IsComplete}"
             AutomationProperties.Name="{Binding CurrentTitle}"
           >
-            <TextBlock
-              Text="{Binding CurrentTitle}"
+            <v:LinkText
+              Value="{Binding CurrentTitle}"
               FontSize="22"
               FontWeight="SemiBold"
               TextWrapping="Wrap"
@@ -162,8 +162,8 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ReviewEntry">
               <Grid ColumnDefinitions="*,Auto" Margin="0,2" ColumnSpacing="8">
-                <TextBlock
-                  Text="{Binding Row.Title}"
+                <v:LinkText
+                  Value="{Binding Row.Title}"
                   Classes="secondary"
                   TextTrimming="CharacterEllipsis"
                 />

@@ -33,6 +33,9 @@
     <DataTemplate DataType="vm:DayLogViewModel">
       <views:DayLogView />
     </DataTemplate>
+    <DataTemplate DataType="vm:DayAheadViewModel">
+      <views:DayAheadView />
+    </DataTemplate>
     <DataTemplate DataType="vm:OnboardingViewModel">
       <views:OnboardingView />
     </DataTemplate>

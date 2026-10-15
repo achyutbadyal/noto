@@ -44,8 +44,8 @@
                 ClipToBounds="True"
               >
                 <Grid ColumnDefinitions="180,*,Auto" ColumnSpacing="12">
-                  <TextBlock
-                    Text="{Binding Name}"
+                  <v:LinkText
+                    Value="{Binding Name}"
                     VerticalAlignment="Center"
                     TextTrimming="CharacterEllipsis"
                   />

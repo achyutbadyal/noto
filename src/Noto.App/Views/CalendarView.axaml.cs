@@ -43,6 +43,6 @@ public partial class CalendarView : UserControl
             || (sender as Control)?.DataContext is not SectionViewModel { Day: { } day }
         )
             return;
-        _vm.OpenWeek(day);
+        _vm.OpenDay(day);
     }
 }

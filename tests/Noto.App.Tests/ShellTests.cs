@@ -251,9 +251,8 @@ public sealed class ShellTests : IDisposable
         await Press("[");
         _shell.Page.ShouldBe(AppPage.DayLog);
         _shell.ViewDay.ShouldBe(AppFixture.Today.AddDays(-1));
-        _shell.DayLog!.IsFuture.ShouldBeFalse();
         _shell
-            .DayLog.Sections.Single(s => s.Title == "Done")
+            .DayLog!.Sections.Single(s => s.Title == "Done")
             .Entries.Single()
             .Title.ShouldBe("Past item");
         _shell.DayLog.Summary.ShouldBe("1 of 2 done · 1 left over");
@@ -262,8 +261,19 @@ public sealed class ShellTests : IDisposable
         _shell.Page.ShouldBe(AppPage.Today);
 
         await Press("]");
-        _shell.DayLog!.IsFuture.ShouldBeTrue();
-        _shell.DayLog.Sections.Single().Entries.Single().Title.ShouldBe("Tomorrow thing");
+        _shell.Page.ShouldBe(AppPage.DayLog);
+        var ahead = _shell.Content.ShouldBeOfType<DayAheadViewModel>();
+        ahead.Day.ShouldBe(AppFixture.Today.AddDays(1));
+        ahead
+            .Sections.Single(s => s.Title == "Any time")
+            .Rows.Single()
+            .Title.ShouldBe("Tomorrow thing");
+        // what is still undecided from yesterday is offered as something that could go here
+        ahead
+            .Sections.Single(s => s.Title == "Could go here")
+            .Rows.Single()
+            .Title.ShouldBe("Left over yesterday");
+        _shell.HeaderTitle.ShouldBe("Tomorrow · Thu, Oct 8");
 
         await Press("[");
         await Press("[");

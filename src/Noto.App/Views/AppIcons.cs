@@ -75,6 +75,11 @@ public static class AppIcons
         // Open book: the guide's own section icon.
         ["book"] =
             "M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 18H6V4h2v8l2.5-1.5L13 12V4h5z",
+        // Arrow leaving a box: this opens somewhere else (a linked page in the browser).
+        ["external"] =
+            "M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3z",
+        ["calendar-plus"] =
+            "M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14zm-8-9h2v2.5h2.5v2H13V18h-2v-2.5H8.5v-2H11z",
         ["chevron-left"] = "M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z",
         ["chevron-right"] = "M9.4 6 8 7.4 12.6 12 8 16.6 9.4 18l6-6z",
         ["chevron-down"] = "M7.4 8.6 6 10l6 6 6-6-1.4-1.4L12 13.2z",

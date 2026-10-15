@@ -85,6 +85,11 @@ public sealed partial class CalendarViewModel : ItemListViewModel
     // The shell switches scope; this is raised when a key or a click inside the calendar wants another.
     public event Action<ViewScope>? ScopeRequested;
 
+    // A day's own page: the plan for a day ahead, today's list, or the log of a day that has passed.
+    public event Action<DateOnly>? DayRequested;
+
+    public void OpenDay(DateOnly day) => DayRequested?.Invoke(day);
+
     public bool IsMonth => Mode == CalendarMode.Month;
     public bool IsWeek => Mode == CalendarMode.Week;
     public bool IsWeekStacked => IsWeek && _appearance.IsWeekVertical;
@@ -101,10 +106,15 @@ public sealed partial class CalendarViewModel : ItemListViewModel
         var view = CalendarLayout.Build(snap.Items, today, anchor, Mode);
 
         // A day column or month chip is narrow, so rows drop the estimate/priority rail and the title keeps its room.
-        ItemRowViewModel Row(TodoItem i)
+        ItemRowViewModel Row(TodoItem i, bool tray = false)
         {
             var row = Wire(ItemRowFactory.Create(i, snap, snap.Workspace.NowItemId == i.Id, byId));
-            row.IsCompact = !IsWeekStacked;
+            row.IsCompact = tray || !IsWeekStacked;
+            // A week card has room for the facts under its title. A narrow column drops the trailing
+            // rail, so the estimate rides with them instead of disappearing.
+            row.ShowDetail = IsWeek && !tray;
+            if (IsWeek && !tray && row.IsCompact && row.HasEstimate)
+                row.Chips = [new RowChip(row.EstimateText), .. row.Chips];
             return row;
         }
 
@@ -121,19 +131,29 @@ public sealed partial class CalendarViewModel : ItemListViewModel
                     IsOutsideMonth = Mode == CalendarMode.Month && d.Day.Month != anchor.Month,
                     MaxShown = Mode == CalendarMode.Month ? MonthChips : int.MaxValue,
                 };
-                section.Replace(d.Open.Select(Row).Concat(d.Done.Select(Row)));
+                section.Replace(d.Open.Select(i => Row(i)).Concat(d.Done.Select(i => Row(i))));
                 section.SetLoad(Load(d.Open, Mode == CalendarMode.Week));
+                if (d.Day >= today)
+                {
+                    var (committed, capacity) = DayAheadLayout.Load(
+                        snap.Items,
+                        d.Day,
+                        snap.Workspace,
+                        snap.FallbackMinutes
+                    );
+                    section.SetMeter(committed, capacity, snap.Workspace.CapacityUnit);
+                }
                 return section;
             })
             .ToList();
 
         var overdue = new SectionViewModel("Overdue", collapsible: false) { IsDropTarget = false };
-        overdue.Replace(view.Overdue.Select(Row));
+        overdue.Replace(view.Overdue.Select(i => Row(i, tray: true)));
         var unscheduled = new SectionViewModel("Unscheduled", collapsible: false)
         {
             IsDropTarget = true,
         };
-        unscheduled.Replace(view.Unscheduled.Select(Row));
+        unscheduled.Replace(view.Unscheduled.Select(i => Row(i, tray: true)));
         _trays = [overdue, unscheduled];
 
         WeekCount = CalendarLayout.GridWeeks(anchor, Mode);

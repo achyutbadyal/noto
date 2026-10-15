@@ -3,10 +3,13 @@
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
   xmlns:vm="using:Noto.App.ViewModels"
   xmlns:v="using:Noto.App.Views"
+  xmlns:s="using:Noto.App.Services"
+  xmlns:l="using:Noto.App.Logic"
   x:Class="Noto.App.Views.ItemRowView"
   x:DataType="vm:ItemRowViewModel"
 >
   <Border
+    x:Name="RowRoot"
     Classes="row"
     Classes.focused="{Binding IsFocused}"
     Classes.selected="{Binding IsSelected}"
@@ -39,6 +42,7 @@
       <Button
         Grid.Column="1"
         Classes="status"
+        Classes.aligned="{Binding HasDetailLines}"
         Command="{Binding ToggleCompleteCommand}"
         Focusable="False"
         AutomationProperties.Name="Toggle complete"
@@ -55,19 +59,85 @@
           FontSize="11"
           TextTrimming="CharacterEllipsis"
         />
-        <TextBlock
+        <v:LinkText
           Classes="rowTitle"
-          Text="{Binding Title}"
+          Value="{Binding Title}"
           TextTrimming="CharacterEllipsis"
           IsVisible="{Binding !IsEditing}"
           TextDecorations="{Binding IsDone, Converter={x:Static v:RowConverters.Strike}}"
         />
+        <!-- Rows with room (day planner, stacked week) say more under the title: a line of notes, the facts,
+             and each linked page. Everything is also in the hover preview. -->
+        <v:LinkText
+          Classes="secondary"
+          Value="{Binding NotesPreview}"
+          IsVisible="{Binding ShowNotesLine}"
+          FontSize="12"
+          Margin="0,1,0,0"
+          TextTrimming="CharacterEllipsis"
+        />
+        <ItemsControl
+          ItemsSource="{Binding Chips}"
+          IsVisible="{Binding ShowChipsLine}"
+          Margin="0,4,0,0"
+        >
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel ItemSpacing="5" LineSpacing="4" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="l:RowChip">
+              <Border
+                Classes="chip fact"
+                Classes.late="{Binding IsLate}"
+                Classes.due="{Binding IsDue}"
+              >
+                <TextBlock Text="{Binding Text}" FontSize="11" />
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        <ItemsControl
+          ItemsSource="{Binding Links}"
+          IsVisible="{Binding ShowLinkChips}"
+          Margin="0,4,0,0"
+        >
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel ItemSpacing="5" LineSpacing="4" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="s:LinkLine">
+              <Button
+                Classes="linkChip"
+                Tag="{Binding Url}"
+                Click="OnOpenLink"
+                AutomationProperties.Name="{Binding Title, StringFormat='Open {0}'}"
+                ToolTip.Tip="{Binding Url}"
+              >
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <PathIcon Data="{v:Icon external}" Width="10" Height="10" />
+                  <TextBlock
+                    Text="{Binding RowText}"
+                    FontSize="11"
+                    MaxWidth="260"
+                    TextTrimming="CharacterEllipsis"
+                  />
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
         <TextBlock
           Text="{Binding LinkText}"
-          IsVisible="{Binding HasLinks}"
-          Classes="hint"
+          IsVisible="{Binding ShowSimpleLink}"
+          Classes="hint link"
           FontSize="12"
           TextTrimming="CharacterEllipsis"
+          Cursor="Hand"
+          PointerPressed="OnOpenFirstLink"
         />
         <!-- The Timeline layout has no trailing rail, so the due label rides under the title. -->
         <TextBlock
@@ -124,7 +194,7 @@
       -->
       <Grid
         Grid.Column="4"
-        ColumnDefinitions="*,Auto,34,46,26"
+        ColumnDefinitions="*,Auto,34,56,26"
         ColumnSpacing="8"
         VerticalAlignment="Center"
         IsVisible="{Binding ShowRail}"
@@ -202,8 +272,15 @@
         Spacing="6"
         HorizontalAlignment="Right"
         VerticalAlignment="Center"
-        IsVisible="{Binding IsCompact}"
+        IsVisible="{Binding ShowCompactRail}"
       >
+        <TextBlock
+          Text="{Binding EstimateText}"
+          IsVisible="{Binding ShowNarrowEstimate}"
+          Classes="hint"
+          FontSize="12"
+          VerticalAlignment="Center"
+        />
         <Border Classes="why" IsVisible="{Binding IsStuck}">
           <TextBlock Text="Why?" />
         </Border>

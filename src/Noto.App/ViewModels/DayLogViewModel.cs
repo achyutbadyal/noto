@@ -16,7 +16,8 @@ public sealed class DayLogSection(string title, IReadOnlyList<DayLogEntry> entri
     public string Header => $"{Title.ToUpperInvariant()} ({Entries.Count})";
 }
 
-// Time travel (docs/07 §8.3): past days are a read-only log rebuilt from history; future days list what's scheduled.
+// Time travel (docs/07 §8.3): a past day is a read-only log rebuilt from history. Days ahead are a plan,
+// which is DayAheadViewModel.
 public sealed partial class DayLogViewModel(WorkspaceReader reader, Guid workspaceId)
     : ObservableObject
 {
@@ -24,9 +25,6 @@ public sealed partial class DayLogViewModel(WorkspaceReader reader, Guid workspa
 
     [ObservableProperty]
     DateOnly _day;
-
-    [ObservableProperty]
-    bool _isFuture;
 
     [ObservableProperty]
     string _title = "";
@@ -38,27 +36,11 @@ public sealed partial class DayLogViewModel(WorkspaceReader reader, Guid workspa
     {
         var snap = await reader.LoadAsync(workspaceId);
         Day = day;
-        IsFuture = day > snap.Today;
         Title =
             day.ToString("dddd, MMM d", System.Globalization.CultureInfo.InvariantCulture)
-            + (IsFuture ? " · scheduled" : " · read-only log");
+            + " · read-only log";
         Sections.Clear();
         var byId = snap.Items.ToDictionary(i => i.Id);
-
-        if (IsFuture)
-        {
-            var scheduled = snap
-                .Items.Where(i =>
-                    i.Status == ItemStatus.Open && !i.IsContainer && i.PlannedFor == day
-                )
-                .ToList();
-            Sections.Add(Section("Planned", scheduled.Select(i => i.Id), byId));
-            Summary =
-                scheduled.Count == 0
-                    ? "Nothing planned for this day yet."
-                    : $"{scheduled.Count} planned";
-            return;
-        }
 
         var sets = await reader.DaySetsAsync(workspaceId, day);
         Sections.Add(Section("Carried in", sets.CarriedIn, byId));
