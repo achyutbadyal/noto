@@ -1,0 +1,26 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.DayPulse"
+  x:DataType="vm:DayPulseViewModel"
+>
+  <!--
+    The strip itself is only shapes: a capsule per day, outline = planned, fill = done. Everything
+    numeric lives in a card that eases in on hover or keyboard focus (DayPulseChip), so the page stays
+    quiet until you ask.
+  -->
+  <ItemsControl ItemsSource="{Binding Chips}" AutomationProperties.Name="Recent and upcoming days">
+    <ItemsControl.ItemsPanel>
+      <ItemsPanelTemplate>
+        <StackPanel Orientation="Horizontal" Spacing="2" />
+      </ItemsPanelTemplate>
+    </ItemsControl.ItemsPanel>
+    <ItemsControl.ItemTemplate>
+      <DataTemplate x:DataType="vm:DayPulseChipViewModel">
+        <v:DayPulseChip />
+      </DataTemplate>
+    </ItemsControl.ItemTemplate>
+  </ItemsControl>
+</UserControl>

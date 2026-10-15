@@ -1,0 +1,93 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.DayPulseChip"
+  x:DataType="vm:DayPulseChipViewModel"
+>
+  <Panel>
+    <Button
+      x:Name="Hit"
+      Classes="pulse"
+      Classes.today="{Binding IsToday}"
+      Classes.future="{Binding IsFuture}"
+      Classes.complete="{Binding IsComplete}"
+      Classes.empty="{Binding IsEmpty}"
+      Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}"
+      CommandParameter="{Binding}"
+      AutomationProperties.Name="{Binding AutomationName}"
+    >
+      <Grid RowDefinitions="38,Auto" RowSpacing="4" HorizontalAlignment="Center">
+        <!-- track = planned; fill = done. Both grow up from one shared baseline. -->
+        <Panel Width="12" VerticalAlignment="Bottom">
+          <Border Classes="track" Height="{Binding TrackHeight}" VerticalAlignment="Bottom" />
+          <Border Classes="fill" Height="{Binding FillHeight}" VerticalAlignment="Bottom" />
+        </Panel>
+        <TextBlock
+          Grid.Row="1"
+          Classes="pulseLetter"
+          Classes.today="{Binding IsToday}"
+          Text="{Binding Letter}"
+          HorizontalAlignment="Center"
+        />
+      </Grid>
+    </Button>
+
+    <!-- The card is a popup so it never pushes layout or gets clipped by the page. -->
+    <Popup
+      x:Name="Tip"
+      PlacementTarget="{Binding #Hit}"
+      Placement="Bottom"
+      VerticalOffset="2"
+      IsLightDismissEnabled="False"
+      IsHitTestVisible="False"
+    >
+      <Border Padding="14,6,14,16" Background="Transparent">
+        <Border x:Name="Card" Classes="pulseCard">
+          <StackPanel Spacing="10" MinWidth="176">
+            <StackPanel Spacing="1">
+              <TextBlock Text="{Binding Title}" Classes="hint" FontSize="11" />
+              <TextBlock Text="{Binding Headline}" Classes="rowTitle" FontWeight="SemiBold" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Rows}" IsVisible="{Binding Rows.Count}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PulseRow">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,2">
+                    <Ellipse
+                      Classes="key"
+                      Classes.done="{Binding IsDone}"
+                      Classes.left="{Binding IsLeft}"
+                      Classes.defer="{Binding IsDefer}"
+                      Classes.drop="{Binding IsDrop}"
+                      Width="7"
+                      Height="7"
+                    />
+                    <TextBlock
+                      Grid.Column="1"
+                      Text="{Binding Label}"
+                      Classes="secondary"
+                      FontSize="12"
+                    />
+                    <TextBlock
+                      Grid.Column="2"
+                      Text="{Binding Value}"
+                      FontSize="12"
+                      FontFeatures="+tnum"
+                    />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock
+              Text="{Binding Hint}"
+              Classes="hint"
+              FontSize="11"
+              IsVisible="{Binding HasHint}"
+            />
+          </StackPanel>
+        </Border>
+      </Border>
+    </Popup>
+  </Panel>
+</UserControl>

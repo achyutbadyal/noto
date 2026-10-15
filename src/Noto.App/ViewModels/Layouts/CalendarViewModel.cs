@@ -21,8 +21,28 @@ public sealed partial class CalendarViewModel : ItemListViewModel
     List<SectionViewModel> _days = [];
     List<SectionViewModel> _trays = [];
 
-    public CalendarViewModel(ListServices services, Guid workspaceId)
-        : base(services, workspaceId) { }
+    readonly AppearanceViewModel _appearance;
+
+    public CalendarViewModel(
+        ListServices services,
+        Guid workspaceId,
+        AppearanceViewModel appearance
+    )
+        : base(services, workspaceId)
+    {
+        _appearance = appearance;
+        appearance.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(AppearanceViewModel.WeekLayout))
+                return;
+            OnPropertyChanged(nameof(IsWeekStacked));
+            OnPropertyChanged(nameof(IsWeekColumns));
+            if (IsWeek)
+                _ = ReloadAsync();
+        };
+    }
+
+    public AppearanceViewModel Appearance => _appearance;
 
     public override IReadOnlyList<SectionViewModel> Sections => [.. _days, .. _trays];
     public IReadOnlyList<SectionViewModel> Days => _days;
@@ -32,7 +52,13 @@ public sealed partial class CalendarViewModel : ItemListViewModel
 
     [
         ObservableProperty,
-        NotifyPropertyChangedFor(nameof(IsMonth), nameof(IsWeek), nameof(TrayVisible))
+        NotifyPropertyChangedFor(
+            nameof(IsMonth),
+            nameof(IsWeek),
+            nameof(IsWeekStacked),
+            nameof(IsWeekColumns),
+            nameof(TrayVisible)
+        )
     ]
     CalendarMode _mode = CalendarMode.Month;
 
@@ -61,6 +87,8 @@ public sealed partial class CalendarViewModel : ItemListViewModel
 
     public bool IsMonth => Mode == CalendarMode.Month;
     public bool IsWeek => Mode == CalendarMode.Week;
+    public bool IsWeekStacked => IsWeek && _appearance.IsWeekVertical;
+    public bool IsWeekColumns => IsWeek && _appearance.IsWeekHorizontal;
 
     public override async Task ReloadAsync()
     {
@@ -72,11 +100,11 @@ public sealed partial class CalendarViewModel : ItemListViewModel
         var byId = snap.Items.ToDictionary(i => i.Id);
         var view = CalendarLayout.Build(snap.Items, today, anchor, Mode);
 
-        // A day column is narrow, so rows drop the estimate/priority rail and the title keeps its room.
+        // A day column or month chip is narrow, so rows drop the estimate/priority rail and the title keeps its room.
         ItemRowViewModel Row(TodoItem i)
         {
             var row = Wire(ItemRowFactory.Create(i, snap, snap.Workspace.NowItemId == i.Id, byId));
-            row.IsCompact = true;
+            row.IsCompact = !IsWeekStacked;
             return row;
         }
 

@@ -154,30 +154,6 @@
   <Style Selector="PathIcon.strong">
     <Setter Property="Foreground" Value="{DynamicResource Text1Brush}" />
   </Style>
-  <Style Selector="PathIcon.done">
-    <Setter Property="Foreground" Value="{DynamicResource DoneBrush}" />
-  </Style>
-  <!-- Completing an item fills its glyph rather than snapping (docs/07 §11.3). -->
-  <Style Selector="Window.motion PathIcon.done">
-    <Setter Property="Transitions">
-      <Transitions>
-        <BrushTransition
-          Property="Foreground"
-          Duration="0:0:0.6"
-          Easing="{StaticResource EaseOut}"
-        />
-      </Transitions>
-    </Setter>
-  </Style>
-  <Style Selector="PathIcon.now">
-    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-  </Style>
-  <Style Selector="PathIcon.waiting">
-    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
-  </Style>
-  <Style Selector="PathIcon.dropped">
-    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
-  </Style>
 
   <!-- Status icon doubles as the complete toggle -->
   <Style Selector="Button.status">
@@ -195,6 +171,121 @@
   </Style>
   <Style Selector="Button.status:pointerover /template/ ContentPresenter">
     <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+  </Style>
+
+  <!-- ============================================================= -->
+  <!--  Day pulse: planned (outline) vs done (fill) capsules          -->
+  <!-- ============================================================= -->
+  <Style Selector="Button.pulse">
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="CornerRadius" Value="8" />
+  </Style>
+  <Style Selector="Button.pulse /template/ ContentPresenter">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.pulse:pointerover /template/ ContentPresenter, Button.pulse:focus-visible /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+  </Style>
+  <Style Selector="Button.pulse Border.track">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+  </Style>
+  <Style Selector="Button.pulse Border.fill">
+    <Setter Property="Width" Value="12" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="Opacity" Value="0.62" />
+  </Style>
+  <Style Selector="Button.pulse.complete Border.fill">
+    <Setter Property="Background" Value="{DynamicResource DoneBrush}" />
+    <Setter Property="Opacity" Value="0.9" />
+  </Style>
+  <Style Selector="Button.pulse.today Border.track">
+    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Button.pulse.today Border.fill">
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+  <!-- Days ahead have no fill yet: a ghost outline of what is booked. -->
+  <Style Selector="Button.pulse.future Border.track">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Opacity" Value="0.7" />
+  </Style>
+  <Style Selector="Button.pulse.empty Border.track">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+  <Style Selector="TextBlock.pulseLetter">
+    <Setter Property="FontSize" Value="10" />
+    <Setter Property="Foreground" Value="{DynamicResource Text3Brush}" />
+  </Style>
+  <Style Selector="TextBlock.pulseLetter.today">
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="Border.pulseCard">
+    <Setter Property="Background" Value="{DynamicResource RaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusLarge}" />
+    <Setter Property="Padding" Value="14,12" />
+    <Setter Property="BoxShadow" Value="0 8 24 0 #40000000" />
+  </Style>
+  <!-- The card rises into place: opacity and a short slide, exponential ease-out. Without the motion
+       class it simply appears. -->
+  <Style Selector="Window.motion Border.pulseCard">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition
+          Property="Opacity"
+          Duration="0:0:0.2"
+          Easing="{StaticResource EaseOutExpo}"
+        />
+        <ThicknessTransition
+          Property="Margin"
+          Duration="0:0:0.26"
+          Easing="{StaticResource EaseOutExpo}"
+        />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Window.motion Border.pulseCard:not(.shown)">
+    <Setter Property="Opacity" Value="0" />
+    <Setter Property="Margin" Value="0,10,0,0" />
+  </Style>
+  <!-- The fill rises when a task is completed, instead of snapping. -->
+  <Style Selector="Window.motion Button.pulse Border.fill, Window.motion Button.pulse Border.track">
+    <Setter Property="Transitions">
+      <Transitions>
+        <DoubleTransition
+          Property="Height"
+          Duration="0:0:0.45"
+          Easing="{StaticResource EaseOutExpo}"
+        />
+        <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="{StaticResource EaseOut}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Ellipse.key">
+    <Setter Property="Fill" Value="{DynamicResource Text3Brush}" />
+  </Style>
+  <Style Selector="Ellipse.key.done">
+    <Setter Property="Fill" Value="{DynamicResource DoneBrush}" />
+  </Style>
+  <Style Selector="Ellipse.key.left">
+    <Setter Property="Fill" Value="{DynamicResource AccentBrush}" />
+  </Style>
+  <Style Selector="Ellipse.key.defer">
+    <Setter Property="Fill" Value="{DynamicResource PressureWarmBrush}" />
+  </Style>
+  <Style Selector="Ellipse.key.drop">
+    <Setter Property="Opacity" Value="0.5" />
   </Style>
 
   <!-- ============================================================= -->
@@ -267,7 +358,7 @@
   </Style>
 
   <!-- Board column under a dragged card: the accent edge is the drop affordance. -->
-  <Style Selector="Border.column:dragover">
+  <Style Selector="Border.column.dropHover">
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
   </Style>
 
@@ -291,7 +382,7 @@
   <Style Selector="Border.dayCell.outside">
     <Setter Property="Opacity" Value="0.5" />
   </Style>
-  <Style Selector="Border.dayCell:dragover">
+  <Style Selector="Border.dayCell.dropHover">
     <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
     <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
   </Style>

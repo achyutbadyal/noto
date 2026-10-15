@@ -329,7 +329,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     {
         if (_calendars.TryGetValue(id, out var existing))
             return existing;
-        var vm = _vms.Calendar(id);
+        var vm = _vms.Calendar(id, Appearance);
         Attach(vm);
         vm.ScopeRequested += scope => _ = SetScopeAsync(scope.ToString());
         vm.PropertyChanged += (_, e) =>
@@ -397,7 +397,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
     Task StepDayAsync(string delta) => ShiftDayAsync(int.Parse(delta));
 
     [RelayCommand]
-    Task PickDayAsync(DayBarViewModel bar) => ShowDayAsync(bar.Day);
+    Task PickDayAsync(DayPulseChipViewModel chip) => ShowDayAsync(chip.Day);
 
     [RelayCommand]
     Task OpenCommandBarAsync() => CommandBar.OpenAsync();

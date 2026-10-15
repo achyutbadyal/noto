@@ -248,7 +248,7 @@ public sealed class LayoutTests : IDisposable
         var late = await _app.AddAsync("Late", AppFixture.Today.AddDays(-1));
         await _app.AddAsync("Whenever");
 
-        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id, _app.Vms.Appearance());
         await calendar.ReloadAsync();
 
         calendar
@@ -266,7 +266,7 @@ public sealed class LayoutTests : IDisposable
     public async Task Dropping_a_card_on_another_day_plans_it_and_undo_restores_it()
     {
         var id = await _app.AddAsync("Move me", AppFixture.Today);
-        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id, _app.Vms.Appearance());
         await calendar.ReloadAsync();
         var target = AppFixture.Today.AddDays(3);
 
@@ -283,7 +283,7 @@ public sealed class LayoutTests : IDisposable
     public async Task Dropping_on_a_past_day_changes_nothing_and_says_why()
     {
         var id = await _app.AddAsync("Stay", AppFixture.Today);
-        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id, _app.Vms.Appearance());
         await calendar.ReloadAsync();
 
         await calendar.MoveToDayAsync(
@@ -300,7 +300,7 @@ public sealed class LayoutTests : IDisposable
     public async Task Dropping_on_the_unscheduled_tray_unplans_the_item()
     {
         var id = await _app.AddAsync("Unplan", AppFixture.Today.AddDays(1));
-        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id, _app.Vms.Appearance());
         await calendar.ReloadAsync();
 
         await calendar.MoveToDayAsync(calendar.FlatRows.Single(r => r.Id == id).Item, null);
@@ -313,7 +313,7 @@ public sealed class LayoutTests : IDisposable
     public async Task Calendar_keyboard_nudges_the_focused_card_by_a_day()
     {
         var id = await _app.AddAsync("Nudge", AppFixture.Today.AddDays(1));
-        var calendar = _app.Vms.Calendar(_app.Workspace.Id);
+        var calendar = _app.Vms.Calendar(_app.Workspace.Id, _app.Vms.Appearance());
         await calendar.ReloadAsync();
         calendar.SetFocus(calendar.FlatRows.Single(r => r.Id == id));
 

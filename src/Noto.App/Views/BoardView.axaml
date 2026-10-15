@@ -28,9 +28,6 @@
               MinHeight="120"
               Padding="8"
               Background="{DynamicResource SurfaceBrush}"
-              DragDrop.AllowDrop="True"
-              DragDrop.DragOver="OnColumnDragOver"
-              DragDrop.Drop="OnColumnDrop"
             >
               <DockPanel>
                 <TextBlock

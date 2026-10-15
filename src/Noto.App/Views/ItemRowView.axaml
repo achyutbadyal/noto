@@ -42,17 +42,9 @@
         Command="{Binding ToggleCompleteCommand}"
         Focusable="False"
         AutomationProperties.Name="Toggle complete"
-        ToolTip.Tip="circle planned · filled Now · clock waiting · check done"
+        ToolTip.Tip="ring planned · ringed dot Now · dashed ring waiting · solid dot done"
       >
-        <PathIcon
-          Width="17"
-          Height="17"
-          Data="{Binding Glyph, Converter={x:Static v:RowConverters.Icon}}"
-          Classes.done="{Binding IsDone}"
-          Classes.now="{Binding IsNow}"
-          Classes.waiting="{Binding IsWaiting}"
-          Classes.dropped="{Binding IsDropped}"
-        />
+        <v:StatusDot Glyph="{Binding Glyph}" Changed="{Binding GlyphChanged}" />
       </Button>
 
       <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,4" MinWidth="0">

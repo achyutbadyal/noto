@@ -16,6 +16,10 @@ public sealed partial class ItemRowViewModel : ObservableObject
 
     // Semantic icon name (resolved to a monochrome vector by IconConverters); never an emoji.
     public required string Glyph { get; init; }
+
+    // The task changed state a moment ago, so its status dot plays the transition when it appears.
+    // Rows are rebuilt on every reload, so the change has to be remembered outside the row.
+    public bool GlyphChanged { get; init; }
     public required bool IsNow { get; init; }
     public required string CarryText { get; init; }
     public required PressureState Pressure { get; init; }
@@ -116,6 +120,29 @@ public sealed partial class ItemRowViewModel : ObservableObject
     }
 }
 
+// Remembers each task's last status glyph, so a freshly built row can tell it just changed state.
+// A change stays "fresh" briefly, because one change usually builds the row more than once (the list,
+// then the inspector or a second view).
+static class GlyphTracker
+{
+    static readonly TimeSpan Fresh = TimeSpan.FromMilliseconds(900);
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<
+        Guid,
+        (string Glyph, long At)
+    > Seen = new();
+
+    public static bool JustChanged(Guid id, string glyph)
+    {
+        var now = Environment.TickCount64;
+        var entry = Seen.AddOrUpdate(
+            id,
+            _ => (glyph, long.MinValue),
+            (_, old) => old.Glyph == glyph ? old : (glyph, now)
+        );
+        return entry.At != long.MinValue && now - entry.At < Fresh.TotalMilliseconds;
+    }
+}
+
 public static class ItemRowFactory
 {
     public static ItemRowViewModel Create(
@@ -140,11 +167,13 @@ public static class ItemRowFactory
                 ? parent.Title
                 : null;
 
+        var glyph = GlyphFor(item, isNow);
         return new ItemRowViewModel
         {
             Item = item,
             Metrics = metrics,
-            Glyph = GlyphFor(item, isNow),
+            Glyph = glyph,
+            GlyphChanged = GlyphTracker.JustChanged(item.Id, glyph),
             IsNow = isNow && item.Status == ItemStatus.Open,
             CarryText = live && metrics.Carry > 0 ? metrics.Carry.ToString() : "",
             Pressure = pressure,

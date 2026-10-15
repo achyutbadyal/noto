@@ -42,7 +42,27 @@
           <PathIcon Data="{v:Icon chevron-right}" />
         </Button>
       </StackPanel>
-      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <Border Classes="raised" Padding="2" CornerRadius="9" IsVisible="{Binding IsWeek}">
+          <StackPanel Orientation="Horizontal" Spacing="2">
+            <Button
+              Classes="seg"
+              Classes.selected="{Binding Appearance.IsWeekVertical}"
+              Content="Stacked"
+              Command="{Binding Appearance.SetWeekLayoutCommand}"
+              CommandParameter="{x:Static vm:WeekLayout.Vertical}"
+              ToolTip.Tip="One row per day, cards at full width"
+            />
+            <Button
+              Classes="seg"
+              Classes.selected="{Binding Appearance.IsWeekHorizontal}"
+              Content="Columns"
+              Command="{Binding Appearance.SetWeekLayoutCommand}"
+              CommandParameter="{x:Static vm:WeekLayout.Horizontal}"
+              ToolTip.Tip="Seven side-by-side columns"
+            />
+          </StackPanel>
+        </Border>
         <Button
           Content="{Binding TrayLabel}"
           Command="{Binding ToggleTrayCommand}"
@@ -83,9 +103,6 @@
                   Classes.past="{Binding IsPast}"
                   Classes.outside="{Binding IsOutsideMonth}"
                   MinHeight="112"
-                  DragDrop.AllowDrop="{Binding IsDropTarget}"
-                  DragDrop.DragOver="OnDayDragOver"
-                  DragDrop.Drop="OnDayDrop"
                 >
                   <DockPanel>
                     <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,4">
@@ -134,11 +151,11 @@
         </Border>
       </DockPanel>
 
-      <!-- ============ Week: one kanban column per day ============ -->
+      <!-- ============ Week, columns: one kanban column per day ============ -->
       <ScrollViewer
         x:Name="WeekScroll"
         Grid.Column="0"
-        IsVisible="{Binding IsWeek}"
+        IsVisible="{Binding IsWeekColumns}"
         HorizontalScrollBarVisibility="Auto"
         VerticalScrollBarVisibility="Disabled"
       >
@@ -156,9 +173,6 @@
                 Classes.past="{Binding IsPast}"
                 Margin="0,0,6,0"
                 Padding="8"
-                DragDrop.AllowDrop="{Binding IsDropTarget}"
-                DragDrop.DragOver="OnDayDragOver"
-                DragDrop.Drop="OnDayDrop"
               >
                 <DockPanel>
                   <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,8">
@@ -200,6 +214,69 @@
         </ItemsControl>
       </ScrollViewer>
 
+      <!-- ============ Week, stacked: one full-width lane per day ============ -->
+      <ScrollViewer
+        Grid.Column="0"
+        IsVisible="{Binding IsWeekStacked}"
+        HorizontalScrollBarVisibility="Disabled"
+        VerticalScrollBarVisibility="Auto"
+      >
+        <ItemsControl ItemsSource="{Binding Days}" Margin="0,0,0,8">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:SectionViewModel">
+              <Border
+                Classes="panel dayCell"
+                Classes.weekend="{Binding IsWeekend}"
+                Classes.past="{Binding IsPast}"
+                Margin="0,0,0,8"
+                Padding="14,10"
+                MinHeight="68"
+              >
+                <Grid ColumnDefinitions="104,*" ColumnSpacing="12">
+                  <StackPanel Spacing="1" VerticalAlignment="Top">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Border
+                        Classes="todayDot"
+                        IsVisible="{Binding IsToday}"
+                        VerticalAlignment="Center"
+                      />
+                      <TextBlock
+                        Classes="section"
+                        Text="{Binding WeekdayLabel}"
+                        VerticalAlignment="Center"
+                      />
+                    </StackPanel>
+                    <TextBlock Classes="displaySmall" Text="{Binding DayNumber}" />
+                    <TextBlock
+                      Classes="hint"
+                      FontSize="11"
+                      FontFeatures="+tnum"
+                      Text="{Binding LoadText}"
+                      IsVisible="{Binding HasLoad}"
+                    />
+                  </StackPanel>
+                  <Panel Grid.Column="1">
+                    <ItemsControl ItemsSource="{Binding Rows}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ItemRowViewModel">
+                          <v:ItemRowView />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock
+                      Classes="hint"
+                      Text="{Binding IsDropTarget, Converter={x:Static v:RowConverters.EmptyDayText}}"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding IsEmpty}"
+                    />
+                  </Panel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+
       <!-- ============ Trays: overdue + unscheduled ============ -->
       <ItemsControl
         Grid.Column="1"
@@ -215,9 +292,6 @@
               Padding="8"
               MinHeight="96"
               IsVisible="{Binding !IsEmpty}"
-              DragDrop.AllowDrop="{Binding IsDropTarget}"
-              DragDrop.DragOver="OnDayDragOver"
-              DragDrop.Drop="OnDayDrop"
             >
               <DockPanel>
                 <TextBlock

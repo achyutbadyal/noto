@@ -35,57 +35,13 @@
         </Grid>
       </Border>
 
-      <!-- 14-day completion strip: scrolls horizontally so it never clips on a narrow window -->
-      <ScrollViewer
+      <!-- last 5 days, today, next 2: planned vs done; the numbers appear on hover -->
+      <v:DayPulse
         Grid.Row="1"
-        HorizontalScrollBarVisibility="Auto"
-        VerticalScrollBarVisibility="Disabled"
-        Margin="0,0,0,12"
-        ToolTip.Tip="Bar height is how much you finished. Click a day to open its log."
-      >
-        <ItemsControl ItemsSource="{Binding Strip.Bars}" AutomationProperties.Name="Last 14 days">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <StackPanel Orientation="Horizontal" Spacing="4" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:DayBarViewModel">
-              <Button
-                Padding="2"
-                Height="46"
-                VerticalContentAlignment="Bottom"
-                Command="{Binding $parent[Window].((vm:ShellViewModel)DataContext).PickDayCommand}"
-                CommandParameter="{Binding}"
-                ToolTip.Tip="{Binding Tooltip}"
-                AutomationProperties.Name="{Binding AutomationName}"
-              >
-                <!--
-                  Bar, then a 1px tick. Every tick sits at the same height, so together they form a
-                  baseline: a day with nothing planned reads as zero on an axis, not a stray dash.
-                -->
-                <StackPanel Spacing="3" VerticalAlignment="Bottom">
-                  <Border
-                    Width="18"
-                    Height="{Binding Height}"
-                    CornerRadius="3"
-                    VerticalAlignment="Bottom"
-                    Background="{DynamicResource AccentBrush}"
-                    Opacity="{Binding IsToday, Converter={x:Static v:RowConverters.TodayOpacity}}"
-                  />
-                  <Border Width="18" Height="1" Background="{DynamicResource HairlineBrush}" />
-                  <TextBlock
-                    Text="{Binding Label}"
-                    FontSize="10"
-                    Classes="hint"
-                    HorizontalAlignment="Center"
-                  />
-                </StackPanel>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
+        DataContext="{Binding Pulse}"
+        HorizontalAlignment="Left"
+        Margin="-6,0,0,10"
+      />
 
       <!-- capacity bar and pace forecast -->
       <StackPanel Grid.Row="2" Margin="0,0,0,16" Spacing="4">

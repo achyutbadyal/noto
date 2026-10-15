@@ -12,6 +12,14 @@ public enum ThemeChoice
     Dark,
 }
 
+// How the Week scope lays out its seven days: stacked top to bottom (every card gets the full width)
+// or as side-by-side columns (the kanban reading).
+public enum WeekLayout
+{
+    Vertical,
+    Horizontal,
+}
+
 // Theme, density and body size are per-device view settings, kept in IUiState. The host applies them
 // (MainWindow.ApplyAppearance) — this class only owns the values and the words for them.
 public sealed partial class AppearanceViewModel : ObservableObject
@@ -21,6 +29,8 @@ public sealed partial class AppearanceViewModel : ObservableObject
 
     public static IReadOnlyList<ThemeChoice> ThemeChoices { get; } = Enum.GetValues<ThemeChoice>();
     public static IReadOnlyList<Density> DensityChoices { get; } = Enum.GetValues<Density>();
+    public static IReadOnlyList<WeekLayout> WeekLayoutChoices { get; } =
+        Enum.GetValues<WeekLayout>();
     readonly IUiState _state;
 
     public AppearanceViewModel(IUiState state)
@@ -30,6 +40,9 @@ public sealed partial class AppearanceViewModel : ObservableObject
         _density = Enum.TryParse<Density>(state.Get("density"), out var d)
             ? d
             : Density.Comfortable;
+        _weekLayout = Enum.TryParse<WeekLayout>(state.Get("week-layout"), out var w)
+            ? w
+            : WeekLayout.Vertical;
         _bodySize = int.TryParse(state.Get("body-size"), out var s)
             ? Math.Clamp(s, MinBodySize, MaxBodySize)
             : 14;
@@ -50,8 +63,17 @@ public sealed partial class AppearanceViewModel : ObservableObject
     [ObservableProperty]
     Density _density;
 
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsWeekVertical), nameof(IsWeekHorizontal))]
+    WeekLayout _weekLayout;
+
     [ObservableProperty]
     int _bodySize;
+
+    public bool IsWeekVertical => WeekLayout == WeekLayout.Vertical;
+    public bool IsWeekHorizontal => WeekLayout == WeekLayout.Horizontal;
+
+    [RelayCommand]
+    public void SetWeekLayout(WeekLayout layout) => WeekLayout = layout;
 
     // Raised after any change so the host can re-apply theme, density and text size.
     public event Action? Changed;
@@ -111,6 +133,8 @@ public sealed partial class AppearanceViewModel : ObservableObject
         Save("density", value.ToString());
         OnPropertyChanged(nameof(RowHeight));
     }
+
+    partial void OnWeekLayoutChanged(WeekLayout value) => Save("week-layout", value.ToString());
 
     partial void OnBodySizeChanged(int value) =>
         Save("body-size", Math.Clamp(value, MinBodySize, MaxBodySize).ToString());

@@ -422,7 +422,33 @@ public sealed class TodayTests : IDisposable
         var vm = await LoadAsync();
 
         vm.ForecastText.ShouldBe("On days like this you usually finish 2 of 3. Expect 1 to carry.");
-        vm.Strip.Bars.Count.ShouldBe(14);
-        vm.Strip.Bars[^2].Tooltip.ShouldContain("done 2 of 2");
+    }
+
+    [Fact]
+    public async Task Pulse_shows_five_days_behind_today_and_two_ahead()
+    {
+        var a = await _app.AddAsync("a", AppFixture.Today);
+        await _app.AddAsync("b", AppFixture.Today);
+        await _app.Services.Bus.SendAsync(new Noto.Core.Commands.CompleteItem(a));
+        await _app.AddAsync("later", AppFixture.Today.AddDays(1));
+
+        var vm = await LoadAsync();
+
+        var chips = vm.Pulse.Chips;
+        chips.Count.ShouldBe(DayPulseViewModel.Behind + 1 + DayPulseViewModel.Ahead);
+        chips
+            .Select(c => c.Kind)
+            .ShouldBe([
+                .. Enumerable.Repeat(PulseKind.Past, DayPulseViewModel.Behind),
+                PulseKind.Today,
+                .. Enumerable.Repeat(PulseKind.Future, DayPulseViewModel.Ahead),
+            ]);
+        var today = chips[DayPulseViewModel.Behind];
+        today.Headline.ShouldBe("1 of 2 done");
+        today.FillHeight.ShouldBeGreaterThan(0);
+        today.TrackHeight.ShouldBeGreaterThan(today.FillHeight);
+        chips[^2].Headline.ShouldBe("1 planned");
+        chips[^1].Headline.ShouldBe("Nothing planned yet");
+        chips[0].Headline.ShouldBe("Nothing was planned");
     }
 }

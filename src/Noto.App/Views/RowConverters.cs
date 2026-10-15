@@ -29,8 +29,8 @@ public static class RowConverters
         visible => new Thickness(0, 0, 0, visible ? 28 : 12)
     );
 
-    public static readonly IValueConverter TodayOpacity = new FuncValueConverter<bool, double>(
-        today => today ? 1.0 : 0.55
+    public static readonly IValueConverter EmptyDayText = new FuncValueConverter<bool, string>(
+        open => open ? "Nothing planned. Drop a task here." : "Nothing was planned."
     );
 
     // Sparkline bars: a 0..1 fraction becomes a bar height, so a trend reads as a shape.

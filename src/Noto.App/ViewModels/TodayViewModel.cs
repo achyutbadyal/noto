@@ -32,12 +32,11 @@ public sealed partial class TodayViewModel : ItemListViewModel
             services.Suggestions,
             services.Links
         );
-        Strip = new DayStripViewModel();
     }
 
     public override IReadOnlyList<SectionViewModel> Sections { get; }
     public AddItemViewModel Add { get; }
-    public DayStripViewModel Strip { get; }
+    public DayPulseViewModel Pulse { get; } = new();
 
     [ObservableProperty]
     CapacityViewModel? _capacity;
@@ -94,7 +93,21 @@ public sealed partial class TodayViewModel : ItemListViewModel
             snap.Today.AddDays(-60),
             snap.Today.AddDays(-1)
         );
-        Strip.Load(snap.Today, history, selected: null);
+        var recent = await Services.Reader.DayStatsAsync(
+            WorkspaceId,
+            snap.Today.AddDays(-DayPulseViewModel.Behind),
+            snap.Today.AddDays(-1)
+        );
+        var openToday = committed.Count + (view.Now is null ? 0 : 1);
+        Pulse.Load(
+            snap.Today,
+            recent,
+            snap.Items,
+            openToday + view.DoneToday.Count,
+            view.DoneToday.Count,
+            openToday,
+            snap.FallbackMinutes
+        );
         var forecast = PaceForecaster.Forecast(
             snap.Today,
             committed.Count + (view.Now is null ? 0 : 1),

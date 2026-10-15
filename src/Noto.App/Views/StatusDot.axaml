@@ -1,0 +1,74 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.StatusDot"
+  Width="18"
+  Height="18"
+>
+  <!--
+    A task's state as a dot, never a glyph: every state is concentric circles, so it centres exactly
+    in its button (a tick's optical centre never matches its box). Ring and core are separate layers:
+      planned  empty ring          now      accent ring + accent core
+      waiting  dashed ring         done     solid green disc
+      dropped  small faded core
+    The ripple only plays when a task has just changed state (see StatusDot.Play).
+  -->
+  <UserControl.Styles>
+    <Style Selector="v|StatusDot Ellipse.ring">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+      <Setter Property="Stroke" Value="{DynamicResource Text3Brush}" />
+    </Style>
+    <Style Selector="v|StatusDot Ellipse.core">
+      <Setter Property="Width" Value="0" />
+      <Setter Property="Height" Value="0" />
+      <Setter Property="Fill" Value="{DynamicResource Text3Brush}" />
+    </Style>
+    <Style Selector="v|StatusDot Ellipse.ripple">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+      <Setter Property="Stroke" Value="{DynamicResource DoneBrush}" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <Style Selector="v|StatusDot.now Ellipse.ring">
+      <Setter Property="Stroke" Value="{DynamicResource AccentBrush}" />
+    </Style>
+    <Style Selector="v|StatusDot.now Ellipse.core">
+      <Setter Property="Width" Value="8" />
+      <Setter Property="Height" Value="8" />
+      <Setter Property="Fill" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="v|StatusDot.waiting Ellipse.ring">
+      <Setter Property="StrokeDashArray" Value="2.2,2" />
+    </Style>
+
+    <Style Selector="v|StatusDot.done Ellipse.ring">
+      <Setter Property="Stroke" Value="{DynamicResource DoneBrush}" />
+    </Style>
+    <Style Selector="v|StatusDot.done Ellipse.core">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="Fill" Value="{DynamicResource DoneBrush}" />
+    </Style>
+
+    <Style Selector="v|StatusDot.dropped Ellipse.ring">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="v|StatusDot.dropped Ellipse.core">
+      <Setter Property="Width" Value="6" />
+      <Setter Property="Height" Value="6" />
+      <Setter Property="Opacity" Value="0.55" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+    <Ellipse x:Name="Ripple" Classes="ripple" IsHitTestVisible="False" />
+    <Ellipse x:Name="Ring" Classes="ring" />
+    <Ellipse x:Name="Core" Classes="core" />
+  </Panel>
+</UserControl>

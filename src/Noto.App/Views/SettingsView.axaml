@@ -149,7 +149,7 @@
             </ItemsControl>
             <Grid
               ColumnDefinitions="140,*,Auto"
-              RowDefinitions="Auto,Auto,Auto"
+              RowDefinitions="Auto,Auto,Auto,Auto"
               ColumnSpacing="8"
               RowSpacing="8"
               IsVisible="{Binding HasOAuthOptions}"
@@ -696,12 +696,26 @@
               />
               <TextBlock
                 Grid.Row="2"
+                Text="Week view"
+                VerticalAlignment="Center"
+                Classes="secondary"
+              />
+              <ComboBox
+                Grid.Row="2"
+                Grid.Column="1"
+                ItemsSource="{x:Static vm:AppearanceViewModel.WeekLayoutChoices}"
+                SelectedItem="{Binding WeekLayout, Mode=TwoWay}"
+                HorizontalAlignment="Stretch"
+                ToolTip.Tip="Vertical stacks the seven days as rows; Horizontal shows side-by-side columns"
+              />
+              <TextBlock
+                Grid.Row="3"
                 Text="Text size"
                 VerticalAlignment="Center"
                 Classes="secondary"
               />
               <Slider
-                Grid.Row="2"
+                Grid.Row="3"
                 Grid.Column="1"
                 Minimum="13"
                 Maximum="18"
