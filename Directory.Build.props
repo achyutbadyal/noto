@@ -5,5 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- The one place the app version lives. Release CI passes -p:Version from the git tag and fails if
+         the two disagree; `mise run version:set X.Y.Z` edits this line. Feeds the assembly version, the
+         macOS Info.plist and the in-app updater. -->
+    <Version>1.0.0</Version>
   </PropertyGroup>
 </Project>
