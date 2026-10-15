@@ -133,7 +133,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
         IsInspectorOpen
         && !IsNarrow
         && Page is AppPage.Today or AppPage.Backlog or AppPage.TodayAll;
-    public double SidebarWidth => EffectiveSidebarExpanded ? 232 : 56;
+    public double SidebarWidth => EffectiveSidebarExpanded ? 232 : 73;
     public bool IsListPage =>
         Page is AppPage.Today or AppPage.Backlog or AppPage.DayLog or AppPage.TodayAll;
     public bool IsToday => Page == AppPage.Today;

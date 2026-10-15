@@ -598,7 +598,7 @@ public sealed class ScreenshotTests : IDisposable
         shell.IsCompact.ShouldBeTrue();
         shell.ShowToolbarLabels.ShouldBeFalse();
         shell.EffectiveSidebarExpanded.ShouldBeFalse();
-        shell.SidebarWidth.ShouldBe(56);
+        shell.SidebarWidth.ShouldBe(73);
         shell.ShowInspector.ShouldBeFalse();
         await SnapAsync(window, "narrow-light");
 
@@ -608,11 +608,11 @@ public sealed class ScreenshotTests : IDisposable
         shell.EffectiveSidebarExpanded.ShouldBeTrue();
         shell.SidebarWidth.ShouldBe(232);
 
-        // User-collapsed rail at full width: icons must sit centred in the 56px rail.
+        // User-collapsed rail at full width: icons must sit centred in the 73px rail.
         shell.ToggleSidebarCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
         shell.IsSidebarCollapsed.ShouldBeTrue();
-        shell.SidebarWidth.ShouldBe(56);
+        shell.SidebarWidth.ShouldBe(73);
         await SnapAsync(window, "rail-light");
     }
 
