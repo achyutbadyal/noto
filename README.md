@@ -61,6 +61,20 @@ Run all tooling through mise: `mise run <task>` or `mise exec -- dotnet <args>`.
 
 Docker is only needed for the server container. Targets: the desktop app is developed and checked on macOS (Apple Silicon); the code builds for Windows and Linux but those platform layers are stubs (see status doc).
 
+## Releasing
+
+The app version lives in one place: `<Version>` in `Directory.Build.props`. To cut a release:
+
+```sh
+mise run version:set -- 0.2.0      # edits Directory.Build.props
+git commit -am "chore: release v0.2.0"
+git tag v0.2.0 && git push origin main v0.2.0
+```
+
+The tag triggers `.github/workflows/release.yml`, which refuses a tag that doesn't match `<Version>`, runs the tests, builds the macOS (ad-hoc signed), Linux and Windows packages, and publishes them with a `SHA256SUMS` file to GitHub Releases. A version with a suffix (`0.2.0-beta.1`) is published as a prerelease.
+
+The app checks that release feed (Settings › About & updates, plus a quiet check at launch you can turn off). On macOS it downloads the new build, verifies its checksum, swaps `Noto.app` in place and relaunches; on Linux and Windows it points you at the release page.
+
 ## Build and test
 
 ```sh

@@ -1,0 +1,134 @@
+name: release
+
+# Cut a release by bumping <Version> in Directory.Build.props (`mise run version:set -- X.Y.Z`), committing,
+# and pushing a matching tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. This workflow tests the tag, builds
+# an installer per platform, and publishes them with SHA256SUMS as a GitHub release. The in-app updater reads
+# that release, so the asset names below are a contract with UpdateService.AssetNameFor.
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+
+# Least privilege: only the final job may write (to create the release).
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: check version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - id: v
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(sed -n 's|.*<Version>\(.*\)</Version>.*|\1|p' Directory.Build.props)"
+          if [ "$tag" != "$file" ]; then
+            echo "::error::Tag v$tag does not match <Version>$file</Version> in Directory.Build.props. Run 'mise run version:set -- $tag', commit, and re-tag."
+            exit 1
+          fi
+          echo "version=$tag" >> "$GITHUB_OUTPUT"
+
+  test:
+    needs: version
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+      - name: Linux native libraries
+        run: sudo apt-get update && sudo apt-get install -y libsecret-tools libnotify-bin xvfb
+      - run: dotnet build Noto.sln
+      - run: xvfb-run -a dotnet test Noto.sln --no-build
+
+  package:
+    name: package (${{ matrix.os }})
+    needs: [version, test]
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          # macos-26: FoundationModels (the on-device AI helper) needs the macOS 26 SDK.
+          - os: macos-26
+            rid: osx-arm64
+            artifact: noto-macos-arm64
+            file: dist/noto-macos-arm64.zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: noto-linux-x64
+            file: dist/noto-linux-x64.tar.gz
+          - os: windows-latest
+            rid: win-x64
+            artifact: noto-windows-win-x64
+            file: dist/noto-windows-win-x64.zip
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+      - name: Publish self-contained
+        run: dotnet publish src/Noto.Desktop -c Release -r ${{ matrix.rid }} --self-contained -p:Version=${{ env.VERSION }} -o dist/noto-desktop
+      - name: Package macOS app bundle
+        if: runner.os == 'macOS'
+        # package_mac.sh stamps Info.plist with $VERSION and ad-hoc signs the bundle (no Developer ID needed).
+        env:
+          REQUIRE_AI_HELPER: "1"
+        run: |
+          ./scripts/package_mac.sh
+          ditto -c -k --keepParent dist/Noto.app dist/noto-macos-arm64.zip
+      - name: Package Linux tarball
+        if: runner.os == 'Linux'
+        env:
+          TARGET_RID: ${{ matrix.rid }}
+        run: ./scripts/package_linux.sh
+      - name: Package Windows zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path dist/noto-desktop/* -DestinationPath dist/noto-windows-win-x64.zip -Force
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: publish release
+    needs: [version, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum noto-* > SHA256SUMS && cat SHA256SUMS
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # A version with a "-suffix" (1.2.0-beta.1) is published as a prerelease, which the updater only
+          # offers to people already running a prerelease.
+          flag=""
+          case "$VERSION" in *-*) flag="--prerelease" ;; esac
+          gh release create "$TAG" dist/noto-* dist/SHA256SUMS \
+            --title "Noto $VERSION" --generate-notes --verify-tag $flag

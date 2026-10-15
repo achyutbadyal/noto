@@ -85,7 +85,8 @@ public sealed class ViewModelFactory(AppServices s)
             workspaceId,
             appearance,
             account,
-            s.Ai
+            s.Ai,
+            s.Updates is null ? null : new UpdatesViewModel(s.Updates, s.UiState)
         );
 
     DecisionController Decisions() => new(s.Runner);

@@ -1,10 +1,12 @@
 using System.Diagnostics;
+using System.Reflection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Noto.App.Services;
 using Noto.App.ViewModels;
 using Noto.Core.Commands;
 using Noto.Core.Links;
 using Noto.Core.Time;
+using Noto.Core.Updates;
 using Noto.Data;
 using Noto.Platform;
 using Noto.Platform.Abstractions;
@@ -96,7 +98,8 @@ sealed class Composition : IDisposable
             Platform,
             ui,
             previews: new LinkPreviews(_db, previews, registry, clock),
-            ai: new AiOptions(ui, Platform.Keyring, http)
+            ai: new AiOptions(ui, Platform.Keyring, http),
+            updates: BuildUpdates()
         );
         Account = BuildAccount(deviceId, ui, http, registry, connections);
     }
@@ -110,6 +113,26 @@ sealed class Composition : IDisposable
         // Restores a saved session in the background; the settings page shows the result.
         _ = Account.RestoreAsync(CancellationToken.None);
         return new ShellViewModel(Services, Account);
+    }
+
+    // Release downloads redirect to GitHub's CDN, which the provider client refuses to follow, so updates use
+    // their own client. It sends no credentials.
+    static UpdateService BuildUpdates()
+    {
+        var http = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = true })
+        {
+            Timeout = TimeSpan.FromMinutes(5),
+        };
+        return new UpdateService(http, RunningVersion(), installer: new MacBundleInstaller());
+    }
+
+    // Stamped into the assembly at build time from <Version> (Directory.Build.props, or -p:Version in CI).
+    static AppVersion RunningVersion()
+    {
+        var info = typeof(Composition)
+            .Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+        return AppVersion.TryParse(info, out var v) ? v : new AppVersion(0, 0, 0);
     }
 
     AccountService BuildAccount(

@@ -143,6 +143,14 @@ echo "Created dist/noto-windows-$TARGET_RID.zip"
 """
 
 # ---------------------------------------------------------------------------
+# Release
+# ---------------------------------------------------------------------------
+
+[tasks."version:set"]
+description = "Set the app version, e.g. mise run version:set -- 0.2.0 (then commit and tag vX.Y.Z; the tag triggers the release workflow)"
+run = "bash scripts/set_version.sh"
+
+# ---------------------------------------------------------------------------
 # CI
 # ---------------------------------------------------------------------------
 

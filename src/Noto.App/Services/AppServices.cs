@@ -25,7 +25,8 @@ public sealed class AppServices
         IUiState? uiState = null,
         IDayNotes? dayNotes = null,
         LinkPreviews? previews = null,
-        AiOptions? ai = null
+        AiOptions? ai = null,
+        UpdateService? updates = null
     )
     {
         Uow = uow;
@@ -46,6 +47,7 @@ public sealed class AppServices
         Links = new LinkIndexer(uow, clock);
         Previews = previews;
         Ai = ai;
+        Updates = updates;
         Suggestions = (ISuggestionService?)ai ?? NullSuggestionService.Instance;
         Recurrence = new RecurrenceService(uow, clock);
         Export = new ExportService(uow, clock);
@@ -77,6 +79,9 @@ public sealed class AppServices
 
     // Null when the host has no AI configuration; the settings pane then shows the feature as unavailable.
     public AiOptions? Ai { get; }
+
+    // Null when the host can't check for updates (tests, offline builds).
+    public UpdateService? Updates { get; }
 
     // What the create form asks for a suggestion. Never null — with no AI it is a no-op that reports
     // IsEnabled false, so the sparkle simply doesn't appear.

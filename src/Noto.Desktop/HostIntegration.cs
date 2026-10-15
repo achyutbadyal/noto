@@ -102,6 +102,43 @@ static class HostIntegration
         timer.Start();
 
         _ = MorningNudgeAsync(services, platform);
+        _ = UpdateNudgeAsync(services, platform);
+    }
+
+    // Once per new version, and only if the user hasn't turned automatic checks off. The notification just
+    // points at Settings; installing is always the user's call.
+    static async Task UpdateNudgeAsync(
+        Noto.App.Services.AppServices services,
+        PlatformServices platform
+    )
+    {
+        if (services.Updates is not { } updates)
+            return;
+        if (services.UiState.Get(Noto.App.ViewModels.UpdatesViewModel.AutoCheckKey) == "off")
+            return;
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        try
+        {
+            if (await updates.CheckAsync() is not { } release)
+                return;
+            var seen = release.Version.ToString();
+            if (services.UiState.Get("updates-notified") == seen)
+                return;
+            services.UiState.Set("updates-notified", seen);
+            await platform.Notifications.ShowAsync(
+                new NotificationRequest(
+                    "Noto update available",
+                    $"Version {seen} is ready. Open Settings › About & updates to install it."
+                )
+            );
+        }
+        // Offline or rate-limited: a silent background check just tries again next launch.
+        catch (Exception e)
+            when (e
+                    is HttpRequestException
+                        or TaskCanceledException
+                        or System.Text.Json.JsonException
+            ) { }
     }
 
     static void Reveal(MainWindow window)

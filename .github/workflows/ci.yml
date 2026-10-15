@@ -80,7 +80,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
+          # macos-26: FoundationModels (the on-device AI helper) needs the macOS 26 SDK.
+          - os: macos-26
             rid: osx-arm64
             artifact: noto-macos-arm64
             file: dist/noto-macos-arm64.zip
@@ -106,6 +107,8 @@ jobs:
       - name: Package macOS app bundle
         if: runner.os == 'macOS'
         # `ditto` preserves the bundle's permissions and metadata; plain `zip` would not.
+        env:
+          REQUIRE_AI_HELPER: "1"
         run: |
           ./scripts/package_mac.sh
           ditto -c -k --keepParent dist/Noto.app dist/noto-macos-arm64.zip

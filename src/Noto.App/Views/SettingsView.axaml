@@ -807,6 +807,55 @@
             </ItemsControl.ItemTemplate>
           </ItemsControl>
         </StackPanel>
+        <StackPanel IsVisible="{Binding ShowAbout}" Spacing="14">
+          <StackPanel DataContext="{Binding Updates}" x:DataType="vm:UpdatesViewModel" Spacing="14">
+            <TextBlock Text="About &amp; updates" Classes="section" />
+            <TextBlock Text="{Binding VersionText}" />
+            <CheckBox
+              Content="Check for updates automatically"
+              IsChecked="{Binding AutoCheck, Mode=TwoWay}"
+            />
+            <WrapPanel Orientation="Horizontal">
+              <Button
+                Content="Check for updates"
+                Command="{Binding CheckCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                Margin="0,0,8,0"
+              />
+              <Button
+                Content="Install and restart"
+                Classes="accent"
+                Command="{Binding InstallCommand}"
+                IsEnabled="{Binding !IsBusy}"
+                IsVisible="{Binding CanInstall}"
+                Margin="0,0,8,0"
+              />
+              <Button
+                Content="View release"
+                Command="{Binding OpenReleasePageCommand}"
+                IsVisible="{Binding CanOpenPage}"
+              />
+            </WrapPanel>
+            <ProgressBar
+              Maximum="1"
+              Value="{Binding Progress}"
+              IsVisible="{Binding IsBusy}"
+              AutomationProperties.Name="Update progress"
+            />
+            <TextBlock
+              Text="{Binding Status}"
+              Classes="secondary"
+              TextWrapping="Wrap"
+              IsVisible="{Binding Status, Converter={x:Static ObjectConverters.IsNotNull}}"
+            />
+            <TextBlock Text="What's new" Classes="section" IsVisible="{Binding ShowNotes}" />
+            <SelectableTextBlock
+              Text="{Binding Notes}"
+              TextWrapping="Wrap"
+              IsVisible="{Binding ShowNotes}"
+            />
+          </StackPanel>
+        </StackPanel>
       </StackPanel>
     </ScrollViewer>
   </Grid>

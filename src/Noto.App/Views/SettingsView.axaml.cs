@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Noto.App.ViewModels;
@@ -10,6 +12,23 @@ public partial class SettingsView : UserControl
     public SettingsView() => InitializeComponent();
 
     SettingsViewModel? Vm => DataContext as SettingsViewModel;
+    UpdatesViewModel? _updates;
+
+    // A staged update is waiting for this process to exit, so "restart" means quit; the helper relaunches.
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_updates is not null)
+            _updates.RestartRequested -= Quit;
+        _updates = Vm?.Updates;
+        if (_updates is not null)
+            _updates.RestartRequested += Quit;
+    }
+
+    static void Quit() =>
+        (
+            Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime
+        )?.Shutdown();
 
     async void OnImportClick(object? sender, RoutedEventArgs e)
     {

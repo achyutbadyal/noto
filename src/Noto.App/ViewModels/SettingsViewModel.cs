@@ -72,7 +72,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         Guid workspaceId,
         AppearanceViewModel appearance,
         AccountViewModel? account = null,
-        AiOptions? ai = null
+        AiOptions? ai = null,
+        UpdatesViewModel? updates = null
     )
     {
         _import = import;
@@ -83,6 +84,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         Appearance = appearance;
         Account = account;
         Ai = ai;
+        Updates = updates;
 
         // "Account" only exists when the host has an account service.
         Categories =
@@ -95,6 +97,7 @@ public sealed partial class SettingsViewModel : ObservableObject
                 ai is not null ? new SettingsCategory("ai", "AI suggestions") : null,
                 new SettingsCategory("appearance", "Appearance"),
                 new SettingsCategory("device", "Data & this device"),
+                updates is not null ? new SettingsCategory("about", "About & updates") : null,
             }.OfType<SettingsCategory>(),
         ];
         _category = Categories[0];
@@ -133,6 +136,9 @@ public sealed partial class SettingsViewModel : ObservableObject
     public AiOptions? Ai { get; }
     public bool HasAi => Ai is not null;
 
+    // Null when the host can't check for updates (tests, offline-only builds).
+    public UpdatesViewModel? Updates { get; }
+
     // The rail. One pane shows at a time; each Show* flag drives exactly one pane's IsVisible.
     public IReadOnlyList<SettingsCategory> Categories { get; }
 
@@ -143,7 +149,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         nameof(ShowCapacity),
         nameof(ShowAi),
         nameof(ShowAppearance),
-        nameof(ShowDevice)
+        nameof(ShowDevice),
+        nameof(ShowAbout)
     )]
     SettingsCategory _category;
 
@@ -153,6 +160,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     public bool ShowAi => HasAi && Category.Key == "ai";
     public bool ShowAppearance => Category.Key == "appearance";
     public bool ShowDevice => Category.Key == "device";
+    public bool ShowAbout => Updates is not null && Category.Key == "about";
     public IReadOnlyList<Noto.Core.Import.ImportFormat> ImportFormats { get; } =
         Enum.GetValues<Noto.Core.Import.ImportFormat>();
 
