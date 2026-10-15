@@ -15,6 +15,13 @@ public sealed partial class SectionViewModel(string title, bool collapsible = tr
 
     public int? WipLimit { get; init; }
 
+    // Toggling rebuilds the whole flat list, so every header is a new control. This lets only the section
+    // that was just toggled animate its arrow, instead of every expanded one turning in sympathy.
+    long _toggledAt = long.MinValue;
+    public bool JustToggled => Environment.TickCount64 - _toggledAt < 600;
+
+    public void MarkToggled() => _toggledAt = Environment.TickCount64;
+
     // Calendar cells only: the day this section is, so a drop can plan an item for it. Null on the
     // Unscheduled / Overdue trays, which is why `IsDropTarget` is separate.
     public DateOnly? Day { get; init; }

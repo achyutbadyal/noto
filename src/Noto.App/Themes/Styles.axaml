@@ -1091,40 +1091,6 @@
     </Setter>
   </Style>
 
-  <!-- Section disclosure chevron: rotates as the section collapses (keyframe, class-driven) -->
-  <Style Selector="PathIcon.chevron">
-    <Setter Property="RenderTransform">
-      <RotateTransform Angle="0" />
-    </Setter>
-  </Style>
-  <Style Selector="PathIcon.chevron.collapsed">
-    <Setter Property="RenderTransform">
-      <RotateTransform Angle="-90" />
-    </Setter>
-    <Style.Animations>
-      <Animation Duration="0:0:0.2" Easing="{StaticResource EaseInOut}">
-        <KeyFrame Cue="0%">
-          <Setter Property="RotateTransform.Angle" Value="0" />
-        </KeyFrame>
-        <KeyFrame Cue="100%">
-          <Setter Property="RotateTransform.Angle" Value="-90" />
-        </KeyFrame>
-      </Animation>
-    </Style.Animations>
-  </Style>
-  <Style Selector="PathIcon.chevron:not(.collapsed)">
-    <Style.Animations>
-      <Animation Duration="0:0:0.2" Easing="{StaticResource EaseInOut}">
-        <KeyFrame Cue="0%">
-          <Setter Property="RotateTransform.Angle" Value="-90" />
-        </KeyFrame>
-        <KeyFrame Cue="100%">
-          <Setter Property="RotateTransform.Angle" Value="0" />
-        </KeyFrame>
-      </Animation>
-    </Style.Animations>
-  </Style>
-
   <!-- Section body fades/settles as it collapses (height itself stays instant: no layout animation) -->
   <Style Selector="ItemsControl.sectionBody">
     <Setter Property="Opacity" Value="1" />

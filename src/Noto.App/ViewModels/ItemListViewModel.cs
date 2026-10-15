@@ -75,6 +75,7 @@ public abstract partial class ItemListViewModel : ObservableObject
     // Collapsing a section changes the flat sequence, so the view has to rebuild it.
     public void ToggleSection(SectionViewModel section)
     {
+        section.MarkToggled();
         section.IsCollapsed = !section.IsCollapsed;
         OnPropertyChanged(nameof(FlatEntries));
     }
