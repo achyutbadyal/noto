@@ -11,174 +11,154 @@
     the parts of the day; below it, the tasks in the order you would meet them, what is due on the day, and a
     short list of things that could still go there. The composer at the bottom adds straight to this day.
   -->
-  <Grid RowDefinitions="*,Auto" Margin="24,8,24,16">
-    <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Margin="0,0,8,12">
-        <v:PromptBar DataContext="{Binding Decisions}" Margin="0,0,0,8" />
+  <Panel>
+    <Grid RowDefinitions="*,Auto" Margin="24,8,24,16">
+      <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="0,0,8,12">
+          <v:PromptBar DataContext="{Binding Decisions}" Margin="0,0,0,8" />
 
-        <!-- hero -->
-        <StackPanel Spacing="16" Margin="10,2,10,8">
-          <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <TextBlock
-                Text="{Binding Headline}"
-                FontWeight="Medium"
-                TextTrimming="CharacterEllipsis"
-              />
-              <TextBlock
-                Grid.Column="1"
-                Text="{Binding Verdict}"
-                Classes="secondary"
+          <!-- hero -->
+          <StackPanel Spacing="16" Margin="10,2,10,8">
+            <StackPanel Spacing="8">
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <TextBlock
+                  Text="{Binding Headline}"
+                  FontWeight="Medium"
+                  TextTrimming="CharacterEllipsis"
+                />
+                <TextBlock
+                  Grid.Column="1"
+                  Text="{Binding Verdict}"
+                  Classes="secondary"
+                  Classes.over="{Binding IsOver}"
+                />
+              </Grid>
+              <ProgressBar
+                Minimum="0"
+                Maximum="100"
+                Value="{Binding LoadPercent}"
                 Classes.over="{Binding IsOver}"
+                IsVisible="{Binding HasLoad}"
+                AutomationProperties.Name="{Binding Verdict}"
               />
-            </Grid>
-            <ProgressBar
-              Minimum="0"
-              Maximum="100"
-              Value="{Binding LoadPercent}"
-              Classes.over="{Binding IsOver}"
-              IsVisible="{Binding HasLoad}"
-              AutomationProperties.Name="{Binding Verdict}"
-            />
 
-            <!-- the shape of the day: how much sits in each part, and where it is free -->
-            <ItemsControl
-              ItemsSource="{Binding Parts}"
-              Margin="0,6,0,0"
-              IsVisible="{Binding HasLoad}"
-            >
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="5" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:PartBar">
-                  <StackPanel Spacing="4" Margin="0,0,12,0" Classes.free="{Binding IsEmpty}">
-                    <TextBlock Text="{Binding Label}" Classes="hint" FontSize="11" />
-                    <ProgressBar
-                      Classes="partBar"
-                      Minimum="0"
-                      Maximum="1"
-                      Value="{Binding Fraction}"
-                    />
-                    <TextBlock
-                      Text="{Binding Amount}"
-                      FontSize="12"
-                      Classes="secondary"
-                      Classes.hint="{Binding IsEmpty}"
-                    />
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+              <!-- the shape of the day: how much sits in each part, and where it is free -->
+              <ItemsControl
+                ItemsSource="{Binding Parts}"
+                Margin="0,6,0,0"
+                IsVisible="{Binding HasLoad}"
+              >
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <UniformGrid Columns="5" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PartBar">
+                    <StackPanel Spacing="4" Margin="0,0,12,0" Classes.free="{Binding IsEmpty}">
+                      <TextBlock Text="{Binding Label}" Classes="hint" FontSize="11" />
+                      <ProgressBar
+                        Classes="partBar"
+                        Minimum="0"
+                        Maximum="1"
+                        Value="{Binding Fraction}"
+                      />
+                      <TextBlock
+                        Text="{Binding Amount}"
+                        FontSize="12"
+                        Classes="secondary"
+                        Classes.hint="{Binding IsEmpty}"
+                      />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
 
-            <TextBlock
-              Text="{Binding ForecastText}"
-              Classes="secondary"
-              FontSize="12"
-              TextWrapping="Wrap"
-              IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}"
-            />
-            <TextBlock
-              Text="{Binding Footnote}"
-              Classes="hint"
-              FontSize="11"
-              TextWrapping="Wrap"
-              IsVisible="{Binding Footnote, Converter={x:Static ObjectConverters.IsNotNull}}"
-            />
+              <TextBlock
+                Text="{Binding ForecastText}"
+                Classes="secondary"
+                FontSize="12"
+                TextWrapping="Wrap"
+                IsVisible="{Binding ForecastText, Converter={x:Static ObjectConverters.IsNotNull}}"
+              />
+              <TextBlock
+                Text="{Binding Footnote}"
+                Classes="hint"
+                FontSize="11"
+                TextWrapping="Wrap"
+                IsVisible="{Binding Footnote, Converter={x:Static ObjectConverters.IsNotNull}}"
+              />
+            </StackPanel>
           </StackPanel>
+
+          <TextBlock
+            Text="{Binding EmptyText}"
+            Classes="secondary"
+            TextWrapping="Wrap"
+            Margin="10,10,10,0"
+            MaxWidth="520"
+            HorizontalAlignment="Left"
+            IsVisible="{Binding IsEmpty}"
+          />
+
+          <ItemsControl ItemsSource="{Binding Sections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:SectionViewModel">
+                <StackPanel Margin="0,16,0,0">
+                  <Grid ColumnDefinitions="*,Auto" Margin="10,0,10,4">
+                    <TextBlock Text="{Binding Header}" Classes="section" />
+                    <TextBlock
+                      Grid.Column="1"
+                      Text="{Binding HeaderDetail}"
+                      Classes="hint"
+                      FontSize="11"
+                      IsVisible="{Binding HasHeaderDetail}"
+                    />
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding Rows}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ItemRowViewModel">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                          <v:ItemRowView />
+                          <Button
+                            Grid.Column="1"
+                            Classes="planHere"
+                            IsVisible="{Binding OfferPlan}"
+                            VerticalAlignment="Center"
+                            Command="{Binding $parent[UserControl].((vm:DayAheadViewModel)DataContext).PlanHereCommand}"
+                            CommandParameter="{Binding}"
+                            AutomationProperties.Name="Plan for this day"
+                            ToolTip.Tip="Plan this for the day"
+                          >
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                              <PathIcon Data="{v:Icon calendar-plus}" Width="13" Height="13" />
+                              <TextBlock Text="Plan here" FontSize="12" />
+                            </StackPanel>
+                          </Button>
+                        </Grid>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
+      </ScrollViewer>
 
-        <TextBlock
-          Text="{Binding EmptyText}"
-          Classes="secondary"
-          TextWrapping="Wrap"
-          Margin="10,10,10,0"
-          MaxWidth="520"
-          HorizontalAlignment="Left"
-          IsVisible="{Binding IsEmpty}"
-        />
-
-        <ItemsControl ItemsSource="{Binding Sections}">
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:SectionViewModel">
-              <StackPanel Margin="0,16,0,0">
-                <Grid ColumnDefinitions="*,Auto" Margin="10,0,10,4">
-                  <TextBlock Text="{Binding Header}" Classes="section" />
-                  <TextBlock
-                    Grid.Column="1"
-                    Text="{Binding HeaderDetail}"
-                    Classes="hint"
-                    FontSize="11"
-                    IsVisible="{Binding HasHeaderDetail}"
-                  />
-                </Grid>
-                <ItemsControl ItemsSource="{Binding Rows}">
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ItemRowViewModel">
-                      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                        <v:ItemRowView />
-                        <Button
-                          Grid.Column="1"
-                          Classes="planHere"
-                          IsVisible="{Binding OfferPlan}"
-                          VerticalAlignment="Center"
-                          Command="{Binding $parent[UserControl].((vm:DayAheadViewModel)DataContext).PlanHereCommand}"
-                          CommandParameter="{Binding}"
-                          AutomationProperties.Name="Plan for this day"
-                          ToolTip.Tip="Plan this for the day"
-                        >
-                          <StackPanel Orientation="Horizontal" Spacing="5">
-                            <PathIcon Data="{v:Icon calendar-plus}" Width="13" Height="13" />
-                            <TextBlock Text="Plan here" FontSize="12" />
-                          </StackPanel>
-                        </Button>
-                      </Grid>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </StackPanel>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </StackPanel>
-    </ScrollViewer>
-
-    <StackPanel Grid.Row="1" Spacing="4" Margin="0,8,0,0">
-      <Border x:Name="CaptureBar" Classes="composer" Padding="6">
-        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6">
-          <TextBox
-            x:Name="AddBox"
-            Grid.Column="0"
-            Classes="bare"
-            Text="{Binding Add.Text, Mode=TwoWay}"
-            Watermark="{Binding DayName, StringFormat='Add to {0}…'}"
-            AutomationProperties.Name="New task title"
-            KeyDown="OnAddKeyDown"
-          />
-          <ComboBox
-            Grid.Column="1"
-            Width="126"
-            ItemsSource="{Binding Add.Estimates}"
-            SelectedItem="{Binding Add.Estimate, Mode=TwoWay}"
-            AutomationProperties.Name="Estimate"
-          />
-          <Button
-            Grid.Column="2"
-            Classes="accent"
-            Content="Add"
-            MinWidth="68"
-            Command="{Binding Add.AddCommand}"
-          />
-        </Grid>
-      </Border>
-      <TextBlock
-        Text="{Binding Add.Error}"
-        Classes="error"
-        Margin="8,0,0,0"
-        IsVisible="{Binding Add.Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+      <v:CaptureComposer
+        x:Name="Composer"
+        Grid.Row="1"
+        Margin="0,8,0,0"
+        DataContext="{Binding Add}"
+        Watermark="{Binding $parent[UserControl].((vm:DayAheadViewModel)DataContext).DayName, StringFormat='Add to {0}…'}"
       />
-    </StackPanel>
-  </Grid>
+    </Grid>
+    <v:NewTaskPanel
+      x:Name="DetailedPanel"
+      ZIndex="10"
+      DataContext="{Binding Add}"
+      Subtitle="{Binding $parent[UserControl].((vm:DayAheadViewModel)DataContext).DayName, StringFormat='Adding for {0}'}"
+    />
+  </Panel>
 </UserControl>

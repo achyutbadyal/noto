@@ -241,6 +241,35 @@ public sealed class DayAheadTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task More_options_opens_the_full_new_task_panel_and_adds_to_that_day()
+    {
+        await SeedAsync();
+        var (window, shell) = Open(ThemeVariant.Dark);
+        await shell.InitializeAsync();
+        await shell.ShowDayAsync(Tomorrow);
+        var day = shell.Content.ShouldBeOfType<DayAheadViewModel>();
+        await SettleAsync();
+
+        window
+            .GetVisualDescendants()
+            .OfType<Button>()
+            .ShouldContain(b => b.Content as string == "More options");
+        day.Add.OpenDetailedCommand.Execute(null);
+        await SettleAsync();
+        var panel = window.GetVisualDescendants().OfType<NewTaskPanel>().Single();
+        panel.GetVisualDescendants().OfType<TextBox>().ShouldContain(t => t.IsEffectivelyVisible);
+
+        day.Add.DetailTitle = "Call the landlord";
+        await day.Add.SubmitDetailedAsync();
+        await SettleAsync();
+
+        var added = shell
+            .Content.ShouldBeOfType<DayAheadViewModel>()
+            .FlatRows.Single(r => r.Title == "Call the landlord");
+        added.Item.PlannedFor.ShouldBe(Tomorrow);
+    }
+
+    [AvaloniaFact]
     public void Link_text_turns_urls_into_underlined_link_runs_and_leaves_plain_text_alone()
     {
         var plain = new LinkText { Value = "nothing to click here" };

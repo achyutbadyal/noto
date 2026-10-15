@@ -27,10 +27,5 @@ public sealed class CapacityViewModel(CapacitySummary summary, bool usesEstimate
     public string AutomationName =>
         $"Capacity {UsedText} of {TotalText}, {(IsOver ? $"{Format(Summary.Over)} over" : "fits")}";
 
-    string Format(int amount) =>
-        Summary.Unit == CapacityUnit.Items
-            ? amount == 1
-                ? "1 item"
-                : $"{amount} items"
-            : Duration.Short(amount);
+    string Format(int amount) => DayAheadText.Amount(amount, Summary.Unit);
 }

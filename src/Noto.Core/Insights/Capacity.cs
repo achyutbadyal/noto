@@ -1,4 +1,5 @@
 using Noto.Core.Derivations;
+using Noto.Core.Layouts;
 using Noto.Core.Models;
 
 namespace Noto.Core.Insights;
@@ -28,8 +29,7 @@ public static class CapacityBar
             .Pinned.Concat(view.Planned)
             .Concat(view.Now is null ? [] : [view.Now])
             .ToList();
-        int Cost(TodoItem i) =>
-            ws.CapacityUnit == CapacityUnit.Items ? 1 : i.EstimateMinutes ?? fallbackMinutes;
+        int Cost(TodoItem i) => DayAheadLayout.Cost(i, ws, fallbackMinutes);
 
         var committed = open.Sum(Cost);
         var suggested = new List<TodoItem>();

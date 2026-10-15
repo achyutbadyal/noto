@@ -29,6 +29,9 @@ public sealed partial class AddItemViewModel : ObservableObject
     readonly bool _plannedForToday;
     readonly Func<string, Guid?>? _resolveWorkspace;
     readonly Func<DateOnly> _today;
+
+    // The day a task added here lands on (and that dates in the title are read against).
+    public DateOnly Today => _today();
     readonly ISuggestionService? _suggestions;
     readonly ILinkResolver? _links;
 

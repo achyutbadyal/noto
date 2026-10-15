@@ -1,0 +1,226 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.NewTaskPanel"
+  x:DataType="vm:AddItemViewModel"
+>
+  <!-- Detailed create: every field the domain supports. It sits outside the page margins so the
+         panel's shadow has room and is not clipped by the page bounds. -->
+  <Panel x:Name="DetailedPanel" IsVisible="{Binding IsDetailedOpen}" ZIndex="10">
+    <Border Background="#66000000" PointerPressed="OnDetailedScrimPressed" />
+    <Border
+      Classes="panel pop"
+      Width="500"
+      MaxWidth="540"
+      MaxHeight="560"
+      Margin="32"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Center"
+      Padding="20"
+      Background="{DynamicResource RaisedBrush}"
+      BoxShadow="0 6 20 0 #40000000"
+    >
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,14">
+          <StackPanel Spacing="2">
+            <TextBlock Text="New task" Classes="title" />
+            <TextBlock Text="{Binding $parent[v:NewTaskPanel].Subtitle}" Classes="hint" />
+          </StackPanel>
+          <Button
+            Grid.Column="1"
+            Classes="icon small"
+            Command="{Binding CloseDetailedCommand}"
+            AutomationProperties.Name="Close"
+          >
+            <PathIcon Data="{v:Icon close}" Width="14" Height="14" />
+          </Button>
+        </Grid>
+
+        <Border DockPanel.Dock="Top" Classes="hairline" Margin="0,0,0,14" />
+
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,14,0,0">
+          <TextBlock
+            Text="{Binding DetailError}"
+            Classes="error"
+            IsVisible="{Binding DetailError, Converter={x:Static ObjectConverters.IsNotNull}}"
+          />
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Content="Cancel (Esc)" Command="{Binding CloseDetailedCommand}" />
+            <Button
+              Classes="accent"
+              Content="Add task"
+              Padding="14,6"
+              Command="{Binding DetailSubmitCommand}"
+            />
+          </StackPanel>
+        </StackPanel>
+
+        <ScrollViewer>
+          <StackPanel Spacing="12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="TITLE" Classes="section" />
+              <TextBox
+                x:Name="DetailTitleBox"
+                Text="{Binding DetailTitle, Mode=TwoWay}"
+                Watermark="What needs doing?"
+                v:Behaviors.FocusWhenVisible="True"
+                KeyDown="OnDetailKeyDown"
+                AutomationProperties.Name="Task title"
+              />
+
+              <!-- One strip under the title, in exactly one of four states: the action, the work, the
+                     evidence, the failure. It fills the form's own fields and never creates a task, so
+                     everything it writes is reviewable and undoable (docs/07 §19). -->
+              <StackPanel Spacing="6" IsVisible="{Binding HasSuggestions}">
+                <Button
+                  Classes="link"
+                  HorizontalAlignment="Left"
+                  IsVisible="{Binding ShowFillAction}"
+                  IsEnabled="{Binding CanSuggest}"
+                  Command="{Binding SuggestCommand}"
+                  AutomationProperties.Name="Fill fields from the title with AI"
+                >
+                  <StackPanel Orientation="Horizontal" Spacing="5">
+                    <PathIcon Data="{v:Icon sparkle}" Width="13" Height="13" />
+                    <TextBlock Text="Fill the rest from this title" />
+                  </StackPanel>
+                </Button>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding IsSuggesting}">
+                  <PathIcon
+                    Data="{v:Icon sparkle}"
+                    Width="13"
+                    Height="13"
+                    Opacity="0.6"
+                    VerticalAlignment="Center"
+                  />
+                  <TextBlock
+                    Text="{Binding SuggestionStep}"
+                    Classes="hint"
+                    FontSize="12"
+                    VerticalAlignment="Center"
+                  />
+                  <ProgressBar IsIndeterminate="True" Width="72" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <TextBlock
+                  Text="{Binding SuggestionError}"
+                  Classes="error"
+                  FontSize="12"
+                  TextWrapping="Wrap"
+                  IsVisible="{Binding SuggestionError, Converter={x:Static ObjectConverters.IsNotNull}}"
+                />
+
+                <!-- What changed, why, and one step back. The evidence stays until the title moves
+                       on, so it can never describe values that are no longer on screen. -->
+                <Border Classes="card" Padding="12,10" IsVisible="{Binding HasFill}">
+                  <DockPanel>
+                    <Button
+                      DockPanel.Dock="Right"
+                      Classes="link"
+                      Content="Undo"
+                      VerticalAlignment="Top"
+                      Margin="12,0,0,0"
+                      Command="{Binding UndoFillCommand}"
+                      AutomationProperties.Name="Undo the fill"
+                    />
+                    <StackPanel Spacing="3">
+                      <TextBlock
+                        Text="{Binding SuggestionNote}"
+                        FontSize="12"
+                        TextWrapping="Wrap"
+                      />
+                      <TextBlock
+                        Text="{Binding FilledFields, StringFormat='Filled {0}'}"
+                        Classes="hint"
+                        FontSize="11"
+                        TextWrapping="Wrap"
+                        IsVisible="{Binding FilledFields, Converter={x:Static ObjectConverters.IsNotNull}}"
+                      />
+                    </StackPanel>
+                  </DockPanel>
+                </Border>
+              </StackPanel>
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock Text="TIME" Classes="section" />
+                <ComboBox
+                  ItemsSource="{Binding Estimates}"
+                  SelectedItem="{Binding DetailEstimate, Mode=TwoWay}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Estimate"
+                />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="PRIORITY" Classes="section" />
+                <ComboBox
+                  ItemsSource="{Binding Priorities}"
+                  SelectedItem="{Binding DetailPriority, Mode=TwoWay}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Priority"
+                />
+              </StackPanel>
+
+              <StackPanel Grid.Row="1" Spacing="4" Margin="0,10,0,0">
+                <TextBlock Text="WHEN" Classes="section" />
+                <ComboBox
+                  ItemsSource="{Binding Whens}"
+                  SelectedItem="{Binding DetailWhen, Mode=TwoWay}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="When"
+                />
+                <TextBlock Text="{Binding DetailWhenPreview}" Classes="hint" FontSize="11" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4" Margin="0,10,0,0">
+                <TextBlock Text="DUE" Classes="section" />
+                <ComboBox
+                  ItemsSource="{Binding Dues}"
+                  SelectedItem="{Binding DetailDue, Mode=TwoWay}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Due date"
+                />
+                <TextBlock Text="{Binding DetailDuePreview}" Classes="hint" FontSize="11" />
+              </StackPanel>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="TIME OF DAY" Classes="section" />
+                <ComboBox
+                  ItemsSource="{Binding TimesOfDay}"
+                  SelectedItem="{Binding DetailTime, Mode=TwoWay}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.Name="Time of day"
+                />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="WAITING ON" Classes="section" />
+                <TextBox
+                  Text="{Binding DetailWaitingOn, Mode=TwoWay}"
+                  Watermark="Name (optional)"
+                  AutomationProperties.Name="Waiting on"
+                />
+              </StackPanel>
+            </Grid>
+
+            <StackPanel Spacing="4">
+              <TextBlock Text="NOTES" Classes="section" />
+              <TextBox
+                Text="{Binding DetailNotes, Mode=TwoWay}"
+                AcceptsReturn="True"
+                TextWrapping="Wrap"
+                MinHeight="64"
+                Watermark="Markdown notes (optional)"
+                AutomationProperties.Name="Notes"
+              />
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+  </Panel>
+</UserControl>

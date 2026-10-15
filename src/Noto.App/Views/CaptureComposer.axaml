@@ -1,0 +1,68 @@
+<UserControl
+  xmlns="https://github.com/avaloniaui"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:vm="using:Noto.App.ViewModels"
+  xmlns:v="using:Noto.App.Views"
+  x:Class="Noto.App.Views.CaptureComposer"
+  x:DataType="vm:AddItemViewModel"
+>
+  <!-- Capture: one composer holding the title, the duration and the actions, so it reads as a single
+       control instead of a row of loose buttons. Shared by Today and the day planner. -->
+  <StackPanel Spacing="4">
+    <Border x:Name="BarBorder" Classes="composer" Padding="6">
+      <StackPanel Spacing="6">
+        <ItemsControl ItemsSource="{Binding Chips}" IsVisible="{Binding Chips.Count}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <StackPanel Orientation="Horizontal" Spacing="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <Border Classes="chip">
+                <TextBlock Text="{Binding}" FontSize="12" />
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6">
+          <Panel Grid.Column="0">
+            <TextBlock x:Name="AddHighlight" Classes="mirror" />
+            <TextBox
+              x:Name="AddBox"
+              Classes="bare"
+              Foreground="Transparent"
+              CaretBrush="{DynamicResource Text1Brush}"
+              Text="{Binding Text, Mode=TwoWay}"
+              Watermark="{Binding $parent[v:CaptureComposer].Watermark}"
+              AutomationProperties.Name="New task title"
+              KeyDown="OnAddKeyDown"
+            />
+          </Panel>
+          <ComboBox
+            Grid.Column="1"
+            Width="126"
+            ItemsSource="{Binding Estimates}"
+            SelectedItem="{Binding Estimate, Mode=TwoWay}"
+            AutomationProperties.Name="Estimate"
+          />
+          <Button
+            Grid.Column="2"
+            Classes="accent"
+            Content="Add"
+            MinWidth="68"
+            Command="{Binding AddCommand}"
+          />
+          <Button Grid.Column="3" Content="More options" Command="{Binding OpenDetailedCommand}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+    <TextBlock
+      Text="{Binding Error}"
+      Classes="error"
+      Margin="8,0,0,0"
+      IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}"
+    />
+  </StackPanel>
+</UserControl>
