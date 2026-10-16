@@ -138,17 +138,7 @@ public sealed class OpCaptureTests : IDisposable
 
         var ops = await _a.PendingAsync();
 
-        foreach (var op in ops)
-        {
-            EntityTypes.All.ShouldContain(op.EntityType);
-            if (op.Kind == OpKinds.Set)
-                SyncRows.FieldsOf(op.EntityType)!.ShouldContain(op.Field!);
-            else
-                ((JsonObject)op.Value!)
-                    .Select(kv => kv.Key)
-                    .Where(k => k != "id")
-                    .ShouldAllBe(k => SyncRows.FieldsOf(op.EntityType)!.Contains(k));
-        }
+        OpAssertions.NameOnlyKnownEntitiesAndFields(ops);
 
         var json = string.Concat(ops.Select(o => o.Value?.ToJsonString())).ToLowerInvariant();
         foreach (

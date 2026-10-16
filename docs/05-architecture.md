@@ -46,79 +46,90 @@ graph TB
 Noto/
 ├── src/
 │   ├── Noto.Core/                    # net10.0 — no UI, no I/O
-│   │   ├── Models/                   # TodoItem, Workspace, ItemEvent, RecurrenceRule, ...
-│   │   ├── Time/                     # IClock, LogicalDate, DayBoundary, tz handling
-│   │   ├── Commands/                 # Plan, KeepToday, Defer, Someday, BreakDown, Wait, Drop, Complete, ...
+│   │   ├── Models/                   # TodoItem, Workspace, ItemEvent, RecurrenceRule, Tag, DayNote
+│   │   ├── Time/                     # IClock, logical dates, day boundary, tz handling
+│   │   ├── Commands/                 # Plan, KeepToday, Defer, Someday, BreakDown, Wait, Drop, Complete, …
 │   │   │                             #   each = state change + ItemEvent in one transaction
-│   │   ├── Derivations/              # Carry/Age/Defers, DayStats, Streaks, Insights, PaceForecast
-│   │   ├── Recurrence/               # RRULE subset, deterministic instance generation
-│   │   ├── Presets/                  # Layout/Order/Pressure definitions, built-in presets
-│   │   └── Interfaces/               # IItemRepository, IEventStore, IOpLog, IKeyring, ...
+│   │   ├── Derivations/  Insights/   # carry/age/defers, DayStats, Today query; streaks, pace forecast
+│   │   ├── Recurrence/  Habits/      # RRULE subset + deterministic instances; flex streaks, heatmap
+│   │   ├── Layouts/  Presets/        # board/timeline/weekly-review data; layout × order × pressure
+│   │   ├── Import/  Export/  Text/   # importers; JSON/CSV export; token parser, fuzzy match
+│   │   ├── Links/  Net/  Sync/       # URL normalization; public-address check; HLC, op model, LWW rule
+│   │   ├── Workspaces/  Updates/     # workspace service; app version + update check
+│   │   ├── Ai/                       # the suggestion contract: ISuggestionService, FieldSuggestion
+│   │   └── Interfaces/               # IItemRepository, IEventStore, IOpLog, IKeyring, …
 │   │
 │   ├── Noto.Data/                    # Microsoft.Data.Sqlite + hand-written SQL (AOT-safe)
-│   │   ├── Migrations/              # 0001_init.sql, 0002_...sql (embedded resources)
+│   │   ├── Migrations/               # 0001_init.sql, 0002_…sql (embedded resources)
 │   │   ├── Repositories/
-│   │   ├── Caches/                  # day_stats_cache, item_metrics_cache, link_preview_cache
-│   │   └── Seed/                    # built-in presets, onboarding templates
+│   │   ├── Caches/                   # day_stats_cache, item_metrics_cache, link_preview_cache
+│   │   └── SqliteUnitOfWork.cs       # + .Search.cs (FTS5); Migrator.cs
 │   │
-│   ├── Noto.Sync/                    # client sync
-│   │   ├── Hlc.cs                   # hybrid logical clock
-│   │   ├── OpLog.cs                 # pending_ops capture from commands
-│   │   ├── SyncClient.cs            # push/pull with cursor + pagination
-│   │   ├── Merger.cs                # per-field LWW apply, conflict_log for text fields
-│   │   └── Bootstrap.cs             # new device / re-enabled workspace snapshot load
+│   ├── Noto.Sync/                    # client sync — flat, one type per file
+│   │   ├── Protocol.cs  SyncClient.cs          # push/pull with cursor + pagination
+│   │   ├── Merger.cs  LwwRow.cs  RowNormalizer.cs
+│   │   ├── SyncScheduler.cs  WorkspaceSyncService.cs  HttpSyncTransport.cs
+│   │   └── ServerAuth.cs  ProblemDetails.cs
 │   │
 │   ├── Noto.Providers/               # Connected Apps
-│   │   ├── IAppProvider.cs
-│   │   ├── ProviderRegistry.cs      # URL matching → (provider, connection)
-│   │   ├── PreviewService.cs        # detection, cache-first, rate limit, live-link state hash
-│   │   ├── Transport/
-│   │   │   ├── DirectTransport.cs   # native: HTTPS straight to provider
-│   │   │   └── GatewayTransport.cs  # browser: via Noto backend /gateway
-│   │   ├── Auth/                    # OAuth2 (PKCE + loopback), token refresh, PAT
-│   │   ├── Providers/               # GitHub, Jira, Linear, Slack, GitLab, Notion, Confluence, OpenGraph
-│   │   └── CustomApp/               # JSONPath mapper
+│   │   ├── ProviderBase.cs  ProviderRegistry.cs  Models.cs
+│   │   ├── Preview/                  # cache-first detection, rate gate, live-link state hash
+│   │   ├── Transport/                # DirectTransport (native) · GatewayTransport (web); SafeHttp
+│   │   ├── Auth/                     # OAuth2 (PKCE + loopback), token refresh, PAT
+│   │   ├── Providers/                # GitHub, Jira, Linear, Slack, GitLab, Notion, Confluence, Figma, OpenGraph
+│   │   ├── CustomApp/                # JSONPath mapper
+│   │   └── Ai/                       # AiMode, IAiProvider, registry, OpenAI-compatible + Apple on-device
 │   │
 │   ├── Noto.Platform/                # interfaces + per-OS implementations
-│   │   ├── FileKeyring.cs           # the device secret store: 4 SecretStorageMode modes (ADR-06)
-│   │   ├── Abstractions/            # IGlobalHotkey, IMenuBar, IKeyring, ICaptureContext,
-│   │   │                            # INotifications, IReduceMotion, IFocusWindow, SecretStorageMode
-│   │   ├── MacOS/                   # Carbon hotkey, NSStatusItem via TrayIcon/NativeMenu, Keychain, Apple Events
-│   │   ├── Windows/                 # RegisterHotKey, Credential Manager (DPAPI), toast notifications
-│   │   ├── Linux/                   # libsecret; X11 hotkey (Wayland: portal / user-bound shortcut)
-│   │   ├── iOS/ Android/            # Keychain / AndroidKeyStore, share targets, widgets
-│   │   └── Browser/                 # Web Crypto + IndexedDB keyring, no hotkey
+│   │   ├── FileKeyring.cs            # the device secret store: 4 SecretStorageMode modes (ADR-06)
+│   │   ├── PlatformFactory.cs        # Create(dataDir, deviceId) → PlatformServices
+│   │   ├── Abstractions/             # IGlobalHotkey, IMenuBar, IKeyring, ICaptureContext,
+│   │   │                             #   INotifications, IReduceMotion, IFocusWindow, SecretStorageMode
+│   │   ├── Internal/                 # ProcessRunner
+│   │   └── MacOS/  Windows/  Linux/  # Carbon hotkey · RegisterHotKey · X11 XGrabKey; keyring per OS
 │   │
 │   ├── Noto.App/                     # Avalonia shared UI
-│   │   ├── ViewModels/              # Shell, Today, Review, Shutdown, Inspector, CommandBar, Backlog,
-│   │   │                            # Board, Timeline, HabitGrid, WeeklyReview, Insights, Settings
-│   │   ├── Views/
-│   │   ├── Controls/                # CarryGlyph, CapacityBar, DayStrip, LinkChip, LinkPreviewCard,
-│   │   │                            # TokenInput, HabitGrid, BoardColumn, TimelineLane, UndoToast
-│   │   ├── Themes/                  # token dictionaries (Dark/Light), workspace accent
+│   │   ├── ViewModels/               # Shell, Today, Review, Shutdown, Inspector, CommandBar, Backlog,
+│   │   │                             #   Insights, Settings; Layouts/ = Board, Timeline, Calendar, …
+│   │   ├── Views/                    # views *and* controls (ItemRowView, SectionsList, ItemDragger,
+│   │   │                             #   CaptureComposer, DayPulse, LinkText, KeyChordMapper)
+│   │   ├── Converters/  Logic/       # value converters; KeyMap, ModeLabels, HelpTopicIds
+│   │   ├── Services/  Help/          # AppServices, AiOptions, LinkPreviews, UndoService; guide content
+│   │   ├── Themes/                   # ThemeTokens, ThemeBuilder, Styles.axaml
 │   │   └── Assets/
 │   │
 │   ├── Noto.Desktop/                 # macOS / Windows / Linux host
-│   ├── Noto.Browser/                 # WASM host
-│   ├── Noto.iOS/  Noto.Android/      # mobile hosts
-│   │
 │   └── Noto.Server/                  # backend (see 06)
-│       ├── Endpoints/               # Auth, Sync, Devices, Account, Gateway
-│       ├── Sync/                    # op ingest, per-field LWW, seq cursor, snapshot
-│       ├── Gateway/                 # OAuth broker, allowlisted fetch proxy, OpenGraph (SSRF-safe)
-│       └── Data/                    # EF Core 10 (server only; no AOT constraint)
+│       ├── Program.cs  ServerHost.cs
+│       ├── Endpoints/                # Auth, Sync, Account (gateway routes live in Gateway/)
+│       ├── Sync/                     # SyncService, TombstoneGc
+│       ├── Gateway/                  # OAuthBroker, ProviderAllowlist, FetchProxy, SafeFetcher,
+│       │                             #   OpenGraphFetcher, SsrfGuard, GraphQlGuard, LoopbackReturn
+│       ├── Auth/                     # JwtService, AuthService, Argon2PasswordHasher, Principal
+│       ├── Middleware/               # RateGate, SecurityHeaders, DeviceStatus, ProblemHandling
+│       ├── Config/                   # ServerConfig, DotEnv
+│       └── Data/                     # ServerDbContext (EF Core 10), Entities
 │
-├── tests/
+├── tests/                            # one project per src project
 │   ├── Noto.Core.Tests/              # derivations, time semantics, invariants (property-based)
 │   ├── Noto.Data.Tests/
 │   ├── Noto.Sync.Tests/              # multi-replica convergence simulations
 │   ├── Noto.Providers.Tests/         # recorded HTTP fixtures per provider
-│   └── Noto.Server.Tests/
+│   ├── Noto.Server.Tests/
+│   ├── Noto.App.Tests/               # view models, theme tokens, headless UI
+│   └── Noto.Platform.Tests/          # keyring modes, per-OS key mapping
 │
+├── tools/noto-ai-helper/             # Swift: the Apple on-device AI bridge
+├── scripts/                          # package_mac.sh, package_linux.sh, package_windows.sh, …
 ├── docs/
+├── mise.toml  global.json
 ├── Noto.sln
 └── Directory.Build.props
 ```
+
+Planned but not yet created: `Noto.Browser` (WASM host), `Noto.iOS` / `Noto.Android` (mobile hosts), and
+the `Browser` platform implementation. They are phase 9 and 12 work ([08](08-implementation-roadmap.md)),
+not scaffolded early.
 
 ---
 
@@ -195,26 +206,22 @@ Source generators mean less boilerplate than ReactiveUI. It's AOT-friendly and f
 
 **Decision:**
 
-- **Native clients** (desktop, mobile) call provider APIs **directly**. Tokens live in a device-local secret store and only connection metadata is kept in SQLite.
+- **Native clients** (desktop, mobile) call provider APIs **directly**. Tokens live in a device-local secret store; only connection metadata is kept in SQLite.
 - **The secret store is chosen per device**, not per account, and the choice is remembered in `storage-mode.json` in the app data directory. `Noto.Platform.FileKeyring` is one class that switches on `SecretStorageMode`; there is deliberately no subclass per mode, because the four differ only in how the JSON is sealed, not in what an operation means.
 
-| `SecretStorageMode`        | Where the secrets live                     | Sealing                                                                                                                                                     |
-| -------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`MachineEncrypted`** (default) | `secrets.enc`                        | AES-GCM (`[12B nonce][16B tag][ciphertext]`) under a 256-bit key derived with `HKDF` (SHA-256) from `device.id` **and** a random 32-byte keyfile (`~/.config/noto/.keyring.key`, mode `0600`). Neither the app data nor the keyfile alone opens the store, and no salt is compiled into the binary. |
-| `PassphraseEncrypted`      | `secrets.vault`                            | AES-GCM (`[16B salt][12B nonce][16B tag][ciphertext]`) under a key derived with `PBKDF2` (SHA-256, 210 000 iterations) from a master passphrase the user types. The key is never written to disk; a wrong passphrase is a clear error the settings pane can retry. |
-| `PlainFile`                | `secrets.json`                             | None. Unencrypted JSON, for a machine the user fully controls.                                                                                               |
-| `OsKeyring`                | macOS Keychain · Windows Credential Manager · libsecret | Delegates to the existing per-OS `IKeyring` implementations.                                                                                    |
+| `SecretStorageMode`              | Where the secrets live                                  | Sealing                                                                                                                                                       |
+| -------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`MachineEncrypted`** (default) | `secrets.enc`                                           | AES-GCM under a 256-bit key derived with `HKDF` (SHA-256) from `device.id` **and** a random 32-byte keyfile (`~/.config/noto/.keyring.key`, mode `0600`). Neither the app data nor the keyfile alone opens the store, and no salt is compiled into the binary. |
+| `PassphraseEncrypted`            | `secrets.vault`                                         | AES-GCM under a key derived with `PBKDF2` (SHA-256, 210 000 iterations) from a master passphrase the user types. The key is never written to disk; a wrong passphrase is a clear error the settings pane can retry. |
+| `PlainFile`                      | `secrets.json`                                          | None. Unencrypted JSON, for a machine the user fully controls.                                                                                                 |
+| `OsKeyring`                      | macOS Keychain · Windows Credential Manager · libsecret  | Delegates to the existing per-OS `IKeyring` implementations.                                                                                                  |
 
 - **Why `MachineEncrypted` is the default.** The OS keyring ties every item to the app's code identity. `scripts/package_mac.sh` ad-hoc signs the bundle (`codesign --sign -`), so every build produces a new CDHash, every ACL is invalidated, and macOS asks for permission again after each update. A file sealed to the machine has no such dependency, needs no user action, and works identically on Windows and Linux.
-- **File safety.** All reads and writes go through a `SemaphoreSlim(1,1)`, because a store is a whole file and two concurrent writers would otherwise read-modify-write over each other. Writes are atomic: a `.tmp` sibling is written, set to `0600` on Unix, then `File.Move(overwrite: true)`. A missing or unreadable file in `MachineEncrypted`/`PlainFile` reads as an **empty store** — never a crash. A locked `PassphraseEncrypted` vault also reads as empty, so a passphrase the user hasn't typed yet cannot break startup; only a *wrong* passphrase raises.
-- **Lazy migration.** On a `MachineEncrypted` key miss, the store looks in the OS keyring once; if the key is there it is copied into `secrets.enc` and deleted from the keyring. The old keychain items therefore move themselves out of the way as they are used, and the consent sheets stop.
-- **Live switch.** Changing the mode copies every known key into the new store and then wipes the old one, so nothing is left behind in the mode the user just left. The OS keyrings have no portable "list everything", so `OsKeyring` mode maintains a small key-name index (`secrets.index.json`, names only) — and deletes it when the mode is left.
-- **Settings** offers all four modes, with the trade-off spelled out rather than the mechanism, and a passphrase field that appears only for `PassphraseEncrypted`. Unlocking there also restores the saved sync session, which could not be read while the vault was locked.
-- **Tests.** The real OS keyring tests are local-only: a CI runner — and a sandbox — has no unlocked login keychain, so `RealKeychain` probes once and they skip rather than fail. Everything the app does by default is covered against `FileKeyring` on a scratch directory.
-- **Browser client:** browsers can't call provider APIs (CORS) or exchange OAuth codes. Calls go through the backend's **Connected Apps Gateway**, which brokers OAuth and proxies allowlisted requests. Tokens are kept in browser storage, encrypted with a non-extractable Web Crypto key, and sent per request. The gateway **does not store** them.
+- **Browser client:** browsers can't call provider APIs (CORS) or exchange OAuth codes, so calls go through the backend's **Connected Apps Gateway**, which brokers OAuth and proxies allowlisted requests. Tokens are kept in browser storage, encrypted with a non-extractable Web Crypto key, and sent per request. The gateway **does not store** them.
 - Link previews are device-local cache, never synced.
 
-Details: [10 › Web](10-connected-apps.md#web-connected-apps-gateway).
+The mechanism — file layout, atomic writes, the lazy migration off the OS keyring, the live mode switch, and
+the local-only keychain tests — is in [10 › Credential Storage](10-connected-apps.md#credential-storage).
 
 ### ADR-07: Sync = Op-Log + Per-Field LWW + HLC + Server Sequence Cursor
 

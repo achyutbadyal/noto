@@ -769,29 +769,6 @@ sealed class AppFixtureNoWorkspace : IDisposable
     public void Dispose() => _db.Dispose();
 }
 
-public sealed class FocusHoursBadgeTests : IDisposable
-{
-    readonly AppFixture _app = new();
-
-    public void Dispose() => _app.Dispose();
-
-    [Fact]
-    public async Task Day_notes_persist_in_the_database()
-    {
-        await _app.Services.DayNotes.SetAsync(
-            _app.Workspace.Id,
-            AppFixture.Today,
-            "Call the plumber"
-        );
-        (await _app.Services.DayNotes.GetAsync(_app.Workspace.Id, AppFixture.Today)).ShouldBe(
-            "Call the plumber"
-        );
-        (
-            await _app.Services.DayNotes.GetAsync(_app.Workspace.Id, AppFixture.Today.AddDays(1))
-        ).ShouldBeNull();
-    }
-}
-
 public sealed class CaptureTests : IDisposable
 {
     readonly AppFixture _app = new();

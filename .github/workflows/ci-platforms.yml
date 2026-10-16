@@ -50,4 +50,4 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet build Noto.sln
-      - run: dotnet test Noto.sln --no-build
+      - run: dotnet test Noto.sln --no-build --filter 'Category!=Screenshots'

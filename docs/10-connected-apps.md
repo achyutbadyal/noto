@@ -212,6 +212,33 @@ The **store** is a device setting, not an account one — see [05 › ADR-06](05
 
 `PassphraseEncrypted` (`secrets.vault`, PBKDF2-derived key held only in memory) and `PlainFile` (`secrets.json`, unencrypted) are the other two file modes. Secrets are never synced, exported or logged in any of them. Non-secret metadata lives in the local-only `app_connection` table ([04](04-domain-model.md#6-links)).
 
+### The store itself
+
+One class, `Noto.Platform.FileKeyring`, switches on `SecretStorageMode`; there is deliberately no subclass
+per mode, because the four differ only in how the JSON is sealed, not in what an operation means. In the
+three file modes every key lives in **one** JSON object — a `Dictionary<string, string>` keyed
+`service + '\u0001' + account` — so the whole store is a single file.
+
+- **File safety.** All reads and writes go through a `SemaphoreSlim(1,1)`, because a store is a whole file
+  and two concurrent writers would otherwise read-modify-write over each other. Writes are atomic: a `.tmp`
+  sibling is written, set to `0600` on Unix, then `File.Move(overwrite: true)`.
+- **Failure modes.** A missing or unreadable file in `MachineEncrypted`/`PlainFile` reads as an **empty
+  store** — never a crash. A locked `PassphraseEncrypted` vault also reads as empty, so a passphrase the user
+  has not typed yet cannot break startup; only a *wrong* passphrase raises, so the settings pane can retry.
+- **Lazy migration.** On a `MachineEncrypted` key miss the store looks in the OS keyring once; if the key is
+  there it is copied into `secrets.enc` and deleted from the keyring. The old keychain items therefore move
+  themselves out of the way as they are used, and the consent sheets stop.
+- **Live switch.** Changing the mode copies every known key into the new store and then wipes the old one, so
+  nothing is left behind in the mode the user just left. OS keyrings have no portable "list everything", so
+  `OsKeyring` mode maintains a small key-name index (`secrets.index.json`, names only) — deleted when the
+  mode is left.
+- **Settings** offers all four modes with the trade-off spelled out rather than the mechanism, and a
+  passphrase field that appears only for `PassphraseEncrypted`. Unlocking there also restores the saved sync
+  session, which could not be read while the vault was locked.
+- **Tests.** The real OS keyring tests are local-only: a CI runner — and a sandbox — has no unlocked login
+  keychain, so `RealKeychain` probes once and they skip rather than fail. Everything the app does by default
+  is covered against `FileKeyring` on a scratch directory.
+
 **Web:** secrets are stored in IndexedDB, encrypted with an AES-GCM key generated as **non-extractable** by Web Crypto. That protects data at rest, but not against script injection on the page, so the web build ships with a strict Content Security Policy and no third-party scripts.
 
 ### Credential model
@@ -340,7 +367,7 @@ Previews live in the local-only `link_preview_cache`, keyed by normalized URL. S
 | Jira     | API token (Cloud), PAT (Data Center), OAuth 3LO | `{site}.atlassian.net/browse/{KEY}`, `{host}/browse/{KEY}`                | REST v3 / v2 (DC)                   |
 | Linear   | Personal API key, OAuth (PKCE)                  | `linear.app/{team}/issue/{ID}/…`                                          | GraphQL (batched)                   |
 
-### v1.x
+### Later versions
 
 | Provider   | Auth methods         | URL patterns                                                                                  |
 | ---------- | -------------------- | --------------------------------------------------------------------------------------------- |
@@ -349,8 +376,15 @@ Previews live in the local-only `link_preview_cache`, keyed by normalized URL. S
 | Notion     | OAuth                | `notion.so/…-{id}`, `{workspace}.notion.site/…-{id}`                                          |
 | Confluence | API token, OAuth 3LO | `{site}.atlassian.net/wiki/spaces/{space}/pages/{id}/…`                                       |
 | Figma      | PAT, OAuth           | `figma.com/design/{key}/…`, `figma.com/file/{key}/…`, `figma.com/board/{key}/…`               |
-| Asana      | PAT, OAuth           | `app.asana.com/0/{project}/{task}`, `app.asana.com/1/{workspace}/project/{p}/task/{t}`        |
-| Trello     | API key + token      | `trello.com/c/{id}`                                                                           |
+
+### Scoped, not built
+
+| Provider | Auth methods    | URL patterns                                                                           |
+| -------- | --------------- | -------------------------------------------------------------------------------------- |
+| Asana    | PAT, OAuth      | `app.asana.com/0/{project}/{task}`, `app.asana.com/1/{workspace}/project/{p}/task/{t}` |
+| Trello   | API key + token | `trello.com/c/{id}`                                                                    |
+
+Both are PAT-friendly and would follow the same `IAppProvider` shape; neither has a provider class yet.
 
 ### Community providers (later)
 

@@ -359,17 +359,6 @@ public sealed class ServiceCaptureTests : IDisposable
         await new LinkIndexer(_a.Db, _clock).AddExplicitAsync(item, "https://example.com");
         await new WorkspaceService(_a.Db, _clock).RenameAsync(ws, "y");
 
-        foreach (var op in await _a.PendingAsync())
-        {
-            EntityTypes.All.ShouldContain(op.EntityType);
-            var allowed = SyncRows.FieldsOf(op.EntityType)!;
-            if (op.Kind == OpKinds.Set)
-                allowed.ShouldContain(op.Field!);
-            else
-                ((JsonObject)op.Value!)
-                    .Select(kv => kv.Key)
-                    .Where(k => k != "id")
-                    .ShouldAllBe(k => allowed.Contains(k));
-        }
+        OpAssertions.NameOnlyKnownEntitiesAndFields(await _a.PendingAsync());
     }
 }

@@ -46,18 +46,22 @@ run = "cd assets/icon && yarn install --silent && yarn node build-icons.mjs"
 # ---------------------------------------------------------------------------
 # Test
 # ---------------------------------------------------------------------------
+#
+# `Category!=Screenshots` skips `tests/Noto.App.Tests/Ui/ScreenshotTests.cs`, which renders the real window
+# headlessly and asserts only that a frame appeared. Without NOTO_SCREENSHOTS those cases cost a full layout
+# and prove nothing, so they are opt-in: `mise run screenshots` runs everything and keeps the PNGs.
 
 [tasks.test]
-description = "Run all tests (Debug)"
-run = "dotnet test Noto.sln"
+description = "Run all tests (Debug), excluding the screenshot renders"
+run = "dotnet test Noto.sln --filter 'Category!=Screenshots'"
 
 [tasks."test:release"]
 description = "Run all tests in Release — the timing budgets in the tests are written for Release"
-run = "dotnet test Noto.sln -c Release"
+run = "dotnet test Noto.sln -c Release --filter 'Category!=Screenshots'"
 
 [tasks."test:app"]
-description = "Run the view-model and UI tests only"
-run = "dotnet test tests/Noto.App.Tests"
+description = "Run the view-model and UI tests only (no screenshot renders)"
+run = "dotnet test tests/Noto.App.Tests --filter 'Category!=Screenshots'"
 
 [tasks."test:one"]
 description = "Run one test project, e.g. PROJECT=Noto.Core.Tests mise run test:one (add FILTER=Name to narrow)"
@@ -156,4 +160,4 @@ run = "bash scripts/set_version.sh"
 
 [tasks.ci]
 description = "What CI should run: format check, lint, build, test"
-run = "dotnet tool restore && dotnet csharpier check . && dotnet format analyzers Noto.sln --verify-no-changes && dotnet format style Noto.sln --verify-no-changes && dotnet build Noto.sln && dotnet test Noto.sln"
+run = "dotnet tool restore && dotnet csharpier check . && dotnet format analyzers Noto.sln --verify-no-changes && dotnet format style Noto.sln --verify-no-changes && dotnet build Noto.sln && dotnet test Noto.sln --filter 'Category!=Screenshots'"

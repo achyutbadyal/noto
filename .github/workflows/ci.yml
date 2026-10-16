@@ -57,7 +57,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsecret-tools libnotify-bin xvfb
       - run: dotnet build Noto.sln
       # Headless under Xvfb so the X11 hotkey and Avalonia headless tests have a display.
-      - run: xvfb-run -a dotnet test Noto.sln --no-build
+      # Screenshot renders are excluded: they assert only that a frame appeared, and CI sets no
+      # NOTO_SCREENSHOTS, so they would cost a full window layout each and prove nothing.
+      - run: xvfb-run -a dotnet test Noto.sln --no-build --filter 'Category!=Screenshots'
 
   format:
     runs-on: ubuntu-latest

@@ -39,3 +39,19 @@ while `mise run build` succeeds with zero warnings, your language server is not 
 Confirm the generators are fine from the CLI: `mise exec -- dotnet build src/Noto.App -p:EmitCompilerGeneratedFiles=true -p:CompilerGeneratedFilesOutputPath=/tmp/gen`
 should emit ~97 files. Then restart the language server; if that does not fix it, delete every `obj/`
 and `bin/` and reload. `global.json` pins the SDK so the editor and the CLI agree on which one to use.
+
+## Avalonia & XAML traps
+
+- **An incremental build can hide a XAML error.** `dotnet build` can report "Build succeeded, 0 Warnings"
+  while the Avalonia compiler has failed; every Avalonia test then fails with `No precompiled XAML found
+  for Noto.App.App`. If the UI breaks for no visible reason, run
+  `mise exec -- dotnet build src/Noto.App --no-incremental` and look for `AVLN` errors.
+- **Attached events are not regular ones.** `DragOver`/`Drop` on a `Border` must be written
+  `DragDrop.DragOver`/`DragDrop.Drop`, or the XAML compiler rejects the property.
+- **`TryGetResource(key, null, out _)` does not find a theme-dictionary resource.** Pass
+  `Application.Current.ActualThemeVariant` when resolving a brush from code. It fails silently (a null
+  brush), so assert the value rather than its presence.
+- **`TreatWarningsAsErrors` is on and CSharpier owns `.axaml` wrapping** — run `mise run fmt` before
+  committing; don't hand-align XAML attributes.
+- **A new page needs two registrations** — the `GoAsync` case in `ShellViewModel` _and_ the `DataTemplate`
+  in `App.axaml` — or it renders blank.

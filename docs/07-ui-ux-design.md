@@ -6,9 +6,10 @@
 > gives it a point of view, **"Ledger"**: warm paper, ruled hairlines, ink-dark text, one accent ink per
 > workspace, and pressure shown as ink density rather than alarm.
 >
-> §11 is the authoritative visual system. **§20 records what changed in the modernization pass, what
-> shipped, and what is still owed.** Where this document and the code disagree, the code is right and
-> this document is a bug.
+> §11 is the authoritative visual system. **§20 is the only place in this document that records status**
+> — what the modernization pass changed, what shipped, and what is still owed. The body describes the
+> design as intended and carries no build status of its own, so there is nothing in it to go stale.
+> Where this document and the code disagree, the code is right and this document is a bug.
 
 ---
 
@@ -317,8 +318,8 @@ paths reach the same state.
 
 ## 5. Stuck Items: Intervention, Not Punishment
 
-When an item hits the **stuck threshold** (default: carry ≥ 3 _or_ defers ≥ 3), its row gains a small
-chip and the inspector shows the reason prompt:
+When an item hits the **stuck threshold** ([03 › Pressure](03-modes-and-workspaces.md#pressure)), its row
+gains a small chip and the inspector shows the reason prompt:
 
 ```
  ⚠ This has been carried 4 times. What's in the way?
@@ -481,8 +482,8 @@ minimum sample size (n ≥ 10) before it appears, so Noto doesn't show noise.
 
 **The empty state has to earn its space.** Before there are 10 samples, the page shows the catalogue
 greyed out with a progress-to-unlock meter ("3 / 10 days of history"), never a bare sentence on an empty
-page. _(The catalogue and the meter are not built yet — see §20.3. Today the page renders only "oldest
-open items" and a large void, which makes it the weakest screen in the app.)_
+page. `InsightsEngine` reports a sample count for every insight, gated or not, so the meter can show
+progress toward the ones that have not unlocked yet.
 
 ### 8.3 Time travel
 
@@ -553,7 +554,10 @@ Column rules, learned from a broken first attempt:
 - Board rows use a **compact trailing rail** (the ask and the carry count only). A board column is too
   narrow for estimates and priorities, and the title must keep its room.
 - Adding a column is a ghost **"+ Column"** affordance, not a raw name/WIP form bolted under the board.
-- _(Not built: drag-and-drop between columns. Today only keyboard moves work — `⇧←`/`⇧→`.)_
+- Dragging a card between columns runs the same command as the keyboard move (`⇧←`/`⇧→`), so the WIP
+  check and the undo toast behave identically either way. The drag is a **custom pointer dragger**
+  (`Views/ItemDragger.cs`) rather than the platform's: macOS owns the platform drag image and will not
+  draw a theme-aware card, so the ghost and the lit drop lane are drawn by the app.
 
 **Timeline (Deadline)**
 
@@ -565,7 +569,8 @@ Column rules, learned from a broken first attempt:
  No date ▌ 3 items
 ```
 
-_(Not built: the timeline is currently a grouped list, not bars against a date axis.)_
+Every row draws a bar from today to its due date on a shared 14-day axis with weekday labels. Overdue is
+pinned to the left edge in the warm ramp. The same dragger as the board moves a card onto a day.
 
 **Habit grid**
 
@@ -577,7 +582,8 @@ _(Not built: the timeline is currently a grouped list, not bars against a date a
 ```
 
 Missed days show as an empty square, not a red X. Habits use **"flex streaks"** (configurable, e.g. "5 of
-7 days"), so one miss doesn't erase months of progress. _(Not built: only today's cell is tickable.)_
+7 days"), so one miss doesn't erase months of progress. Any scheduled day up to today can be ticked; a
+missed `skip`-rule day has no instance to complete, so ticking one materialises it first.
 
 ---
 
@@ -588,7 +594,7 @@ Missed days show as an empty square, not a red X. Habits use **"flex streaks"** 
 ```
  ▌ ○  Deploy v2.3 to staging  ⟨GH #511 · merged •⟩   Why?  ↻4   ~1h   !2
  │ │  │                        │                      │     │     │     │
- │ │  title (inline edit: e)   link chip, max 1       │     │     │     └ priority (aligned column)
+ │ │  title (inline edit: e)   the first link chip     │     │     │     └ priority (aligned column)
  │ │  status glyph: ○ planned ◉ now ◌ waiting ✓ done ⊘ dropped
  │ │                          └ "Why?" — a quiet ask, only when stuck
  │ └ the carry glyph + count: the one emphasised trailing value
@@ -616,11 +622,16 @@ only emphasised value; estimate and priority are `text-3`.
 Pressure is **one ramp** — amber → orange → rust — so escalating reads as _more of the same_, not as
 three unrelated alarms. No pulsing, no scaling, no full-row tints, and never red.
 
-| Density     | Row height | Shows                                                            |
-| ----------- | ---------- | ---------------------------------------------------------------- |
-| Compact     | 28px       | glyph, title, carry. Chips collapse to a provider glyph.         |
-| Comfortable | 38px       | everything above, at most 1 chip, tags truncated                 |
-| Spacious    | 56px       | plus a second line with notes excerpt or subtasks progress `2/5` |
+| Density     | Row height | Shows                                                             |
+| ----------- | ---------- | ----------------------------------------------------------------- |
+| Compact     | 28px       | glyph, title, carry. No chip or notes line.                       |
+| Comfortable | 38px       | plus the chip line and the wrapped link chips                     |
+| Spacious    | 56px       | plus a second line with a notes excerpt or subtask progress `2/5` |
+
+**Links in a row.** A row that has room — the day planner, a calendar week — renders its link chips under
+the title in a wrapping row, one line each, as many as the item has. A row without room shows the first
+link's summary followed by `+N more` as plain text instead. The full set, as expanded cards, is always in
+the inspector; the cap is on the row, never on the item.
 
 ### 10.2 Inspector
 
@@ -629,11 +640,10 @@ Defers), stuck prompt (if any), schedule (planned for, due, recurrence), links (
 subtasks, **Life of this item** (the `TodoHistory` timeline in plain language: "Carried 3 times",
 "Deferred to Mon", "Unblocked via Jira"), then a danger zone (drop, move workspace).
 
-**Target design (not built).** The inspector is currently a form: seven stacked full-width dropdowns
-before any content, which reads as settings rather than detail. It should be **read-first** — the values
-shown as text, which become a control when clicked — with the controls grouped under _Details_,
-_Schedule_, _Links_, _Subtasks_, _Life of this item_ and _Danger zone_, and the "INSPECTOR" header chrome
-removed.
+The inspector is **read-first**: the values are text and become a control only under the pointer or
+keyboard focus, so it reads as detail rather than as a settings form. There is no pane header — the
+item's title is the heading. The controls group under _Details_, _Schedule_, _Links_, _Subtasks_,
+_Life of this item_ and _Danger zone_.
 
 ---
 
@@ -876,7 +886,7 @@ The model changes this design needed have been applied. This table maps UI conce
 
 | Concern                           | Approach                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Virtualized sectioned list        | `ItemsRepeater` with a grouped source, or `ListBox` with `VirtualizingStackPanel` and section-header items. Keep row templates cheap: chips render from cached view models, never fetch during layout. **Not built — rows are not virtualized yet.**                                                                                                                                                                              |
+| Virtualized sectioned list        | `SectionsList` renders one flattened sequence (section header, then rows) through a `VirtualizingStackPanel`, so a large backlog only realises what is on screen. Keep row templates cheap: chips render from cached view models, never fetch during layout.                                                                                                                                                                      |
 | Single-key shortcuts              | `KeyBindings` on the list container, active only when focus isn't inside a `TextBox`.                                                                                                                                                                                                                                                                                                                                             |
 | Global hotkey and menubar (macOS) | Native interop: `RegisterEventHotKey` (Carbon) for the hotkey, and Avalonia `TrayIcon` + `NativeMenu` for the menubar. Windows: `RegisterHotKey`. Budget this as platform work, not UI work.                                                                                                                                                                                                                                      |
 | Capture with context              | macOS Apple Events to browsers / Accessibility API. Requires entitlements and a usage description. Ship it after the core loop works.                                                                                                                                                                                                                                                                                             |
@@ -964,34 +974,33 @@ history of how it got there and what is still owed.
 
 ### 20.1 What was wrong
 
-Measured against the 27 headless screenshots (`mise run screenshots`), not against taste.
+Measured against the 27 headless screenshots (`mise run screenshots`), not against taste. The design
+rationale for each fix is stated where the fix lives — a single row bar in §10.1, the quiet "Why?" pill in
+§5, the display header in §3.4, the block ranking in §7.1 — so only the defect list is recorded here.
 
-| #   | Screen(s)                                | Observation                                                                                                                 | Severity |
-| --- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | -------- |
-| A   | `today-dark`, `today-light`              | Sidebar / list / inspector were near-identical in value. No depth, no layering.                                             | High     |
-| B   | all                                      | One framework blue did six jobs at once (progress, selection, Now, buttons, links), and competed with the workspace accent. | High     |
-| C   | `today-*`, `board-dark`                  | Trailing metadata was one grey smear at 12px. Carry — the most important number — did not stand out.                        | High     |
-| D   | `today-*`, `board-dark`, `timeline-dark` | The `stuck?` chip was a **red-outlined** pill: red means alarm, contradicting principle 2.                                  | High     |
-| E   | `ItemRowView`                            | Three pressure hues plus a separate red for stuck, and two adjacent 3px bars with no way to tell them apart.                | High     |
-| F   | `today-*`, `todayall-*`                  | Chrome was louder than content: a 15px centred toolbar title was the largest text while task titles were 13px.              | High     |
-| G   | `today-*`, `links-*`                     | The inspector was a form: seven stacked dropdowns before any content.                                                       | High     |
-| H   | `board-dark`                             | **Broken.** Fixed columns overflowed and clipped mid-word; the add-column row was a raw form; no drag-and-drop.             | Critical |
-| I   | `insights-dark`                          | **Weakest screen.** One list and a large void; the narrative insight cards were not rendered.                               | Critical |
-| J   | `settings-*`                             | 574 lines of label + control rows; a `ToggleSwitch` sat below its own label.                                                | Medium   |
-| K   | `commandbar-dark`                        | Typing `dep` returned three `Guide: …` rows before the actual item.                                                         | Medium   |
-| L   | `weekly-*`, `habits-*`, `insights-*`     | Large dead voids; content was not constrained to a measure.                                                                 | Medium   |
-| M   | `today-*`, `review-*`                    | Icon system inconsistent: `PathIcon`s mixed with literal `⌘⇧R` / `Esc` / `↻` text.                                          | Low      |
-| N   | `today-dark`                             | Sidebar was inert; seven nav items of equal weight.                                                                         | Medium   |
-| O   | `narrow-light`                           | The centred toolbar title duplicated the page header.                                                                       | Medium   |
-| P   | `today-*`                                | The 14-day strip was illegible — 14px bars, 2px empty days, 9px labels.                                                     | Medium   |
-| Q   | `review-*`                               | The review card was a plain box; the exit was not directional.                                                              | Medium   |
-| R   | `habits-dark`                            | Only today's cell was tickable.                                                                                             | Low      |
-| S   | `timeline-dark`                          | "Timeline" was a plain grouped list, not a timeline.                                                                        | Medium   |
+| #   | Screen(s)                                | Observation                                                                                                                 |
+| --- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| A   | `today-dark`, `today-light`              | Sidebar / list / inspector were near-identical in value. No depth, no layering.                                             |
+| B   | all                                      | One framework blue did six jobs at once (progress, selection, Now, buttons, links), and competed with the workspace accent. |
+| C   | `today-*`, `board-dark`                  | Trailing metadata was one grey smear at 12px. Carry — the most important number — did not stand out.                        |
+| D   | `today-*`, `board-dark`, `timeline-dark` | The `stuck?` chip was a **red-outlined** pill: red means alarm.                                                             |
+| E   | `ItemRowView`                            | Three pressure hues plus a separate red for stuck, and two adjacent 3px bars with no way to tell them apart.                |
+| F   | `today-*`, `todayall-*`                  | Chrome was louder than content: a 15px centred toolbar title was the largest text while task titles were 13px.              |
+| G   | `today-*`, `links-*`                     | The inspector was a form: seven stacked dropdowns before any content.                                                       |
+| H   | `board-dark`                             | **Broken.** Fixed columns overflowed and clipped mid-word; the add-column row was a raw form; no drag-and-drop.             |
+| I   | `insights-dark`                          | **Weakest screen.** One list and a large void; the narrative insight cards were not rendered.                               |
+| J   | `settings-*`                             | 574 lines of label + control rows; a `ToggleSwitch` sat below its own label.                                                |
+| K   | `commandbar-dark`                        | Typing `dep` returned three `Guide: …` rows before the actual item.                                                         |
+| L   | `weekly-*`, `habits-*`, `insights-*`     | Large dead voids; content was not constrained to a measure.                                                                 |
+| M   | `today-*`, `review-*`                    | Icon system inconsistent: `PathIcon`s mixed with literal `⌘⇧R` / `Esc` / `↻` text.                                          |
+| N   | `today-dark`                             | Sidebar was inert; seven nav items of equal weight.                                                                         |
+| O   | `narrow-light`                           | The centred toolbar title duplicated the page header.                                                                       |
+| P   | `today-*`                                | The 14-day strip was illegible — 14px bars, 2px empty days, 9px labels.                                                     |
+| Q   | `review-*`                               | The review card was a plain box; the exit was not directional.                                                              |
+| R   | `habits-dark`                            | Only today's cell was tickable.                                                                                             |
+| S   | `timeline-dark`                          | "Timeline" was a plain grouped list, not a timeline.                                                                        |
 
 ### 20.2 What shipped
-
-Verified by the full suite: **983 tests, all passing** (`mise run ci`; the `Noto.Platform.Tests.Mac_keychain_*`
-test needs real macOS Keychain access, so it only passes outside a sandbox).
 
 - **The visual system (§11).** Warm-neutral ramps, ten editorial accent inks, one pressure ramp, the lit
   edge, warm hairlines, the 6/8/12/16 radius scale and the type scale. The palette was verified
@@ -1046,7 +1055,6 @@ test needs real macOS Keychain access, so it only passes outside a sandbox).
 1. **Capture token highlighting in the command bar (§7.1)** — the palette has its own chip row and was left
    alone; only the Today composer highlights inline.
 2. **Board titles** still truncate in a narrow column once the ask and carry are drawn.
-3. **Progressive toolbar material (§5.4)** — see below.
 
 ### 20.4 Deliberately not implemented, and why
 
@@ -1060,10 +1068,10 @@ These were on the deferred list and are **not** done. Each was a judgement call,
   expand animation on the new row would also fire on every unrelated refresh. Doing it properly means
   diffing rows by id and animating only genuinely new ones — a list-rendering change that deserves its own
   pass rather than a flicker.
-- **Progressive toolbar material (§5.4).** The shell's toolbar is **docked**, not an overlay: it occupies
-  its own grid row, so page content never passes beneath it and a scroll-driven material would be inert.
-  Making it meaningful means converting the shell to an overlay toolbar with the content scrolling under a
-  translucent bar — a shell redesign that belongs with WS2, not a style tweak.
+- **Progressive toolbar material.** The shell's toolbar is **docked**, not an overlay: it occupies its own
+  grid row, so page content never passes beneath it and a scroll-driven material would be inert. Making it
+  meaningful means converting the shell to an overlay toolbar with the content scrolling under a translucent
+  bar — a shell redesign, not a style tweak.
 
 ### 20.5 Delivery order
 
@@ -1085,30 +1093,13 @@ Guardrails, learned the hard way:
 - **Screenshot and token tests pin visuals deliberately.** Update expectations in the _same_ commit as the
   visual change, never in a later "fix tests" commit. Do not weaken an assertion to make a colour pass.
   A weaker assertion hides real bugs: `> 0` coloured runs passed while _no_ colour was being applied.
-- **An incremental build can hide a XAML error.** `dotnet build` reported "Build succeeded, 0 Warnings"
-  while the Avalonia compiler had failed, and every Avalonia test then failed with "No precompiled XAML
-  found for Noto.App.App". If the UI breaks for no visible reason, run
-  `dotnet build src/Noto.App --no-incremental` and look for `AVLN` errors.
-- **Attached events are not regular ones.** `DragOver`/`Drop` on a `Border` must be written
-  `DragDrop.DragOver`/`DragDrop.Drop`, or the XAML compiler rejects the property.
-- **`TryGetResource(key, null, …)` does not find a theme-dictionary resource.** Pass
-  `Application.Current.ActualThemeVariant` when resolving a brush from code.
-- **`TreatWarningsAsErrors` is on and CSharpier owns `.axaml` wrapping** — run `mise run fmt` before
-  committing; don't hand-align XAML attributes.
-- **A new page needs two registrations** — the `GoAsync` case _and_ the `App.ViewModel` `DataTemplate` —
-  or it renders blank.
 - **Do not start WS4–7 before the tokens are stable**, or the palette drifts.
+- Build and XAML traps (incremental builds hiding compiler errors, `DragDrop` attached events,
+  `TryGetResource` on theme dictionaries, formatting) live in `CLAUDE.md` — they are tooling, not design.
 
-### 20.6 File map
 
-| Area                   | Files                                                                                                                              |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Tokens & theme         | `Themes/ThemeTokens.cs`, `Themes/ThemeBuilder.cs`, `Themes/Styles.axaml`                                                           |
-| Shell                  | `Views/MainWindow.axaml`, `Views/MainWindow.axaml.cs`, `ViewModels/ShellViewModel*.cs`                                             |
-| Row                    | `Views/ItemRowView.axaml`, `ViewModels/ItemRowViewModel.cs`, `Views/RowConverters.cs`                                              |
-| Today                  | `Views/TodayView.axaml`, `Views/SectionsList.axaml`, `Views/PromptBar.axaml`                                                       |
-| Inspector              | `Views/InspectorView.axaml`, `ViewModels/InspectorViewModel.cs`                                                                    |
-| Layouts                | `Views/BoardView.axaml`, `Views/HabitGridView.axaml`, `ViewModels/Layouts/*`                                                       |
-| Palette                | `ViewModels/CommandBarViewModel.cs`, `Logic/KeyMap.cs`                                                                             |
-| Appearance             | `ViewModels/AppearanceViewModel.cs`, `Views/SettingsView.axaml`                                                                    |
-| Tests that pin visuals | `tests/Noto.App.Tests/ThemeTests.cs`, `tests/Noto.App.Tests/Ui/ControlStyleTests.cs`, `tests/Noto.App.Tests/Ui/ScreenshotTests.cs` |
+### 20.6 Tests that pin visuals
+
+`ThemeTests` (tokens and contrast), `Ui/ControlStyleTests` (rendered control states), `Ui/ScreenshotTests`
+(the rendered screens) and `Ui/StateFillTests` (laid-out geometry). Change one in the same commit as the
+visual change it pins — see the guardrail in §20.5.

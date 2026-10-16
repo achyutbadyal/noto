@@ -1,83 +1,93 @@
 # Noto — What's Done
 
-Status as of 2026-10-07. Build is clean (warnings are errors) and every test project passes. Acceptance criteria that are tested are ticked in [08 › Implementation Roadmap](08-implementation-roadmap.md); this file holds what the checkboxes can't: what is unverified, deviations and gaps.
+Status as of 2026-10-16. Build is clean (warnings are errors) and every test project passes. Acceptance
+criteria are ticked in [08 › Implementation Roadmap](08-implementation-roadmap.md); **this file holds what
+the checkboxes can't** — what is unverified, what deviates from the design, and what is still missing.
 
 ```
 mise run build    # dotnet build Noto.sln
 mise run test     # dotnet test Noto.sln
 ```
 
-Everything below was verified by automated tests unless it is listed under [Not verified](#not-verified) or [Not done](#not-done).
+Everything below was verified by automated tests unless it is listed under [Not verified](#not-verified) or
+[Not done](#not-done).
 
 ## Summary by roadmap phase
 
-| Phase                      | State                                          | Notes                                                                                                                                                                           |
-| -------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 Foundation               | Done                                           | Models, I1–I7 invariants, time semantics, SQLite + migrations, command bus with events and undo                                                                                 |
-| 2 Derivations              | Done                                           | Carry/age/defers, day stats, caches + invalidation. Perf budgets met                                                                                                            |
-| 3 Core loop (macOS)        | Built, visually checked headless only          | Today, Review, Shutdown, Backlog, inspector, ⌘K, FTS5 search, undo toasts, a11y labels                                                                                          |
-| 4 Presets and insights     | Done                                           | Presets, order, pressure, stuck prompt, insights v1, pace forecast, day strip, time travel                                                                                      |
-| 5 Dogfood → MVP            | **Not done**                                   | Needs two weeks of real use                                                                                                                                                     |
-| 6 macOS native             | Built, **not exercised**                       | Hotkey, menubar, notifications, capture-with-context compile and have unit tests; never fired on a real desktop. Import/export done and tested                                  |
-| 7 Connected apps (desktop) | Done against fixtures                          | Nine providers, previews, live links, auth flows. Never run against real services                                                                                               |
-| 8 Sync and backend         | Done                                           | HLC op-log, per-field LWW, convergence harness, server, auth. Postgres and Docker untested                                                                                      |
-| 9 Web                      | Server half done, **client not done**          | Gateway, SSRF guard, CSP are in. No WASM host, no SQLite/OPFS spike                                                                                                             |
-| 10 Layouts and recurrence  | Done                                           | Recurrence, habits, board, timeline, weekly review: logic and Avalonia views                                                                                                    |
-| 11 More providers          | Done against fixtures                          | Slack, GitLab, Notion, Confluence, Figma                                                                                                                                        |
+| Phase                      | State                                          | Notes                                                                                                                                          |
+| -------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Foundation               | Done                                           | Models, I1–I7 invariants, time semantics, SQLite + migrations, command bus with events and undo                                                |
+| 2 Derivations              | Done                                           | Carry/age/defers, day stats, caches + invalidation. Perf budgets met                                                                           |
+| 3 Core loop (macOS)        | Built, visually checked headless only          | Today, Review, Shutdown, Backlog, inspector, ⌘K, FTS5 search, undo toasts, a11y labels                                                          |
+| 4 Presets and insights     | Done                                           | Presets, order, pressure, stuck prompt, insights v1, pace forecast, day strip, time travel                                                      |
+| 5 Dogfood → MVP            | **Not done**                                   | Needs two weeks of real use                                                                                                                    |
+| 6 macOS native             | Built, **not exercised**                       | Hotkey, menubar, notifications, capture-with-context compile and have unit tests; never fired on a real desktop. Import/export done and tested  |
+| 7 Connected apps (desktop) | Done against fixtures                          | Nine providers, previews, live links, auth flows. Never run against real services                                                              |
+| 8 Sync and backend         | Done                                           | HLC op-log, per-field LWW, convergence harness, server, auth. Postgres and Docker untested                                                      |
+| 9 Web                      | Server half done, **client not done**          | Gateway, SSRF guard, CSP are in. No WASM host, no SQLite/OPFS spike                                                                            |
+| 10 Layouts and recurrence  | Done                                           | Recurrence, habits, board, timeline, weekly review: logic and Avalonia views                                                                   |
+| 11 More providers          | Done against fixtures                          | Slack, GitLab, Notion, Confluence, Figma                                                                                                       |
 | 12 Platforms               | Windows/Linux written, unverified on real OSes | Windows (Credential Manager, RegisterHotKey, toasts) and Linux (secret-tool, X11 XGrabKey, notify-send) platform layers; zip/tarball packaging; CI matrix. No iOS/Android hosts |
 
 ## What exists
 
+Project responsibilities and structure are in [05 › Solution Structure](05-architecture.md#solution-structure).
+What each project actually does today:
+
 ### `Noto.Core` (no UI, no I/O)
 
-- **Models and invariants:** `TodoItem`, `Workspace`, `ItemEvent`, `RecurrenceRule`, `Tag`, `DayNote`, plus I1–I7 checks.
-- **Time:** injectable clock; logical dates from instant + IANA zone + day boundary (DST gaps and repeats, history keeps its recorded zone).
-- **Commands:** one `CommandBus` is the only item writer. Each command writes state, event and sync op in one transaction. Create, plan (plan / keep today / defer / unschedule), someday, wait, complete (with "already done" credit), reopen, drop, restore, rename, break down, field setters, stuck reason, focus, delete. All undoable.
-- **Derivations:** age / carry / defers by replaying events (segment arithmetic, not per-day loops), day stats and the exact item sets behind them (time travel), Today query, pressure thresholds, six built-in presets, five order strategies.
-- **Insights:** stuck prompt, completion streak, pace forecast, every doc 04 §4.4 insight (hidden below 10 samples), container rules, capacity bar.
-- **Recurrence and habits:** RRULE subset with deterministic instance ids, carry vs skip, flex streaks, heatmap.
-- **Layouts:** board (columns, WIP, stuck-in-column), timeline, weekly review data.
-- **Workspaces:** create/rename/reorder/archive/soft-delete with recovery, Now item, presets, focus hours, Today (all) lens.
-- **Import/export:** Todoist (CSV, JSON), Things, Reminders `.ics`, TickTick, Markdown checklists; JSON and CSV export (no credentials or previews).
-- **Links and sync primitives:** URL normalization, HLC, op model, per-field LWW rule.
+- **Models and invariants:** `TodoItem`, `Workspace`, `ItemEvent`, `RecurrenceRule`, `Tag`, `DayNote`, plus the I1–I7 checks.
+- **Time:** injectable clock; logical dates from an instant + IANA zone + day boundary (DST gaps and repeats; history keeps its recorded zone).
+- **Commands:** one `CommandBus` is the only item writer, and each command writes state, event and sync op in one transaction. Create, plan (plan / keep today / defer / unschedule), someday, wait, complete (with "already done" credit), reopen, drop, restore, rename, break down, field setters, stuck reason, focus, delete — all undoable.
+- **Derivations:** age / carry / defers by replaying events (segment arithmetic, not per-day loops), day stats and the exact item sets behind them (time travel), the Today query, pressure thresholds, six built-in presets, five order strategies.
+- **Insights:** stuck prompt, completion streak, pace forecast, every [04 §4.4](04-domain-model.md#44-workspace-stats--insights) insight (hidden below 10 samples), container rules, capacity bar.
+- **Also:** an RRULE subset with deterministic instance ids, flex streaks and the heatmap, board / timeline / weekly-review data, workspaces (create, rename, reorder, archive, soft-delete with recovery, Now item, presets, focus hours, Today-all), import (Todoist, Things, Reminders, TickTick, Markdown) and JSON/CSV export, URL normalization, HLC and the per-field LWW rule, and the AI suggestion contract.
 
 ### `Noto.Data`
 
-SQLite via `Microsoft.Data.Sqlite` with hand-written SQL, embedded numbered migrations (`0001`–`0100`), repositories, derived caches (local-only), FTS5 search with triggers, and op recording inside the repositories so services and commands are both captured.
+SQLite via `Microsoft.Data.Sqlite` with hand-written SQL, embedded numbered migrations (`0001`–`0100`),
+repositories, local-only derived caches, FTS5 search with triggers, and op recording inside the
+repositories so services and commands are both captured.
 
 ### `Noto.Sync`
 
-Client sync with seq cursor and pagination, batching merger with conflict log for text fields, per-workspace enable / disable / re-enable, snapshot bootstrap, scheduler, `HttpSyncTransport`.
+Client sync with a seq cursor and pagination, a batching merger with a conflict log for text fields,
+per-workspace enable / disable / re-enable, snapshot bootstrap, the scheduler and `HttpSyncTransport`.
 
 ### `Noto.Server`
 
-Minimal API + EF Core 10 (SQLite and Postgres providers). Argon2id passwords, 15-minute JWTs with rotating refresh tokens (reuse detection) bound to devices, `/sync`, snapshot, workspace delete, account export and delete. Connected Apps Gateway: OAuth broker, allowlisted fetch proxy, read-only GraphQL guard, SSRF-guarded OpenGraph (public IPs only, redirects re-checked, 1 MB / 5 s caps). Rate limits, strict CSP, required secrets with no defaults, tombstone GC, Dockerfile.
+Minimal API + EF Core 10 (SQLite and Postgres providers). Argon2id passwords, 15-minute JWTs with rotating
+refresh tokens (reuse detection) bound to devices, `/sync`, snapshot, workspace delete, account export and
+delete. Connected Apps Gateway: OAuth broker, allowlisted fetch proxy, read-only GraphQL guard, and
+SSRF-guarded OpenGraph (public IPs only, redirects re-checked, 1 MB / 5 s caps). Rate limits, strict CSP,
+required secrets with no defaults, tombstone GC, Dockerfile.
 
 ### `Noto.Providers`
 
-GitHub (batched GraphQL), Jira, Linear, Slack (admin-approval flow), GitLab, Notion, Confluence, Figma, OpenGraph fallback, custom JSONPath apps. Cache-first preview service with visible-first queue, rate gate, backoff, change dot. Live-link rules (merged PR → "Done?" suggestion; Waiting item returns when its ticket leaves a blocked status). PAT and OAuth (PKCE, loopback, refresh). Tokens never reach SQLite, exports or logs (tested, including raw DB/WAL bytes).
+GitHub (batched GraphQL), Jira, Linear, Slack (admin-approval flow), GitLab, Notion, Confluence, Figma,
+OpenGraph fallback and custom JSONPath apps. Cache-first preview service with a visible-first queue, rate
+gate, backoff and a change dot; live-link rules (a merged PR suggests "Done?"; a Waiting item returns when
+its ticket leaves a blocked status). PAT and OAuth (PKCE, loopback, refresh). Tokens never reach SQLite,
+exports or logs — asserted against the raw DB and WAL bytes.
 
-**AI field suggestions** (`Noto.Providers/Ai`, contract in `Noto.Core/Ai`). A sparkle in the new-task panel asks a model to fill the form from a rough title. It writes into the form's own fields only — never a task — so every value is reviewable before saving. Off by default; the settings pane picks a mode (Off / Apple on-device / local server / cloud API), and Off removes the affordance everywhere. One OpenAI-compatible provider serves both hosted APIs and local servers (Ollama, LM Studio, llama.cpp, vLLM); the on-device Apple Intelligence provider runs through `noto-ai-helper`, a small Swift executable in `tools/noto-ai-helper` that wraps the FoundationModels framework (`mise run ai:helper` builds and installs it; it needs macOS 26+ and a Swift toolchain). The reply is parsed defensively (clamped, unknown keys dropped, unusable values ignored) and a failure is reported rather than applied.
+**AI field suggestions** (`Noto.Providers/Ai`, contract in `Noto.Core/Ai`): a sparkle in the new-task panel
+fills the form from a rough title, writing only into the form's own fields so every value is reviewable
+before saving. Off by default; the settings pane picks Off / Apple on-device / local server / cloud API, and
+Off removes the affordance everywhere. One OpenAI-compatible provider serves both hosted APIs and local
+servers (Ollama, LM Studio, llama.cpp, vLLM); the on-device Apple Intelligence path runs through
+`noto-ai-helper`, a small Swift executable in `tools/noto-ai-helper` wrapping the FoundationModels framework
+(`mise run ai:helper` builds and installs it; it needs macOS 26+ and a Swift toolchain). The reply is parsed
+defensively and a failure is reported rather than applied.
 
 ### `Noto.App` / `Noto.Desktop` / `Noto.Platform`
 
-Avalonia 11.3 with CommunityToolkit.Mvvm. Shell, sidebar, Today, Morning Review (keyboard-only), Shutdown, Backlog, inspector, command bar with search, undo toasts, time travel (a day ahead is a plan page; docs/07 §8.3–8.4), Insights, Settings, Today (all), Weekly Review, Board, Timeline, Habit grid, quick capture, onboarding. VoiceOver label strings, theme tokens in one C# source shared with the contrast tests. Platform abstractions with macOS implementations (Keychain, Carbon hotkey, notifications, capture context); Windows/Linux stubs that explain what is unavailable.
-
-## Acceptance criteria that are tested
-
-| Criterion (docs/08)                                          | Result                                                                                          |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Every row of the carry/age table in doc 04 §4.1              | One test per row                                                                                |
-| Seeded 365-day history: Today < 50 ms, a year of stats < 1 s | Today ≈ 31 ms, year ≈ 310 ms (Release). Debug builds use a 4× allowance                         |
-| Keyboard-only 5-item Morning Review                          | ≤ 8 key presses, at view-model level                                                            |
-| Every decision undoable                                      | Tested for each decision                                                                        |
-| VoiceOver row strings                                        | String format tested; VoiceOver itself not run                                                  |
-| Both themes pass the contrast table                          | Computed from the tokens; documented dark `text-3` hover exception verified                     |
-| 3 replicas, 10k random ops, partitions, clock skew converge  | Identical state, matches an independent oracle, no different-field edit lost                    |
-| No credentials or previews in any op                         | Asserted; server rejects unknown entity types and fields                                        |
-| App works fully offline with sync enabled                    | Tested (ops queue, push on reconnect, failed sync changes nothing)                              |
-| Tokens only in the keyring                                   | Tested against SQLite tables, DB/WAL bytes, exports and logs; real Keychain round trip on macOS |
-| Merged PR → "Done?"; Waiting auto-returns on Jira status     | Tested with fixtures                                                                            |
+Avalonia 11.3 with CommunityToolkit.Mvvm. Shell, sidebar, Today, Morning Review (keyboard-only), Shutdown,
+Backlog, inspector, command bar with search, undo toasts, time travel (a day ahead is a plan page,
+[07 §8.3](07-ui-ux-design.md#83-time-travel)), Insights, Settings, Today (all), Weekly Review, Board,
+Timeline, Habit grid, quick capture, onboarding. VoiceOver label strings, theme tokens in one C# source
+shared with the contrast tests, and a virtualized sectioned list. Platform abstractions with macOS
+implementations (Keychain, Carbon hotkey, notifications, capture context) and Windows/Linux stubs that
+explain what is unavailable.
 
 ## Library choices
 
@@ -101,7 +111,8 @@ Kept hand-written, deliberately:
 - **HLC.** No maintained, AOT-friendly package found that fits.
 - **Fractional rank** for manual order lives in the hand-written layer for the same reason.
 
-Behavior changes from the library swap: monthly `BYMONTHDAY=31` now skips short months (RFC 5545) instead of clamping, and in Markdown a bare line right after a list item continues that item.
+Behavior changes from the library swap: monthly `BYMONTHDAY=31` now skips short months (RFC 5545) instead of
+clamping, and in Markdown a bare line right after a list item continues that item.
 
 ## Deviations from the design docs
 
@@ -121,7 +132,7 @@ Compiled and unit-tested, but never run for real:
 
 - **Any real third-party service.** OAuth endpoints and scopes for all providers, GraphQL / REST payload shapes, Slack's admin-approval error codes: written from documentation and memory, tested against hand-written fixtures. The Notion token exchange (HTTP basic auth) is probably wrong.
 - **macOS native features on a real desktop.** Tray icon, global hotkey firing, focus window and capture panel on screen, osascript notifications and capture-with-context (they need permission prompts), VoiceOver.
-- **UI interaction.** Layout was checked with headless Skia screenshots (Today dark/light, review, command bar, settings, insights, help, board, timeline, habits, Today (all), weekly review). Pointer interactions (row clicks, flyouts) are untested; the board has keyboard moves only, no drag.
+- **UI interaction.** Layout was checked with headless Skia screenshots (Today dark/light, review, command bar, settings, insights, help, board, timeline, habits, Today (all), weekly review). Pointer interactions are only partly covered — keyboard moves and drags have tests, row clicks and flyouts do not.
 - **Postgres and Docker.** The Postgres provider is wired and its connection-string conversion tested, but no instance was run. The single-file binary was built and smoke-tested; the Docker image was not.
 
 ## Not done
@@ -132,18 +143,16 @@ Compiled and unit-tested, but never run for real:
 
 ## Known gaps and follow-ups
 
-- No Redo (the bus has none). Rows aren't virtualized, so a very large backlog will be slow. The inspector edits plain Markdown with no rendering.
+- No Redo (the bus has none). The inspector edits plain Markdown with no rendering.
 - `#tags` are parsed and shown as chips but not saved (no tag command on the bus).
 - AI suggestions fill every field the form has, but tags have no field yet, so they are shown in the fill note rather than applied. The "When" dropdown is preset-based, so a concrete day the model returns collapses to the nearest preset (today / tomorrow / in a week).
 - The on-device Apple Intelligence path needs `noto-ai-helper` (`mise run ai:helper`; macOS 26+ and a Swift toolchain). The helper is found next to the running app, so the script copies it into every output layout — `bin/{Debug,Release}`, `dist/noto-desktop` and `dist/Noto.app` — and `package_mac.sh` bundles it too; re-run it after publishing. The settings pane has a **Recheck** button, since the binary can appear while the app is open. Its C#↔Swift contract is pinned by a test, and the helper itself was verified by hand on macOS 27 (it answers in ~5 s cold, and wraps its reply in ```json fences — which is why the parser strips them). No AI provider has been exercised against a real _cloud_ endpoint, and the helper is not part of CI.
-- Habit grid: only today's cell can be ticked.
 - `--capture` starts the app with the panel open; there is no single-instance IPC.
-- Link chips and cards are not wired into the UI; Auto-prompting the Weekly Review is not wired.
+- Auto-prompting the Weekly Review is not wired.
 - Today (all) assumes all workspaces share one logical day; capacity is not summed across workspaces.
 - Importers can throw raw `JsonException` / `CsvHelperException`; Core should wrap them (the Settings view catches them).
 - No hard purge of soft-deleted workspaces after 30 days (only the recovery check). Local tombstones are purged on request only.
 - Server: no EF migrations (`EnsureCreated`), ingest serialized per process (multiple instances need a DB-level lock), conflict log is best-effort (a device whose pushed edit is overwritten gets no entry).
-- Workspace tab accent colors do not repaint until the next refresh after a theme switch.
 - Sync wiring is easy to get wrong: one shared `HybridClock` must go to both `SqliteUnitOfWork` and `CommandBus`, otherwise nothing is recorded (documented in `CLAUDE.md`).
 
 ## Suggested next steps

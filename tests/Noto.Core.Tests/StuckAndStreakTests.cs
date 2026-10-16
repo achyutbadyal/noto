@@ -9,22 +9,13 @@ namespace Noto.Core.Tests;
 
 public class StuckPromptTests
 {
-    [Theory]
-    [InlineData(Pressure.Honest, 3, 0, true)]
-    [InlineData(Pressure.Honest, 2, 3, true)]
-    [InlineData(Pressure.Honest, 2, 2, false)]
-    [InlineData(Pressure.Gentle, 13, 4, false)]
-    [InlineData(Pressure.Gentle, 14, 0, true)]
-    [InlineData(Pressure.Relentless, 2, 0, true)]
-    public void Prompt_triggers_at_the_pressure_thresholds(
-        Pressure level,
-        int carry,
-        int defers,
-        bool expected
-    ) =>
+    // The threshold table itself is `PresetTests.Stuck_chip_thresholds`. All this needs to pin is that
+    // `ShouldPrompt` still delegates to it — the rest of the rows would be a second copy of that table.
+    [Fact]
+    public void Prompt_follows_the_pressure_thresholds() =>
         StuckPrompt
-            .ShouldPrompt(new ItemMetrics(carry, carry, defers), PressureThresholds.For(level))
-            .ShouldBe(expected);
+            .ShouldPrompt(new ItemMetrics(3, 3, 0), PressureThresholds.For(Pressure.Honest))
+            .ShouldBeTrue();
 
     [Theory]
     [InlineData(StuckReason.TooBig, StuckFixKind.BreakDown)]

@@ -1,6 +1,10 @@
 # Noto — Implementation Roadmap
 
-Estimates are **focused working days for one developer**. Each phase's estimate excludes contingency; plan for **+20%** on top. The Gantt chart excludes weekends.
+This file is the **specification of what each phase delivers**, in the order it was built. It deliberately
+tracks no status — **what is actually done lives in [11 › What's Done](11-whats-done.md)** — so the two can't
+drift apart.
+
+Estimates are **focused working days for one developer**, excluding contingency; plan for **+20%** on top.
 
 **Ordering principles:**
 
@@ -10,100 +14,20 @@ Estimates are **focused working days for one developer**. Each phase's estimate 
 4. Layouts beyond List come after the loop is proven.
 5. Recurrence ships with the Habit layout that depends on it.
 
-## Phase Overview
-
-```mermaid
-gantt
-    title Noto Development Phases
-    dateFormat  YYYY-MM-DD
-    excludes    weekends
-
-    section 1 Foundation
-    Solution scaffold, CI (macOS)              :p1a, 2026-10-12, 2d
-    Domain models + invariants                 :p1b, after p1a, 3d
-    Time semantics (logical day, tz, DST)      :p1c, after p1b, 2d
-    SQLite data layer + SQL migrations         :p1d, after p1c, 3d
-    Command bus, events, undo                  :p1e, after p1d, 2d
-
-    section 2 Derivations
-    Age / carry / defers                       :p2a, after p1e, 2d
-    Day stats + caches + invalidation          :p2b, after p2a, 2d
-
-    section 3 Core loop (macOS)
-    Shell, theme tokens, sidebar               :p3a, after p2b, 3d
-    Today sections, row, inspector             :p3b, after p3a, 5d
-    Token input + command bar + search (FTS5)  :p3c, after p3b, 5d
-    Morning Review                             :p3d, after p3c, 3d
-    Decisions, Backlog, Break down, Waiting    :p3e, after p3d, 3d
-    Capacity bar + Shutdown                    :p3f, after p3e, 3d
-    Keyboard map, undo toasts, a11y pass       :p3g, after p3f, 2d
-
-    section 4 Presets & insights v1
-    Order / pressure / presets                 :p4a, after p3g, 3d
-    Stuck prompt + reasons                     :p4b, after p4a, 1d
-    Day strip + time travel                    :p4c, after p4b, 2d
-    Insights v1 + pace forecast                :p4d, after p4c, 4d
-
-    section 5 Dogfood → MVP
-    Dogfood, fix, perf budgets                 :p5a, after p4d, 10d
-    MVP release (macOS)                        :milestone, after p5a, 0d
-
-    section 6 macOS native
-    Global hotkey + capture panel              :p6a, after p5a, 3d
-    Menubar, focus window, notifications       :p6b, after p6a, 4d
-    Capture with context                       :p6c, after p6b, 2d
-    Import / export                            :p6d, after p6c, 3d
-
-    section 7 Connected apps (desktop)
-    Provider iface, registry, keyring          :p7a, after p6d, 3d
-    PAT + OAuth (loopback, PKCE), refresh      :p7b, after p7a, 3d
-    GitHub, Jira, Linear providers             :p7c, after p7b, 7d
-    Chips, cards, change dot, live links       :p7d, after p7c, 4d
-    Custom apps                                :p7e, after p7d, 2d
-
-    section 8 Sync & backend
-    Server scaffold, auth, devices             :p8a, after p7e, 4d
-    HLC op-log client + merger                 :p8b, after p8a, 4d
-    Server ingest, LWW, seq cursor, snapshot   :p8c, after p8b, 4d
-    Per-workspace toggle, tombstone GC         :p8d, after p8c, 2d
-    Convergence test harness                   :p8e, after p8d, 3d
-    Docker + single binary                     :p8f, after p8e, 1d
-
-    section 9 Web
-    WASM SQLite/OPFS spike                     :p9a, after p8f, 3d
-    Web host as sync client                    :p9b, after p9a, 4d
-    Connected Apps Gateway                     :p9c, after p9b, 5d
-    Web hardening (CSP, keyring, polish)       :p9d, after p9c, 3d
-
-    section 10 Layouts & recurrence
-    Recurrence engine                          :p10a, after p9d, 4d
-    Habit grid + flex streaks                  :p10b, after p10a, 3d
-    Board                                      :p10c, after p10b, 5d
-    Timeline                                   :p10d, after p10c, 4d
-    Weekly Review                              :p10e, after p10d, 3d
-
-    section 11 More providers
-    Slack, GitLab, Notion, Confluence, Figma   :p11a, after p10e, 10d
-
-    section 12 Platforms
-    Windows + Linux                            :p12a, after p11a, 10d
-    iOS + Android                              :p12b, after p12a, 25d
-```
-
-| Phase                      | Days | Cumulative | Milestone                                       |
-| -------------------------- | ---- | ---------- | ----------------------------------------------- |
-| 1 Foundation               | 12   | 12         |                                                 |
-| 2 Derivations              | 4    | 16         |                                                 |
-| 3 Core loop (macOS)        | 24   | 40         |                                                 |
-| 4 Presets & insights v1    | 10   | 50         |                                                 |
-| 5 Dogfood                  | 10   | 60         | **MVP (macOS)**: about 72 days with contingency |
-| 6 macOS native             | 12   | 72         |                                                 |
-| 7 Connected apps (desktop) | 19   | 91         | **v1.0 (macOS)**                                |
-| 8 Sync & backend           | 18   | 109        |                                                 |
-| 9 Web                      | 15   | 124        | **Web beta**                                    |
-| 10 Layouts & recurrence    | 19   | 143        |                                                 |
-| 11 More providers          | 10   | 153        |                                                 |
-| 12 Platforms               | 35   | 188        | Windows/Linux/mobile                            |
+| Phase                      | Days | Milestone                                       |
+| -------------------------- | ---- | ----------------------------------------------- |
+| 1 Foundation               | 12   |                                                 |
+| 2 Derivations              | 4    |                                                 |
+| 3 Core loop (macOS)        | 24   |                                                 |
+| 4 Presets & insights v1    | 10   |                                                 |
+| 5 Dogfood                  | 10   | **MVP (macOS)**: about 72 days with contingency |
+| 6 macOS native             | 12   |                                                 |
+| 7 Connected apps (desktop) | 19   | **v1.0 (macOS)**                                |
+| 8 Sync & backend           | 18   |                                                 |
+| 9 Web                      | 15   | **Web beta**                                    |
+| 10 Layouts & recurrence    | 19   |                                                 |
+| 11 More providers          | 10   |                                                 |
+| 12 Platforms               | 35   | Windows / Linux / mobile                        |
 
 Total ≈ 188 days, or ≈ 225 with contingency (about 11 months full-time solo). The MVP lands in about 3½ months.
 
@@ -113,7 +37,7 @@ Total ≈ 188 days, or ≈ 225 with contingency (about 11 months full-time solo)
 
 | Task                         | Output                                                               | Acceptance                                                                                                  |
 | ---------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Solution scaffold on .NET 10 | `Noto.sln`, projects per [05](05-architecture.md#solution-structure) | `dotnet build` and `dotnet test` green in CI (macOS runner)                                                 |
+| Solution scaffold on .NET 10 | `Noto.sln`, projects per [05](05-architecture.md#solution-structure) | `dotnet build` and `dotnet test` green in CI                                                                |
 | Domain models                | `Noto.Core/Models`                                                   | Entities and invariants I1–I7 from [04](04-domain-model.md#21-todoitem), property-tested                    |
 | Time semantics               | `Noto.Core/Time`                                                     | Logical-date tests cover day boundaries, travel, DST skip and repeat, events keeping their recorded zone    |
 | Data layer                   | `Noto.Data` (Microsoft.Data.Sqlite)                                  | Migrations from an empty DB; repository round-trips; local-only vs synced tables separated                  |
@@ -131,10 +55,10 @@ Delivers [07](07-ui-ux-design.md) §3–4, §7.1, §10–12: shell, Today sectio
 
 **Done when:**
 
-- [ ] A 5-item Morning Review can be done with the keyboard alone in < 30s.
-- [x] Every decision is undoable.
-- [ ] Rows read correctly in VoiceOver ("Deploy v2.3, planned, carried 4 times, estimate 1 hour").
-- [x] Both themes pass the contrast table in [07 › Tokens](07-ui-ux-design.md#111-tokens).
+- A 5-item Morning Review can be done with the keyboard alone in < 30s.
+- Every decision is undoable.
+- Rows read correctly in VoiceOver ("Deploy v2.3, planned, carried 4 times, estimate 1 hour").
+- Both themes pass the contrast table in [07 › Tokens](07-ui-ux-design.md#111-tokens).
 
 ## Phase 4: Presets & Insights v1 (10 days)
 
@@ -167,9 +91,9 @@ Provider interface and registry, keyring storage, PAT and OAuth (loopback + PKCE
 
 **Done when:**
 
-- [ ] GitHub PR, Jira issue and Linear issue URLs show chips within 2s cached / 5s on first fetch.
-- [x] A merged PR produces the "Done?" suggestion. A Waiting item auto-returns when its Jira ticket leaves a blocked status.
-- [x] Tokens exist only in the Keychain. They're absent from SQLite, exports and logs (verified by test).
+- GitHub PR, Jira issue and Linear issue URLs show chips within 2s cached / 5s on first fetch.
+- A merged PR produces the "Done?" suggestion. A Waiting item auto-returns when its Jira ticket leaves a blocked status.
+- Tokens exist only in the keyring. They're absent from SQLite, exports and logs (verified by test).
 
 ## Phase 8: Sync & Backend (18 days)
 
@@ -177,9 +101,9 @@ Server (auth, devices, `/sync`, `/sync/snapshot`), HLC op-log client and merger,
 
 **Done when:**
 
-- [x] A randomized convergence test (3 replicas, 10k random ops, random partitions and clock skew) ends with identical state on all replicas, and no `different-field` edit is lost.
-- [x] Credentials and previews never appear in any op (asserted in the test suite).
-- [x] The app works fully offline with sync enabled.
+- A randomized convergence test (3 replicas, 10k random ops, random partitions and clock skew) ends with identical state on all replicas, and no `different-field` edit is lost.
+- Credentials and previews never appear in any op (asserted in the test suite).
+- The app works fully offline with sync enabled.
 
 ## Phase 9: Web (15 days)
 

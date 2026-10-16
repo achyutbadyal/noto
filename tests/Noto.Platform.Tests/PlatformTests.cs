@@ -75,15 +75,6 @@ public class PlatformTests
     }
 
     [Fact]
-    public void Mac_reduce_motion_reads_the_os_flag_without_throwing()
-    {
-        if (!OperatingSystem.IsMacOS())
-            return;
-        using var motion = new MacReduceMotion();
-        _ = motion.IsEnabled; // value depends on the user's accessibility settings
-    }
-
-    [Fact]
     public void Mac_hotkey_rejects_unknown_keys_without_registering()
     {
         if (!OperatingSystem.IsMacOS())

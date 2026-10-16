@@ -165,7 +165,7 @@ Runs side projects alongside a day job. Needs workspace isolation and focus hour
 - Chip renders within 2s from cache, or 5s on first fetch.
 - If the app isn't connected, the link is plain and clickable, with a one-time "Connect X" hint.
 - Expired tokens refresh automatically. If refresh fails, the chip shows " reconnect".
-- Multiple URLs in one item each get a chip (at most 2 shown in the row, all of them in the inspector).
+- Multiple URLs in one item each get a chip. A row with room wraps them; a compact row shows the first and `+N more`. The inspector always has all of them.
 - Custom apps: token/API key + URL pattern + OpenGraph or JSONPath mapping, optionally with state mapping.
 - Automatic completion from link state is opt-in, reversible and recorded in history.
 

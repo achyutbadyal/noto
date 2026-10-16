@@ -134,18 +134,21 @@ Gateway rules:
 
 ```
 Noto.Server/
-├── Program.cs
-├── Endpoints/        Auth, Devices, Sync, Account, Gateway
-├── Sync/             OpIngest, LwwApplier, SnapshotService, TombstoneGc
-├── Gateway/          OAuthBroker, ProviderAllowlist, FetchProxy, OpenGraphFetcher, SsrfGuard
-├── Digest/           WeeklyDigestJob (hosted only)
-├── Data/             ServerDbContext (EF Core 10), Migrations
-├── Auth/             JwtService, RefreshTokenStore, Argon2PasswordHasher
-├── Middleware/       RateLimiting (built-in ASP.NET Core limiter), ProblemDetails
-└── Dockerfile
+├── Program.cs  ServerHost.cs
+├── Endpoints/        AuthEndpoints, SyncEndpoints, AccountEndpoints
+├── Sync/             SyncService (op ingest, per-field LWW, seq cursor, snapshot), TombstoneGc
+├── Gateway/          GatewayEndpoints, OAuthBroker, ProviderAllowlist, ProviderCatalog,
+│                     FetchProxy, SafeFetcher, OpenGraphFetcher, SsrfGuard, GraphQlGuard,
+│                     LoopbackReturn, GatewayRegistration
+├── Auth/             JwtService, AuthService, Argon2PasswordHasher, Principal
+├── Middleware/       RateGate, SecurityHeaders, DeviceStatusMiddleware, ProblemHandling
+├── Config/           ServerConfig, DotEnv
+├── Data/             ServerDbContext (EF Core 10), Entities
+├── Dockerfile  docker-compose.yml
+└── Digest/           WeeklyDigestJob — hosted-only, planned
 ```
 
-**Tables:** `users`, `devices`, `refresh_tokens`, `ops (seq bigserial PK, op_id unique, user_id, workspace_id, entity_type, entity_id, kind, field, value jsonb, hlc, device_id, received_at)`, `current_rows (entity_type, entity_id, user_id, workspace_id, row jsonb, field_clocks jsonb)`, `workspace_sync (user_id, workspace_id, enabled)`.
+**Tables:** `users`, `devices`, `refresh_tokens`, `ops (seq bigserial PK, op_id unique, user_id, workspace_id, entity_type, entity_id, kind, field, value jsonb, hlc, device_id, received_at)`, `current_rows (entity_type, entity_id, user_id, workspace_id, row jsonb, field_clocks jsonb)`, `workspace_sync (user_id, workspace_id, enabled)`, `exports`.
 
 ---
 

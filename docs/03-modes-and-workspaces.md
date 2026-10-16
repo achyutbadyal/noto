@@ -25,19 +25,10 @@ Health (Habit preset) and Side Projects (Kanban preset) are offered as one-click
 
 ### Workspace Properties
 
-The full field list is in [04 › Workspace](04-domain-model.md#23-workspace). The behavior-relevant fields:
-
-```
-Workspace {
-    time_zone, tz_follows_device, day_boundary     // logical day (04 › Time Semantics)
-    focus_hours?                                   // e.g. Mon–Fri 09:00–18:00
-    capacity_unit, daily_capacity                  // minutes (default 360) | items
-    preset                                         // sprint | zen | deadline | habit | kanban | accountability | custom
-    layout, sort_order_mode, pressure              // the three mode controls (below)
-    pressure_overrides?, layout_settings
-    sync_enabled
-}
-```
+The full field list is in [04 › Workspace](04-domain-model.md#23-workspace). The fields that change behavior
+are the logical-day trio (`time_zone`, `tz_follows_device`, `day_boundary`), `focus_hours`,
+`capacity_unit` + `daily_capacity`, the three mode controls (`layout`, `sort_order_mode`, `pressure`) with
+their `pressure_overrides` and per-layout `layout_settings`, `preset`, and `sync_enabled`.
 
 ### Focus Hours
 
