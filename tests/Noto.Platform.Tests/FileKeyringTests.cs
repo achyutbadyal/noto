@@ -25,12 +25,18 @@ public sealed class FileKeyringTests : IDisposable
     }
 
     // A stand-in for the OS keychain that reports itself as *supported*, unlike InMemoryKeyring, so the
-    // migration path is actually exercised.
+    // sweep is actually exercised. `Refuse` makes it behave like a keychain whose consent sheet was
+    // denied — the read throws, as MacKeychain's does on `errSecUserCanceled`.
     sealed class FakeOsKeyring : IKeyring
     {
         readonly Dictionary<(string, string), string> _secrets = [];
 
+        public bool Refuse { get; set; }
+
         public Capability Capability => Capability.Supported;
+
+        public bool Holds(string service, string account) =>
+            _secrets.ContainsKey((service, account));
 
         public Task SetAsync(string service, string account, string secret)
         {
@@ -39,9 +45,11 @@ public sealed class FileKeyringTests : IDisposable
         }
 
         public Task<string?> GetAsync(string service, string account) =>
-            Task.FromResult(
-                _secrets.TryGetValue((service, account), out var secret) ? secret : null
-            );
+            Refuse
+                ? throw new InvalidOperationException("Keychain error -128")
+                : Task.FromResult(
+                    _secrets.TryGetValue((service, account), out var secret) ? secret : null
+                );
 
         public Task DeleteAsync(string service, string account)
         {
@@ -225,20 +233,185 @@ public sealed class FileKeyringTests : IDisposable
             (await keyring.GetAsync("app.noto.connections", $"conn-{i}")).ShouldBe($"secret-{i}");
     }
 
+    // A file mode must not go near the OS keyring on a read. This is the regression the whole design
+    // exists for: a lookup for a key we already hold raises the consent sheet for an item we no longer
+    // need, and one the user cancels comes back on every launch.
     [Fact]
-    public async Task A_key_only_the_os_keyring_has_is_migrated_on_first_read()
+    public async Task A_read_never_looks_in_the_os_keyring()
+    {
+        // A keyring that throws on every read, so looking would fail here rather than prompt the user.
+        var os = new FakeOsKeyring { Refuse = true };
+        var keyring = Open(SecretStorageMode.MachineEncrypted, os);
+        await keyring.SetAsync("app.noto.server", "session", "refresh-token");
+
+        (await keyring.GetAsync("app.noto.server", "session")).ShouldBe("refresh-token");
+        (await keyring.GetAsync("app.noto.ai", "api-key")).ShouldBeNull();
+    }
+
+    // The one time a file mode does look: a single pass over the names the app knows, which moves what the
+    // builds that wrote to the keychain directly left behind into the file and deletes it there.
+    [Fact]
+    public async Task The_sweep_moves_what_the_keyring_holds_into_the_file_and_clears_it()
     {
         var os = new FakeOsKeyring();
-        await os.SetAsync("app.noto.ai", "api-key", "from-keychain");
+        await os.SetAsync("app.noto.server", "session", "refresh-token");
+        await os.SetAsync("app.noto.ai", "api-key", "sk-live");
+        await os.SetAsync("app.noto.connections", "conn-1", "provider-token");
+        await os.SetAsync("app.noto.connections", "conn-2", "nobody-claims-this");
 
         var keyring = Open(SecretStorageMode.MachineEncrypted, os);
-        (await keyring.GetAsync("app.noto.ai", "api-key")).ShouldBe("from-keychain");
+        var report = await keyring.SweepAsync([
+            ("app.noto.server", "session"),
+            ("app.noto.ai", "api-key"),
+            ("app.noto.connections", "conn-1"),
+        ]);
 
-        // Copied into the encrypted file and taken out of the keychain, so the prompt stops coming back.
-        (await os.GetAsync("app.noto.ai", "api-key")).ShouldBeNull();
-        var reopened = Open(SecretStorageMode.MachineEncrypted, os);
-        (await reopened.GetAsync("app.noto.ai", "api-key")).ShouldBe("from-keychain");
-        (await os.GetAsync("app.noto.ai", "api-key")).ShouldBeNull();
+        report.ShouldBe(new KeyringSweepReport(3, 3, 0));
+        (await keyring.GetAsync("app.noto.server", "session")).ShouldBe("refresh-token");
+        (await keyring.GetAsync("app.noto.ai", "api-key")).ShouldBe("sk-live");
+        (await keyring.GetAsync("app.noto.connections", "conn-1")).ShouldBe("provider-token");
+        os.Holds("app.noto.server", "session").ShouldBeFalse();
+
+        // A name nobody claims is left alone — it is not ours to delete, and nothing reads it, so it can't
+        // raise a sheet either. There is no portable way to enumerate a keychain, so a connection deleted
+        // before the upgrade keeps its orphan until the user removes it by hand.
+        (await os.GetAsync("app.noto.connections", "conn-2")).ShouldBe("nobody-claims-this");
+    }
+
+    // The leftover shape a per-read migration can never fix: the file answers first, so the keychain copy
+    // is never looked up and therefore never deleted.
+    [Fact]
+    public async Task The_sweep_removes_a_keychain_copy_of_a_key_the_file_already_has()
+    {
+        var os = new FakeOsKeyring();
+        await os.SetAsync("app.noto.server", "session", "stale-token");
+
+        var keyring = Open(SecretStorageMode.MachineEncrypted, os);
+        await keyring.SetAsync("app.noto.server", "session", "current-token");
+
+        var report = await keyring.SweepAsync();
+
+        // The file's copy wins; the keychain one is only deleted.
+        report.ShouldBe(new KeyringSweepReport(0, 1, 0));
+        os.Holds("app.noto.server", "session").ShouldBeFalse();
+        (await keyring.GetAsync("app.noto.server", "session")).ShouldBe("current-token");
+    }
+
+    [Fact]
+    public async Task A_keyring_that_refuses_is_counted_and_never_throws()
+    {
+        // A denied consent sheet, or a locked login keychain: startup must not break on it.
+        var os = new FakeOsKeyring { Refuse = true };
+        var keyring = Open(SecretStorageMode.MachineEncrypted, os);
+        await keyring.SetAsync("app.noto.server", "session", "refresh-token");
+
+        var report = await keyring.SweepAsync([("app.noto.ai", "api-key")]);
+
+        // The key it already holds, plus the name it was handed.
+        report.ShouldBe(new KeyringSweepReport(0, 0, 2));
+        (await keyring.GetAsync("app.noto.server", "session")).ShouldBe("refresh-token");
+    }
+
+    [Fact]
+    public async Task Disconnecting_removes_the_keychain_copy_too()
+    {
+        var os = new FakeOsKeyring();
+        var keyring = Open(SecretStorageMode.MachineEncrypted, os);
+        await keyring.SetAsync("app.noto.connections", "conn-1", "provider-token");
+        await os.SetAsync("app.noto.connections", "conn-1", "old-copy"); // as an older build left it
+
+        await keyring.DeleteAsync("app.noto.connections", "conn-1");
+
+        (await keyring.GetAsync("app.noto.connections", "conn-1")).ShouldBeNull();
+        os.Holds("app.noto.connections", "conn-1").ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Switching_to_a_file_mode_clears_the_keyring_as_well()
+    {
+        var os = new FakeOsKeyring();
+        await os.SetAsync("app.noto.connections", "conn-1", "provider-token");
+
+        var keyring = Open(SecretStorageMode.MachineEncrypted, os);
+        var report = await keyring.SwitchModeAsync(
+            SecretStorageMode.PlainFile,
+            knownKeys: [("app.noto.connections", "conn-1")]
+        );
+
+        report!.Moved.ShouldBe(1);
+        (await keyring.GetAsync("app.noto.connections", "conn-1")).ShouldBe("provider-token");
+        os.Holds("app.noto.connections", "conn-1").ShouldBeFalse();
+        FileKeyring.NeedsKeyringSweep(_dir.Path).ShouldBeFalse();
+    }
+
+    // Armed until it has run, and armed again by a mode change — which is when items can be left behind.
+    [Fact]
+    public void The_sweep_runs_once_per_install_and_a_mode_change_re_arms_it()
+    {
+        FileKeyring.NeedsKeyringSweep(_dir.Path).ShouldBeTrue();
+
+        FileKeyring.MarkKeyringSwept(_dir.Path);
+        FileKeyring.NeedsKeyringSweep(_dir.Path).ShouldBeFalse();
+        FileKeyring.ReadMode(_dir.Path).ShouldBe(SecretStorageMode.MachineEncrypted);
+
+        FileKeyring.WriteMode(_dir.Path, SecretStorageMode.PlainFile);
+        FileKeyring.NeedsKeyringSweep(_dir.Path).ShouldBeTrue();
+        FileKeyring.ReadMode(_dir.Path).ShouldBe(SecretStorageMode.PlainFile);
+    }
+
+    [Fact]
+    public async Task The_startup_sweep_runs_once_and_the_on_demand_one_ignores_that()
+    {
+        var os = new FakeOsKeyring();
+        await os.SetAsync("app.noto.ai", "api-key", "sk-live");
+
+        var keyring = Open(SecretStorageMode.MachineEncrypted, os);
+        (await keyring.SweepOnceAsync([("app.noto.ai", "api-key")])).ShouldBe(
+            new KeyringSweepReport(1, 1, 0)
+        );
+
+        // Already looked: a later launch does nothing rather than asking again.
+        (await keyring.SweepOnceAsync([("app.noto.ai", "api-key")])).ShouldBeNull();
+
+        // The on-demand sweep ignores the flag, because an install whose sheet was denied needs a way back.
+        (await keyring.SweepAsync([("app.noto.ai", "api-key")])).ShouldBe(
+            new KeyringSweepReport(0, 0, 0)
+        );
+
+        // Choosing a store re-arms it.
+        FileKeyring.WriteMode(_dir.Path, SecretStorageMode.PlainFile);
+        (await keyring.SweepOnceAsync([("app.noto.ai", "api-key")])).ShouldNotBeNull();
+    }
+
+    // Marking the sweep done on a store nobody has opened yet would lose the session for good: the keychain
+    // is the only place it exists, and no later launch would look again.
+    [Fact]
+    public async Task A_vault_that_is_still_locked_leaves_the_sweep_armed()
+    {
+        var os = new FakeOsKeyring();
+        await os.SetAsync("app.noto.server", "session", "refresh-token");
+
+        var locked = Open(SecretStorageMode.PassphraseEncrypted, os);
+        (await locked.SweepOnceAsync([("app.noto.server", "session")])).ShouldBeNull();
+        FileKeyring.NeedsKeyringSweep(_dir.Path).ShouldBeTrue();
+
+        await locked.UnlockAsync("hunter2");
+        (await locked.SweepOnceAsync([("app.noto.server", "session")])).ShouldBe(
+            new KeyringSweepReport(1, 1, 0)
+        );
+        (await locked.GetAsync("app.noto.server", "session")).ShouldBe("refresh-token");
+        os.Holds("app.noto.server", "session").ShouldBeFalse();
+        FileKeyring.NeedsKeyringSweep(_dir.Path).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Os_keyring_mode_has_nothing_to_sweep()
+    {
+        var os = new FakeOsKeyring();
+        var keyring = Open(SecretStorageMode.OsKeyring, os);
+
+        keyring.CanSweep.ShouldBeFalse();
+        (await keyring.SweepOnceAsync()).ShouldBeNull();
     }
 
     [Fact]

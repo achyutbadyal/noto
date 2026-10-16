@@ -18,10 +18,14 @@ public sealed class SecretStorageSettingsTests : IDisposable
         Directory.Delete(_dir, recursive: true);
     }
 
-    SettingsViewModel Build(SecretStorageMode mode)
+    SettingsViewModel Build(
+        SecretStorageMode mode,
+        IKeyring? os = null,
+        Func<Task<IReadOnlyList<(string Service, string Account)>>>? knownSecrets = null
+    )
     {
         FileKeyring.WriteMode(_dir, mode);
-        var store = new FileKeyring(_dir, Guid.NewGuid().ToString(), keyFilePath: KeyFile);
+        var store = new FileKeyring(_dir, Guid.NewGuid().ToString(), os, KeyFile);
         var platform = new PlatformServices(
             _app.Services.Platform.Hotkey,
             store,
@@ -38,7 +42,8 @@ public sealed class SecretStorageSettingsTests : IDisposable
             _app.Services.Workspaces,
             _app.Workspace.Id,
             new AppearanceViewModel(_app.Services.UiState),
-            secrets: store
+            secrets: store,
+            knownSecrets: knownSecrets
         );
     }
 
@@ -115,5 +120,68 @@ public sealed class SecretStorageSettingsTests : IDisposable
 
         vm.HasSecrets.ShouldBeFalse();
         vm.Secrets.ShouldBeNull();
+    }
+
+    // The escape hatch for an install whose keychain still holds items from the builds that wrote there
+    // directly: look them up once, move them into the store, delete them from the keychain.
+    [Fact]
+    public async Task The_pane_can_move_what_the_system_keychain_still_holds_into_the_store()
+    {
+        var os = new FakeOsKeyring();
+        await os.SetAsync("app.noto.connections", "conn-1", "provider-token");
+
+        var vm = Build(
+            SecretStorageMode.MachineEncrypted,
+            os,
+            () =>
+                Task.FromResult<IReadOnlyList<(string Service, string Account)>>([
+                    ("app.noto.connections", "conn-1"),
+                ])
+        );
+        await vm.LoadAsync();
+
+        vm.CanCleanKeyring.ShouldBeTrue();
+        vm.KeyringStatus.ShouldBeNull();
+
+        await vm.CleanKeyringAsync();
+
+        (await vm.Secrets!.GetAsync("app.noto.connections", "conn-1")).ShouldBe("provider-token");
+        (await os.GetAsync("app.noto.connections", "conn-1")).ShouldBeNull();
+        vm.KeyringStatus.ShouldNotBeNullOrEmpty();
+    }
+
+    // Nothing to clean without a way to name every secret, so the action isn't offered at all rather than
+    // being offered and doing nothing.
+    [Fact]
+    public async Task A_host_that_cannot_name_every_secret_offers_no_clean_up()
+    {
+        var vm = Build(SecretStorageMode.MachineEncrypted, new FakeOsKeyring());
+        await vm.LoadAsync();
+
+        vm.CanCleanKeyring.ShouldBeFalse();
+    }
+
+    // Opening the pane again resets its lines, so a sweep result from a previous visit can't read as this
+    // visit's answer.
+    [Fact]
+    public async Task Opening_the_pane_clears_the_last_keychain_result()
+    {
+        var os = new FakeOsKeyring();
+        await os.SetAsync("app.noto.connections", "conn-1", "provider-token");
+        var vm = Build(
+            SecretStorageMode.MachineEncrypted,
+            os,
+            () =>
+                Task.FromResult<IReadOnlyList<(string Service, string Account)>>([
+                    ("app.noto.connections", "conn-1"),
+                ])
+        );
+        await vm.LoadAsync();
+        await vm.CleanKeyringAsync();
+        vm.KeyringStatus.ShouldNotBeNullOrEmpty();
+
+        await vm.LoadAsync();
+
+        vm.KeyringStatus.ShouldBeNull();
     }
 }

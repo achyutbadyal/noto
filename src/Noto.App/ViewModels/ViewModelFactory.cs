@@ -91,7 +91,8 @@ public sealed class ViewModelFactory(AppServices s)
             account,
             s.Ai,
             s.Updates is null ? null : new UpdatesViewModel(s.Updates, s.UiState),
-            s.Platform.SecretStore
+            s.Platform.SecretStore,
+            () => AppSecrets.AllAsync(s.Uow)
         );
 
     DecisionController Decisions() => new(s.Runner);

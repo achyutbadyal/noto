@@ -64,6 +64,14 @@ public sealed class AccountService(
 {
     public const string KeyringService = "app.noto.server";
     const string SessionAccount = "session";
+
+    // The (service, account) this session lives under. Named here so the keyring sweep can look for it
+    // without a second copy of the strings (docs/05 › ADR-06).
+    public static readonly (string Service, string Account) SessionSecret = (
+        KeyringService,
+        SessionAccount
+    );
+
     const string ServerKey = "server.url";
     static readonly TimeSpan RefreshBeforeExpiry = TimeSpan.FromMinutes(2);
 

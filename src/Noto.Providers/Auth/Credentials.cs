@@ -24,20 +24,33 @@ public sealed class CredentialStore(IKeyring keyring)
 {
     public const string Service = "app.noto.connections";
 
-    public async Task<Credential?> LoadAsync(Guid connectionId) =>
-        await keyring.GetAsync(Service, connectionId.ToString()) is { } json
-            ? JsonSerializer.Deserialize(json, AuthJson.Default.Credential)
-            : null;
+    // The (service, account) one connection's secret lives under. Named here so the keyring sweep can look
+    // for it without a second copy of the shape (docs/05 › ADR-06).
+    public static (string Service, string Account) SecretFor(Guid connectionId) =>
+        (Service, connectionId.ToString());
 
-    public Task SaveAsync(Guid connectionId, Credential credential) =>
-        keyring.SetAsync(
-            Service,
-            connectionId.ToString(),
+    public async Task<Credential?> LoadAsync(Guid connectionId)
+    {
+        var (service, account) = SecretFor(connectionId);
+        var json = await keyring.GetAsync(service, account);
+        return json is null ? null : JsonSerializer.Deserialize(json, AuthJson.Default.Credential);
+    }
+
+    public Task SaveAsync(Guid connectionId, Credential credential)
+    {
+        var (service, account) = SecretFor(connectionId);
+        return keyring.SetAsync(
+            service,
+            account,
             JsonSerializer.Serialize(credential, AuthJson.Default.Credential)
         );
+    }
 
-    public Task DeleteAsync(Guid connectionId) =>
-        keyring.DeleteAsync(Service, connectionId.ToString());
+    public Task DeleteAsync(Guid connectionId)
+    {
+        var (service, account) = SecretFor(connectionId);
+        return keyring.DeleteAsync(service, account);
+    }
 }
 
 public sealed class InMemoryKeyring : IKeyring

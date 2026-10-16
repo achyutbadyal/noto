@@ -16,7 +16,7 @@ This is a core feature for the developer and manager personas.
 ## Core Principles
 
 1. **Generic adapter system.** Providers implement one interface. Custom apps need no code.
-2. **Credentials live in the device keyring.** On native clients, tokens are stored in the OS keyring and used directly against the provider. They're never synced, exported or logged.
+2. **Credentials live in the device secret store.** On native clients, tokens are kept in a store that belongs to the device — the OS keyring, or by default a file sealed to the machine — and used directly against the provider. They're never synced, exported or logged.
 3. **Web uses the Noto Gateway.** Browsers can't call provider APIs (CORS) or complete OAuth code exchanges, so the web client routes through the backend's stateless gateway ([Web](#web-connected-apps-gateway)).
 4. **Previews are device-local.** Fetched content (Slack messages, ticket text) is private third-party data. It's cached per device and **never synced**. Only the URL (`todo_link`) syncs.
 5. **Suggest, don't act.** State changes produce suggestions. Automatic changes (e.g. auto-complete) are opt-in per workspace, always reversible, and always visible in item history as "via GitHub".
@@ -200,7 +200,7 @@ Title / notes changed ─► URL scanner ─► normalize ─► todo_link rows 
 
 **Native:** each connection's secret material (`access_token`, `refresh_token`, `expires_at`, or API key) is stored as one entry, keyed by service `app.noto.connections` and account `<connection id>`.
 
-The **store** is a device setting, not an account one — see [05 › ADR-06](05-architecture.md#adr-06-connected-apps--device-secret-store-natively-gateway-in-the-browser). The default is `MachineEncrypted`: `secrets.enc` beside the database, sealed with AES-GCM under a key derived from the device id and a `0600` keyfile. That is what keeps macOS from asking for keychain permission again after every update, because the app is ad-hoc signed and gets a new CDHash each build.
+The **store** is a device setting, not an account one — see [05 › ADR-06](05-architecture.md#adr-06-connected-apps--device-secret-store-natively-gateway-in-the-browser). The default is `MachineEncrypted`: `secrets.enc` beside the database, sealed with AES-GCM under a key derived from the device id and a `0600` keyfile. That is what keeps macOS from asking for keychain permission again after every update, because the app is ad-hoc signed and gets a new CDHash each build. The OS keyring stays reachable as the `OsKeyring` mode; in the three file modes it is looked at once, by the sweep below, and never while reading a secret.
 
 | Platform | Where `OsKeyring` mode stores it                                                                                                       |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -225,13 +225,25 @@ three file modes every key lives in **one** JSON object — a `Dictionary<string
 - **Failure modes.** A missing or unreadable file in `MachineEncrypted`/`PlainFile` reads as an **empty
   store** — never a crash. A locked `PassphraseEncrypted` vault also reads as empty, so a passphrase the user
   has not typed yet cannot break startup; only a *wrong* passphrase raises, so the settings pane can retry.
-- **Lazy migration.** On a `MachineEncrypted` key miss the store looks in the OS keyring once; if the key is
-  there it is copied into `secrets.enc` and deleted from the keyring. The old keychain items therefore move
-  themselves out of the way as they are used, and the consent sheets stop.
+- **No keyring on a read path.** In the three file modes the OS keyring is never consulted while reading a
+  secret. That is the whole point of the default: a lookup for a key the file already holds raises the
+  consent sheet for an item the app no longer needs, and one the user cancels comes back on every launch,
+  because the keychain copy is only deleted after a read that succeeded.
+- **One-time sweep.** The keyring *is* looked at once per install, before the first secret is read: the
+  fixed names (the sync session, the AI key) plus one entry per connection are read, anything the file
+  doesn't have is moved into it, and every item found is deleted. `storage-mode.json` records that it
+  happened, and choosing a mode re-arms it — that is when items can be left behind again. Settings has the
+  same sweep on demand, so an install whose consent sheet was denied has a way back. A keychain that
+  refuses is counted, never raised: startup cannot break on it. A key no one claims (a connection deleted
+  *before* the upgrade) is left alone — there is no portable way to enumerate a keyring, and nothing reads
+  it, so it cannot prompt either.
 - **Live switch.** Changing the mode copies every known key into the new store and then wipes the old one, so
-  nothing is left behind in the mode the user just left. OS keyrings have no portable "list everything", so
-  `OsKeyring` mode maintains a small key-name index (`secrets.index.json`, names only) — deleted when the
-  mode is left.
+  nothing is left behind in the mode the user just left. Leaving `OsKeyring` also sweeps the names the index
+  cannot know about — an install that upgraded from a build predating the index has items it never saw. OS
+  keyrings have no portable "list everything", so `OsKeyring` mode maintains a small key-name index
+  (`secrets.index.json`, names only) — deleted when the mode is left.
+- **Deletes reach the keyring.** Deleting a secret also deletes the keyring copy, best effort, so a token
+  cannot outlive the connection it belonged to.
 - **Settings** offers all four modes with the trade-off spelled out rather than the mechanism, and a
   passphrase field that appears only for `PassphraseEncrypted`. Unlocking there also restores the saved sync
   session, which could not be read while the vault was locked.

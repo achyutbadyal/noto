@@ -83,7 +83,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         AccountViewModel? account = null,
         AiOptions? ai = null,
         UpdatesViewModel? updates = null,
-        FileKeyring? secrets = null
+        FileKeyring? secrets = null,
+        // Every (service, account) the app stores, for the keyring sweep. Null when the host can't name
+        // them, which is also when there is nothing to sweep.
+        Func<Task<IReadOnlyList<(string Service, string Account)>>>? knownSecrets = null
     )
     {
         _import = import;
@@ -97,6 +100,7 @@ public sealed partial class SettingsViewModel : ObservableObject
         Ai = ai;
         Updates = updates;
         Secrets = secrets;
+        KnownSecrets = knownSecrets;
 
         // "Account" only exists when the host has an account service.
         Categories =
@@ -159,6 +163,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     // doesn't appear at all rather than offering a choice that does nothing.
     public FileKeyring? Secrets { get; }
     public bool HasSecrets => Secrets is not null;
+
+    public Func<Task<IReadOnlyList<(string Service, string Account)>>>? KnownSecrets { get; }
 
     // The rail. One pane shows at a time; each Show* flag drives exactly one pane's IsVisible.
     public IReadOnlyList<SettingsCategory> Categories { get; }
@@ -418,6 +424,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     string? _secretStatus;
 
+    // What the last look through the system keychain found. Its own line, because it is about a different
+    // thing than which store is in use.
+    [ObservableProperty]
+    string? _keyringStatus;
+
     public bool SecretNeedsPassphrase =>
         SecretChoice?.Mode == SecretStorageMode.PassphraseEncrypted;
 
@@ -431,6 +442,47 @@ public sealed partial class SettingsViewModel : ObservableObject
             ? "Locked. Enter your master passphrase to open it."
             : "Stored outside the database and never exported or synced.";
 
+    // Only a host that has both a file-backed store and a way to name every secret can offer the sweep —
+    // and only while the store can be opened, so the action never appears dead.
+    public bool CanCleanKeyring => Secrets is { CanSweep: true } && KnownSecrets is not null;
+
+    // The escape hatch for an install whose keychain still holds items from the builds that wrote there
+    // directly: look them up once, move them into the file store, delete them from the keychain. The only
+    // other time this happens is the first launch after the upgrade (docs/05 › ADR-06).
+    [RelayCommand]
+    public async Task CleanKeyringAsync()
+    {
+        if (Secrets is null || KnownSecrets is null)
+            return;
+
+        try
+        {
+            var keys = await KnownSecrets();
+            // Off the UI thread: the first lookup can block on a system consent sheet, and the window must
+            // not sit there looking hung while the user answers it.
+            KeyringStatus = Describe(await Task.Run(() => Secrets.SweepAsync(keys)));
+        }
+        catch (SecretStorageException e)
+        {
+            KeyringStatus = e.Message;
+        }
+    }
+
+    // Say what actually happened, not that it "succeeded": a key the keychain refused is still in there.
+    static string Describe(KeyringSweepReport? report)
+    {
+        if (report is null)
+            return "Nothing to compare with the system keychain right now.";
+        if (report is { Moved: 0, Removed: 0, Failed: 0 })
+            return "Nothing of Noto's is left in the system keychain.";
+
+        var moved = $"{report.Moved} secret{(report.Moved == 1 ? "" : "s")} moved into the file";
+        var removed = $"{report.Removed} keychain item{(report.Removed == 1 ? "" : "s")} removed";
+        return report.Failed == 0
+            ? $"{moved}, {removed}."
+            : $"{moved}, {removed}; {report.Failed} couldn't be read and are still in the keychain.";
+    }
+
     [RelayCommand]
     public async Task ApplySecretStorageAsync()
     {
@@ -439,10 +491,17 @@ public sealed partial class SettingsViewModel : ObservableObject
 
         try
         {
-            await Secrets.SwitchModeAsync(SecretChoice?.Mode ?? Secrets.Mode, SecretPassphrase);
+            var keys = await KnownKeysAsync();
+            // Off the UI thread: switching away from the keyring sweeps it, and a lookup can block on a
+            // system consent sheet.
+            var sweep = await Task.Run(() =>
+                Secrets.SwitchModeAsync(SecretChoice?.Mode ?? Secrets.Mode, SecretPassphrase, keys)
+            );
             SecretPassphrase = "";
             SecretStatus =
                 $"Secrets are now stored as {ModeLabels.Of(Secrets.Mode).ToLowerInvariant()}.";
+            if (sweep is { } report)
+                KeyringStatus = Describe(report);
             Capabilities = DescribeCapabilities();
             OnPropertyChanged(nameof(Capabilities));
 
@@ -460,8 +519,14 @@ public sealed partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(SecretNeedsPassphrase));
         OnPropertyChanged(nameof(SecretActionLabel));
         OnPropertyChanged(nameof(SecretHint));
+        OnPropertyChanged(nameof(CanCleanKeyring));
         _runner.NotifyChanged();
     }
+
+    Task<IReadOnlyList<(string Service, string Account)>> KnownKeysAsync() =>
+        KnownSecrets is null
+            ? Task.FromResult<IReadOnlyList<(string Service, string Account)>>([])
+            : KnownSecrets();
 
     public async Task LoadAsync()
     {
@@ -511,6 +576,9 @@ public sealed partial class SettingsViewModel : ObservableObject
                 SecretModes.FirstOrDefault(c => c.Mode == Secrets.Mode) ?? SecretModes[0];
             SecretPassphrase = "";
             SecretStatus = null;
+            // Its own line, so it resets with the rest: a sweep result from a previous visit would read as
+            // this visit's answer.
+            KeyringStatus = null;
             // SecretChoice only raises when the value actually changes, and the locked state can change
             // between visits (the user may have unlocked the vault elsewhere).
             OnPropertyChanged(nameof(SecretNeedsPassphrase));

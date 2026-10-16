@@ -16,6 +16,9 @@ public sealed partial class AiOptions : ObservableObject, ISuggestionService
     public const string KeyService = "app.noto.ai";
     const string KeyAccount = "api-key";
 
+    // The (service, account) the API key lives under, for the keyring sweep (docs/05 › ADR-06).
+    public static readonly (string Service, string Account) KeySecret = (KeyService, KeyAccount);
+
     readonly IUiState _state;
     readonly IKeyring _keyring;
 

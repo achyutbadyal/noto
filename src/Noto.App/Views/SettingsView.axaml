@@ -862,28 +862,52 @@
                 AutomationProperties.Name="Master passphrase"
               />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Spacing="10">
+            <!-- A Grid, not a horizontal StackPanel: a StackPanel measures its children unbounded, so the
+                 hint's TextWrapping could never engage and a long line would clip instead of wrapping. -->
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
               <Button
                 Classes="accent"
                 Content="{Binding SecretActionLabel}"
                 Padding="14,6"
                 Command="{Binding ApplySecretStorageCommand}"
+                IsEnabled="{Binding !ApplySecretStorageCommand.IsRunning}"
               />
               <TextBlock
+                Grid.Column="1"
                 Text="{Binding SecretHint}"
                 Classes="hint"
                 FontSize="12"
                 VerticalAlignment="Center"
                 TextWrapping="Wrap"
               />
-            </StackPanel>
+            </Grid>
             <TextBlock
               Text="{Binding SecretStatus}"
               Classes="secondary"
               FontSize="12"
               TextWrapping="Wrap"
+              AutomationProperties.LiveSetting="Polite"
               IsVisible="{Binding SecretStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
             />
+            <!-- The escape hatch for an install that once wrote to the system keychain directly: its items
+                 are looked up once, moved into the store above and deleted. The only other time this
+                 happens is the first launch after the upgrade (docs/05 › ADR-06). -->
+            <StackPanel Spacing="6" IsVisible="{Binding CanCleanKeyring}" Margin="0,4,0,0">
+              <Button
+                Content="Clean up the system keychain"
+                HorizontalAlignment="Left"
+                Command="{Binding CleanKeyringCommand}"
+                IsEnabled="{Binding !CleanKeyringCommand.IsRunning}"
+              />
+              <TextBlock
+                Text="{Binding KeyringStatus}"
+                Classes="secondary"
+                FontSize="12"
+                TextWrapping="Wrap"
+                AutomationProperties.LiveSetting="Polite"
+                IsVisible="{Binding KeyringStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
+              />
+            </StackPanel>
           </StackPanel>
         </StackPanel>
         <StackPanel IsVisible="{Binding ShowAbout}" Spacing="14">

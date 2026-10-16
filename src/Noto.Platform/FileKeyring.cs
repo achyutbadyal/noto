@@ -11,9 +11,13 @@ namespace Noto.Platform;
 // subclass per mode would only spread the locking and the atomic write over four files.
 //
 // MachineEncrypted is the default: the JSON is sealed with a key derived from this machine's device id and
-// a keyfile, so it needs no user action and never touches the OS keychain. That matters because an ad-hoc
-// signed macOS build gets a fresh CDHash every time, which invalidates every keychain ACL and makes the
-// system ask for permission again after each update (docs/05 › ADR-06).
+// a keyfile, so it needs no user action and no OS keychain. That matters because an ad-hoc signed macOS
+// build gets a fresh CDHash every time, which invalidates every keychain ACL and makes the system ask for
+// permission again after each update (docs/05 › ADR-06).
+//
+// The OS keyring is therefore never on a read path in the three file modes. It is consulted only by
+// `SweepAsync` — once per install, to move what the builds that wrote there directly left behind into the
+// file and delete it — and best-effort by `DeleteAsync`, so a token cannot outlive its connection.
 public sealed class FileKeyring : IKeyring
 {
     const int NonceBytes = 12;
@@ -100,36 +104,55 @@ public sealed class FileKeyring : IKeyring
     // ---- The mode is a device setting -----------------------------------------
 
     // A missing or unreadable file means the default, so a half-written config never locks anyone out.
-    public static SecretStorageMode ReadMode(string dataDirectory)
+    public static SecretStorageMode ReadMode(string dataDirectory) =>
+        ReadModeFile(dataDirectory) is { Mode: { } text }
+        && Enum.TryParse<SecretStorageMode>(text, out var mode)
+            ? mode
+            : SecretStorageMode.MachineEncrypted;
+
+    // True until this install has looked through the OS keyring once, which is what moves the items the
+    // older builds wrote there into the file and stops the consent sheets (docs/05 › ADR-06).
+    public static bool NeedsKeyringSweep(string dataDirectory) =>
+        ReadModeFile(dataDirectory) is not { KeyringSwept: true };
+
+    public static void MarkKeyringSwept(string dataDirectory)
+    {
+        var file = ReadModeFile(dataDirectory) ?? new StorageModeFile();
+        // Never lose the mode: a config that could not be read reads as the default, and that is what gets
+        // written back rather than an empty one.
+        file.Mode ??= ReadMode(dataDirectory).ToString();
+        file.KeyringSwept = true;
+        WriteModeFile(dataDirectory, file);
+    }
+
+    // Writing the mode re-arms the sweep: a mode change is exactly when items can be left behind again.
+    public static void WriteMode(string dataDirectory, SecretStorageMode mode) =>
+        WriteModeFile(dataDirectory, new StorageModeFile { Mode = mode.ToString() });
+
+    static StorageModeFile? ReadModeFile(string dataDirectory)
     {
         try
         {
             var path = ConfigPath(dataDirectory);
-            if (!File.Exists(path))
-                return SecretStorageMode.MachineEncrypted;
-            var file = JsonSerializer.Deserialize(
-                File.ReadAllText(path),
-                KeyringJson.Default.StorageModeFile
-            );
-            return Enum.TryParse<SecretStorageMode>(file?.Mode, out var mode)
-                ? mode
-                : SecretStorageMode.MachineEncrypted;
+            return File.Exists(path)
+                ? JsonSerializer.Deserialize(
+                    File.ReadAllText(path),
+                    KeyringJson.Default.StorageModeFile
+                )
+                : null;
         }
         catch (Exception e) when (e is IOException or JsonException)
         {
-            return SecretStorageMode.MachineEncrypted;
+            return null;
         }
     }
 
-    public static void WriteMode(string dataDirectory, SecretStorageMode mode)
+    static void WriteModeFile(string dataDirectory, StorageModeFile file)
     {
         Directory.CreateDirectory(dataDirectory);
         WriteFile(
             ConfigPath(dataDirectory),
-            JsonSerializer.SerializeToUtf8Bytes(
-                new StorageModeFile { Mode = mode.ToString() },
-                KeyringJson.Default.StorageModeFile
-            )
+            JsonSerializer.SerializeToUtf8Bytes(file, KeyringJson.Default.StorageModeFile)
         );
     }
 
@@ -172,11 +195,11 @@ public sealed class FileKeyring : IKeyring
             if (!IsUnlocked)
                 return null;
 
-            var key = Key(service, account);
+            // The file, and only the file. The OS keyring is swept once (SweepAsync) and never consulted
+            // on a read, so no read can raise a consent sheet at a moment the user didn't choose
+            // (docs/05 › ADR-06).
             var entries = await LoadAllAsync(_mode, _passphrase);
-            return entries.TryGetValue(key, out var found)
-                ? found
-                : await MigrateAsync(service, account, key, entries);
+            return entries.TryGetValue(Key(service, account), out var found) ? found : null;
         }
         finally
         {
@@ -203,10 +226,28 @@ public sealed class FileKeyring : IKeyring
             var entries = await LoadAllAsync(_mode, _passphrase);
             if (entries.Remove(key))
                 await SaveAllAsync(entries, _mode, _passphrase);
+
+            // A copy in the OS keyring would outlive the connection it belonged to, so the delete goes
+            // there too. Best effort: a keyring that refuses must not make disconnecting fail.
+            await TryDeleteFromOsAsync(service, account);
         }
         finally
         {
             _gate.Release();
+        }
+    }
+
+    async Task TryDeleteFromOsAsync(string service, string account)
+    {
+        if (!_os.Capability.IsSupported)
+            return;
+        try
+        {
+            await _os.DeleteAsync(service, account);
+        }
+        catch (Exception)
+        {
+            // Denied or unavailable: `SweepAsync` is the retry path, not a failure the caller can act on.
         }
     }
 
@@ -232,8 +273,16 @@ public sealed class FileKeyring : IKeyring
     }
 
     // Copies every known key into the new store and wipes the old one, so nothing is left behind in the
-    // mode the user just left. Nothing is committed until the new store has been written.
-    public async Task SwitchModeAsync(SecretStorageMode mode, string? passphrase = null)
+    // mode the user just left. Nothing is committed until the new store has been written. `knownKeys` is
+    // what the caller knows by name, for the sweep that follows (see SweepAsync).
+    //
+    // Returns what the sweep did, or null when there was nothing to sweep — the mode didn't change, or the
+    // new mode is the keyring itself.
+    public async Task<KeyringSweepReport?> SwitchModeAsync(
+        SecretStorageMode mode,
+        string? passphrase = null,
+        IEnumerable<(string Service, string Account)>? knownKeys = null
+    )
     {
         if (mode == SecretStorageMode.PassphraseEncrypted && string.IsNullOrEmpty(passphrase))
             throw new SecretStorageException("Choose a master passphrase.");
@@ -249,7 +298,7 @@ public sealed class FileKeyring : IKeyring
                     await LoadAllAsync(mode, passphrase);
                     _passphrase = passphrase;
                 }
-                return;
+                return null;
             }
 
             if (_mode == SecretStorageMode.PassphraseEncrypted && !IsUnlocked)
@@ -264,6 +313,13 @@ public sealed class FileKeyring : IKeyring
             _mode = mode;
             _passphrase = mode == SecretStorageMode.PassphraseEncrypted ? passphrase : null;
             WriteMode(_directory, mode);
+
+            // Leaving the keyring mode is not enough on its own: `WipeAsync` can only remove what the index
+            // lists, and an install that upgraded from a build predating the index has items it never saw.
+            // So the keys the caller knows about are swept here too. Never throws.
+            return mode == SecretStorageMode.OsKeyring
+                ? null
+                : await SweepLockedAsync(knownKeys, once: true);
         }
         finally
         {
@@ -365,27 +421,118 @@ public sealed class FileKeyring : IKeyring
         catch (IOException) { }
     }
 
-    // ---- Lazy migration out of the OS keychain -------------------------------
+    // ---- The one-time sweep out of the OS keychain ----------------------------
 
-    // The first machine-encrypted read of a key that only the OS keychain has. One lookup per key, and the
-    // copy is removed from the keychain afterwards, so the consent sheet stops coming back (docs/05 ›
-    // ADR-06). Fail-open: an unavailable keyring simply means the key is not there.
-    async Task<string?> MigrateAsync(
-        string service,
-        string account,
-        string key,
-        Dictionary<string, string> entries
+    // Moves whatever the OS keyring still holds into the file store, then deletes it there, so an install
+    // that once wrote to the keychain stops seeing consent sheets (docs/05 › ADR-06).
+    //
+    // This is deliberately NOT a fallback on a read. A lookup for a key we already hold raises the sheet
+    // for an item we no longer need — the very thing MachineEncrypted exists to avoid — and one the user
+    // cancels comes back on every launch, because the copy is only deleted after a read that succeeded.
+    // Running once, at a moment the app chooses, makes the cost at most one sheet per key, once.
+    //
+    // `knownKeys` is what the caller knows by name: the sync session, the AI key, one entry per provider
+    // connection. Every key already in the file is added, because a stale duplicate of a key we hold would
+    // otherwise never be looked up and so never removed. Never throws — a keyring that refuses (a denied
+    // sheet, a locked login keychain) is counted, not raised.
+    //
+    // Returns null when it could not look at all, which is also when the flag stays armed for a later
+    // launch: a vault still waiting for its passphrase, `OsKeyring` mode, or a platform with no keyring.
+    public async Task<KeyringSweepReport?> SweepOnceAsync(
+        IEnumerable<(string Service, string Account)>? knownKeys = null
     )
     {
-        if (_mode != SecretStorageMode.MachineEncrypted || !_os.Capability.IsSupported)
+        await _gate.WaitAsync();
+        try
+        {
+            return await SweepLockedAsync(knownKeys, once: true);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    // On demand, from Settings. Ignores the flag, because an install whose consent sheet was denied needs
+    // a way back that doesn't depend on changing the mode.
+    public async Task<KeyringSweepReport?> SweepAsync(
+        IEnumerable<(string Service, string Account)>? knownKeys = null
+    )
+    {
+        await _gate.WaitAsync();
+        try
+        {
+            return await SweepLockedAsync(knownKeys, once: false);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    // True when a sweep has something to compare: a file store that can be opened, and a keyring to look in.
+    // Settings uses it to decide whether to offer the clean-up at all.
+    public bool CanSweep =>
+        _mode != SecretStorageMode.OsKeyring && IsUnlocked && _os.Capability.IsSupported;
+
+    async Task<KeyringSweepReport?> SweepLockedAsync(
+        IEnumerable<(string Service, string Account)>? knownKeys,
+        bool once
+    )
+    {
+        if (!CanSweep)
             return null;
-        if (await _os.GetAsync(service, account) is not { } secret)
+        if (once && !NeedsKeyringSweep(_directory))
             return null;
 
-        entries[key] = secret;
-        await SaveAllAsync(entries, _mode, _passphrase);
-        await _os.DeleteAsync(service, account);
-        return secret;
+        var entries = await LoadAllAsync(_mode, _passphrase);
+        var candidates = new List<(string Service, string Account)>(knownKeys ?? []);
+        candidates.AddRange(entries.Keys.Select(k => Split(k)));
+
+        var moved = 0;
+        var removed = 0;
+        var failed = 0;
+        foreach (var (service, account) in candidates.Distinct())
+        {
+            var key = Key(service, account);
+            string? secret;
+            try
+            {
+                secret = await _os.GetAsync(service, account);
+            }
+            catch (Exception)
+            {
+                failed++;
+                continue;
+            }
+
+            if (secret is null)
+                continue; // nothing of ours under that name
+
+            if (!entries.ContainsKey(key))
+            {
+                entries[key] = secret;
+                moved++;
+            }
+
+            try
+            {
+                await _os.DeleteAsync(service, account);
+                removed++;
+            }
+            catch (Exception)
+            {
+                failed++;
+            }
+        }
+
+        if (moved > 0)
+            await SaveAllAsync(entries, _mode, _passphrase);
+
+        // Recorded even when a key was refused: the promise is one sheet per key, once, and an automatic
+        // retry is what made the sheets come back forever. Settings is the retry path.
+        MarkKeyringSwept(_directory);
+        return new KeyringSweepReport(moved, removed, failed);
     }
 
     // ---- Key index (OS keyring mode only) ------------------------------------
@@ -586,13 +733,23 @@ public sealed class FileKeyring : IKeyring
     }
 }
 
+// What one pass over the OS keyring did, so the settings pane can say something true about it rather than
+// that it "succeeded". `Failed` counts keys the keyring would not hand over — a denied consent sheet, a
+// locked login keychain — which are still in the keychain afterwards.
+public sealed record KeyringSweepReport(int Moved, int Removed, int Failed);
+
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(StorageModeFile))]
 sealed partial class KeyringJson : JsonSerializerContext;
 
-// `storage-mode.json` — which store this device uses. Not a secret.
+// `storage-mode.json` — which store this device uses, and whether the one-time keyring sweep has run. Not
+// a secret.
 sealed class StorageModeFile
 {
     public string? Mode { get; set; }
+
+    // False until this install has looked through the OS keyring once. `WriteMode` clears it, so changing
+    // the mode re-arms the sweep — that is when items can be left behind again.
+    public bool KeyringSwept { get; set; }
 }

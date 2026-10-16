@@ -110,9 +110,28 @@ sealed class Composition : IDisposable
 
     public ShellViewModel CreateShell()
     {
-        // Restores a saved session in the background; the settings page shows the result.
-        _ = Account.RestoreAsync(CancellationToken.None);
+        // Startup runs in the background; the settings page shows the result.
+        _ = StartAsync();
         return new ShellViewModel(Services, Account);
+    }
+
+    // The one-time move off the builds that wrote to the OS keychain directly. It has to finish before the
+    // first secret is read, or a session only the keychain holds would look signed out for this launch —
+    // and it is what stops the consent sheets coming back, so it runs before the restore, once per install
+    // (docs/05 › ADR-06).
+    async Task StartAsync()
+    {
+        // Off the UI thread: the first lookup can block on a system consent sheet, and the window must not
+        // sit there looking hung while the user answers it.
+        await Task.Run(SweepKeyringOnceAsync);
+        await Account.RestoreAsync(CancellationToken.None);
+    }
+
+    async Task SweepKeyringOnceAsync()
+    {
+        if (Platform.SecretStore is not { } store)
+            return;
+        await store.SweepOnceAsync(await AppSecrets.AllAsync(_db));
     }
 
     // Release downloads redirect to GitHub's CDN, which the provider client refuses to follow, so updates use

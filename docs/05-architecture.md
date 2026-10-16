@@ -217,10 +217,11 @@ Source generators mean less boilerplate than ReactiveUI. It's AOT-friendly and f
 | `OsKeyring`                      | macOS Keychain · Windows Credential Manager · libsecret  | Delegates to the existing per-OS `IKeyring` implementations.                                                                                                  |
 
 - **Why `MachineEncrypted` is the default.** The OS keyring ties every item to the app's code identity. `scripts/package_mac.sh` ad-hoc signs the bundle (`codesign --sign -`), so every build produces a new CDHash, every ACL is invalidated, and macOS asks for permission again after each update. A file sealed to the machine has no such dependency, needs no user action, and works identically on Windows and Linux.
+- **The keyring is never on a read path.** In the file modes a read answers from the file or not at all, because a lookup for a key the file already holds raises the consent sheet for an item the app no longer needs — and one the user cancels returns on every launch, the keychain copy being deleted only after a read that succeeded. The keyring is looked at once per install instead: a sweep of the names the app knows (the sync session, the AI key, one per connection) that moves anything missing into the file and deletes what it found. Settings offers the same sweep on demand, so an install whose consent sheet was denied has a way back.
 - **Browser client:** browsers can't call provider APIs (CORS) or exchange OAuth codes, so calls go through the backend's **Connected Apps Gateway**, which brokers OAuth and proxies allowlisted requests. Tokens are kept in browser storage, encrypted with a non-extractable Web Crypto key, and sent per request. The gateway **does not store** them.
 - Link previews are device-local cache, never synced.
 
-The mechanism — file layout, atomic writes, the lazy migration off the OS keyring, the live mode switch, and
+The mechanism — file layout, atomic writes, the one-time sweep off the OS keyring, the live mode switch, and
 the local-only keychain tests — is in [10 › Credential Storage](10-connected-apps.md#credential-storage).
 
 ### ADR-07: Sync = Op-Log + Per-Field LWW + HLC + Server Sequence Cursor
