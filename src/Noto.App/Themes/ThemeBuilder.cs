@@ -25,6 +25,12 @@ public static class ThemeBuilder
         app.Resources["Radius"] = new CornerRadius(8);
         app.Resources["RadiusLarge"] = new CornerRadius(12);
         app.Resources["RadiusXLarge"] = new CornerRadius(16);
+        // The least air two stacked interactive surfaces may share. Every state fill (hover, keyboard
+        // focus, selection) is a rounded rectangle; butted together with no gap, two neighbours stop
+        // reading as two rows and merge into one shape with a pinched waist — which is exactly what a
+        // focused row above a selected row above a hovered row did (docs/07 §11.2). The gap only has to
+        // be non-zero to separate them; past ~3px the list just loses density.
+        app.Resources["SurfaceGap"] = new Thickness(0, 0, 0, 2);
         SetAccent(app, null);
         RefreshAccentBrushes(app);
     }

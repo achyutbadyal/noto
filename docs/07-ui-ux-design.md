@@ -732,6 +732,12 @@ system.
 - **Spacing:** 4px base grid. Row padding 8/12. Sections separated by 20px and an uppercase 11px label in
   `text-3`.
 - **Radius:** 6px (chips, keyboard hints), 8px (inputs, icon buttons), 12px (panels), 16px (popovers).
+- **State fills keep a gap.** A hover, keyboard-focus or selection fill is a _rounded rectangle_, so two
+  of them sharing an edge stop reading as two rows: a focused row above a selected row above a hovered row
+  welded into one shape with a pinched waist. Every list-like surface therefore leaves at least 2px clear
+  below it (`ThemeBuilder.SurfaceGap`; sidebar rows land at 3px because their panels add 1px of their own).
+  The gap only has to be non-zero — past ~3px the list just loses density. `StateFillTests` asserts the
+  laid-out geometry rather than the style, so a container that forgets to space its rows fails there.
 - **Elevation:** only true overlays have shadows — popovers, the quick-capture panel, the command palette
   and the toast. Everything else separates by surface value and the lit edge, not by shadow.
 - **Keyboard hints are chips.** A shortcut is rendered in a bordered monospace chip, not as bare `⌘K`
