@@ -9,13 +9,14 @@ public static class WindowsPlatform
     const string NoContext =
         "Capture with context isn't available on Windows. Noto can't read the foreground app's page.";
 
-    public static PlatformServices Create() =>
+    public static PlatformServices Create(FileKeyring store) =>
         new(
             new WinHotkey(),
-            new WinKeyring(),
+            store,
             new UnsupportedCaptureContext(NoContext),
             new WinNotifications(),
-            new PolledReduceMotion(ClientAreaAnimationsOff, TimeSpan.FromSeconds(5))
+            new PolledReduceMotion(ClientAreaAnimationsOff, TimeSpan.FromSeconds(5)),
+            store
         );
 
     // Settings > Accessibility > Visual effects > Animation effects.

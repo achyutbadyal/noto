@@ -42,7 +42,8 @@ public class PlatformTests
     [Fact]
     public void Factory_picks_a_platform_set_for_this_os()
     {
-        using var platform = PlatformFactory.Create().Hotkey;
+        using var dir = new TempDirectory();
+        using var platform = PlatformFactory.Create(dir.Path, Guid.NewGuid().ToString()).Hotkey;
         platform.Capability.IsSupported.ShouldBe(
             OperatingSystem.IsMacOS() || OperatingSystem.IsWindows() || HasX11Session()
         );
@@ -51,8 +52,8 @@ public class PlatformTests
     [Fact]
     public async Task Mac_keychain_stores_updates_reads_and_deletes_a_secret()
     {
-        if (!OperatingSystem.IsMacOS())
-            return; // verified on macOS only
+        if (!OperatingSystem.IsMacOS() || !RealKeychain.Available)
+            return; // the login keychain needs an unlocked desktop session, which CI doesn't have
 
         var keyring = new MacKeyring();
         var service = $"app.noto.tests.{Guid.NewGuid():N}";

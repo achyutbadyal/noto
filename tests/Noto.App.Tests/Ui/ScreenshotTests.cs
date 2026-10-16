@@ -15,6 +15,7 @@ using Noto.Core.Commands;
 using Noto.Core.Links;
 using Noto.Core.Models;
 using Noto.Core.Presets;
+using Noto.Platform;
 using Noto.Platform.Abstractions;
 using Noto.Sync;
 
@@ -456,6 +457,71 @@ public sealed class ScreenshotTests : IDisposable
             .OfType<TextBox>()
             .ShouldContain(t => t.Watermark == "Blank uses your first site");
         await SnapAsync(window, "settings-account-oauth-site-dark");
+    }
+
+    // The credential picker only exists when the host has a file-backed store, so this is the one snapshot
+    // that builds its own fixture. It is the pane that fixes the macOS keychain prompt spam (docs/05 ›
+    // ADR-06), so a broken layout there is worth catching.
+    [AvaloniaFact]
+    public async Task Settings_secret_storage_picker_renders()
+    {
+        var dir = Directory.CreateTempSubdirectory("noto-secrets").FullName;
+        try
+        {
+            var store = new FileKeyring(
+                dir,
+                Guid.NewGuid().ToString(),
+                keyFilePath: Path.Combine(dir, ".keyring.key")
+            );
+            using var app = new AppFixture(
+                platform: new PlatformServices(
+                    new UnsupportedHotkey("test"),
+                    store,
+                    new UnsupportedCaptureContext("test"),
+                    new UnsupportedNotifications("test"),
+                    new StaticReduceMotion(),
+                    store
+                )
+            );
+            var shell = new ShellViewModel(app.Services, null);
+            var window = new MainWindow
+            {
+                DataContext = shell,
+                Width = 1240,
+                Height = 900,
+            };
+            window.Show();
+            await shell.InitializeAsync();
+            await shell.GoAsync(AppPage.Settings);
+
+            var settings = shell.Settings!;
+            settings.HasSecrets.ShouldBeTrue();
+            settings.SecretModes.Count.ShouldBe(4);
+            settings.Category = settings.Categories.First(c => c.Key == "device");
+            Dispatcher.UIThread.RunJobs();
+            await SettleAsync();
+
+            window
+                .GetVisualDescendants()
+                .OfType<ListBox>()
+                .ShouldContain(l => ReferenceEquals(l.ItemsSource, settings.SecretModes));
+            await SnapAsync(window, "settings-secrets-dark");
+
+            // Picking the passphrase mode is what makes the passphrase field appear.
+            settings.SecretChoice = settings.SecretModes.First(m =>
+                m.Mode == SecretStorageMode.PassphraseEncrypted
+            );
+            Dispatcher.UIThread.RunJobs();
+            window
+                .GetVisualDescendants()
+                .OfType<TextBox>()
+                .ShouldContain(t => t.Watermark == "Type your passphrase");
+            await SnapAsync(window, "settings-secrets-passphrase-dark");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
     }
 
     sealed class UnusedServerAuth : IServerAuth

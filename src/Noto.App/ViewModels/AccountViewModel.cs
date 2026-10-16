@@ -130,6 +130,10 @@ public sealed partial class AccountViewModel : ObservableObject
         && (o.Site != SiteField.Required || !string.IsNullOrWhiteSpace(ConnectSite))
         && (!o.NeedsEmail || !string.IsNullOrWhiteSpace(ConnectEmail));
 
+    // Called when the secret store is unlocked mid-session: the saved session lives in that store, so a
+    // vault that was locked at startup has not been read yet.
+    public Task RestoreAsync() => _account.RestoreAsync(CancellationToken.None);
+
     // Loads the connected-apps list. Called when Settings opens.
     // A failed read shows a message in the connections section; it must not take down the Settings page.
     public async Task LoadAsync()

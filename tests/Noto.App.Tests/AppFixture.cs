@@ -20,10 +20,15 @@ public sealed class AppFixture : IDisposable
     public ViewModelFactory Vms { get; }
     public Workspace Workspace { get; private set; } = null!;
 
-    public AppFixture(Preset? preset = null, AiOptions? ai = null)
+    public AppFixture(
+        Preset? preset = null,
+        AiOptions? ai = null,
+        PlatformServices? platform = null
+    )
     {
         var bus = new CommandBus(Db, Clock, Guid.CreateVersion7());
-        var platform = new PlatformServices(
+        // A host with a real secret store passes its own platform in; everything else gets the stubs.
+        platform ??= new PlatformServices(
             new UnsupportedHotkey("test"),
             new InMemoryKeyring(),
             new UnsupportedCaptureContext("test"),

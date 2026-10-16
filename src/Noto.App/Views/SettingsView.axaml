@@ -820,6 +820,71 @@
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
+
+          <!-- Where tokens and the sync session are kept. Only shown when the host has a file-backed
+               store; on a platform without one there is no choice to offer (docs/05 › ADR-06). -->
+          <StackPanel IsVisible="{Binding HasSecrets}" Spacing="10" Margin="0,8,0,0">
+            <TextBlock Text="Credentials" Classes="section" />
+            <TextBlock
+              Text="Where Noto keeps your provider tokens and sync session. Switching copies everything into the new store and erases the old one."
+              Classes="hint"
+              FontSize="12"
+              TextWrapping="Wrap"
+            />
+            <ListBox
+              Classes="guide"
+              ItemsSource="{Binding SecretModes}"
+              SelectedItem="{Binding SecretChoice, Mode=TwoWay}"
+              Background="Transparent"
+              AutomationProperties.Name="Secret storage mode"
+            >
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:SecretModeChoice">
+                  <StackPanel Spacing="1" Margin="0,2">
+                    <TextBlock Text="{Binding Label}" FontSize="13" />
+                    <TextBlock
+                      Text="{Binding Description}"
+                      Classes="hint"
+                      FontSize="11"
+                      TextWrapping="Wrap"
+                    />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <!-- The passphrase only exists for the mode that needs one. -->
+            <StackPanel Spacing="4" IsVisible="{Binding SecretNeedsPassphrase}">
+              <TextBlock Text="Master passphrase" Classes="secondary" FontSize="12" />
+              <TextBox
+                Text="{Binding SecretPassphrase, Mode=TwoWay}"
+                PasswordChar="•"
+                Watermark="Type your passphrase"
+                AutomationProperties.Name="Master passphrase"
+              />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button
+                Classes="accent"
+                Content="{Binding SecretActionLabel}"
+                Padding="14,6"
+                Command="{Binding ApplySecretStorageCommand}"
+              />
+              <TextBlock
+                Text="{Binding SecretHint}"
+                Classes="hint"
+                FontSize="12"
+                VerticalAlignment="Center"
+                TextWrapping="Wrap"
+              />
+            </StackPanel>
+            <TextBlock
+              Text="{Binding SecretStatus}"
+              Classes="secondary"
+              FontSize="12"
+              TextWrapping="Wrap"
+              IsVisible="{Binding SecretStatus, Converter={x:Static ObjectConverters.IsNotNull}}"
+            />
+          </StackPanel>
         </StackPanel>
         <StackPanel IsVisible="{Binding ShowAbout}" Spacing="14">
           <StackPanel DataContext="{Binding Updates}" x:DataType="vm:UpdatesViewModel" Spacing="14">

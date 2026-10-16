@@ -90,7 +90,8 @@ public sealed class ViewModelFactory(AppServices s)
             appearance,
             account,
             s.Ai,
-            s.Updates is null ? null : new UpdatesViewModel(s.Updates, s.UiState)
+            s.Updates is null ? null : new UpdatesViewModel(s.Updates, s.UiState),
+            s.Platform.SecretStore
         );
 
     DecisionController Decisions() => new(s.Runner);

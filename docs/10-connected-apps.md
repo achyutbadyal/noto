@@ -198,9 +198,11 @@ Title / notes changed ─► URL scanner ─► normalize ─► todo_link rows 
 
 ## Credential Storage
 
-**Native:** each connection's secret material (`access_token`, `refresh_token`, `expires_at`, or API key) is stored as one keyring item:
+**Native:** each connection's secret material (`access_token`, `refresh_token`, `expires_at`, or API key) is stored as one entry, keyed by service `app.noto.connections` and account `<connection id>`.
 
-| Platform | Store                                                                                                                                  |
+The **store** is a device setting, not an account one — see [05 › ADR-06](05-architecture.md#adr-06-connected-apps--device-secret-store-natively-gateway-in-the-browser). The default is `MachineEncrypted`: `secrets.enc` beside the database, sealed with AES-GCM under a key derived from the device id and a `0600` keyfile. That is what keeps macOS from asking for keychain permission again after every update, because the app is ad-hoc signed and gets a new CDHash each build.
+
+| Platform | Where `OsKeyring` mode stores it                                                                                                       |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | macOS    | Login Keychain via SecItem (`kSecClassGenericPassword`, service `app.noto.connections`, account `<connection id>`), not synchronizable |
 | Windows  | Credential Manager (DPAPI-protected), target `app.noto.connections/<connection id>`                                                    |
@@ -208,7 +210,7 @@ Title / notes changed ─► URL scanner ─► normalize ─► todo_link rows 
 | iOS      | Keychain, `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`                                                                           |
 | Android  | AndroidKeyStore-wrapped key encrypting an app-private file                                                                             |
 
-The keyring is the encryption. There's no separate `credentials.enc` file or Noto-managed key. Non-secret metadata lives in the local-only `app_connection` table ([04](04-domain-model.md#6-links)).
+`PassphraseEncrypted` (`secrets.vault`, PBKDF2-derived key held only in memory) and `PlainFile` (`secrets.json`, unencrypted) are the other two file modes. Secrets are never synced, exported or logged in any of them. Non-secret metadata lives in the local-only `app_connection` table ([04](04-domain-model.md#6-links)).
 
 **Web:** secrets are stored in IndexedDB, encrypted with an AES-GCM key generated as **non-extractable** by Web Crypto. That protects data at rest, but not against script injection on the page, so the web build ships with a strict Content Security Policy and no third-party scripts.
 

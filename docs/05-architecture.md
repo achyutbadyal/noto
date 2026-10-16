@@ -80,8 +80,9 @@ Noto/
 │   │   └── CustomApp/               # JSONPath mapper
 │   │
 │   ├── Noto.Platform/                # interfaces + per-OS implementations
+│   │   ├── FileKeyring.cs           # the device secret store: 4 SecretStorageMode modes (ADR-06)
 │   │   ├── Abstractions/            # IGlobalHotkey, IMenuBar, IKeyring, ICaptureContext,
-│   │   │                            # INotifications, IReduceMotion, IFocusWindow
+│   │   │                            # INotifications, IReduceMotion, IFocusWindow, SecretStorageMode
 │   │   ├── MacOS/                   # Carbon hotkey, NSStatusItem via TrayIcon/NativeMenu, Keychain, Apple Events
 │   │   ├── Windows/                 # RegisterHotKey, Credential Manager (DPAPI), toast notifications
 │   │   ├── Linux/                   # libsecret; X11 hotkey (Wayland: portal / user-bound shortcut)
@@ -190,11 +191,26 @@ Source generators mean less boilerplate than ReactiveUI. It's AOT-friendly and f
 
 **Decision:** Orders, pressure levels and presets are data. Layouts (list, board, timeline, habit grid) are code. Switching never writes to items. See [03](03-modes-and-workspaces.md).
 
-### ADR-06: Connected Apps — Device Keyring Natively, Gateway in the Browser
+### ADR-06: Connected Apps — Device Secret Store Natively, Gateway in the Browser
 
 **Decision:**
 
-- **Native clients** (desktop, mobile) call provider APIs **directly**. Tokens are stored in the OS keyring (macOS Keychain, Windows Credential Manager, libsecret, iOS Keychain, AndroidKeyStore) and only connection metadata is kept in SQLite.
+- **Native clients** (desktop, mobile) call provider APIs **directly**. Tokens live in a device-local secret store and only connection metadata is kept in SQLite.
+- **The secret store is chosen per device**, not per account, and the choice is remembered in `storage-mode.json` in the app data directory. `Noto.Platform.FileKeyring` is one class that switches on `SecretStorageMode`; there is deliberately no subclass per mode, because the four differ only in how the JSON is sealed, not in what an operation means.
+
+| `SecretStorageMode`        | Where the secrets live                     | Sealing                                                                                                                                                     |
+| -------------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`MachineEncrypted`** (default) | `secrets.enc`                        | AES-GCM (`[12B nonce][16B tag][ciphertext]`) under a 256-bit key derived with `HKDF` (SHA-256) from `device.id` **and** a random 32-byte keyfile (`~/.config/noto/.keyring.key`, mode `0600`). Neither the app data nor the keyfile alone opens the store, and no salt is compiled into the binary. |
+| `PassphraseEncrypted`      | `secrets.vault`                            | AES-GCM (`[16B salt][12B nonce][16B tag][ciphertext]`) under a key derived with `PBKDF2` (SHA-256, 210 000 iterations) from a master passphrase the user types. The key is never written to disk; a wrong passphrase is a clear error the settings pane can retry. |
+| `PlainFile`                | `secrets.json`                             | None. Unencrypted JSON, for a machine the user fully controls.                                                                                               |
+| `OsKeyring`                | macOS Keychain · Windows Credential Manager · libsecret | Delegates to the existing per-OS `IKeyring` implementations.                                                                                    |
+
+- **Why `MachineEncrypted` is the default.** The OS keyring ties every item to the app's code identity. `scripts/package_mac.sh` ad-hoc signs the bundle (`codesign --sign -`), so every build produces a new CDHash, every ACL is invalidated, and macOS asks for permission again after each update. A file sealed to the machine has no such dependency, needs no user action, and works identically on Windows and Linux.
+- **File safety.** All reads and writes go through a `SemaphoreSlim(1,1)`, because a store is a whole file and two concurrent writers would otherwise read-modify-write over each other. Writes are atomic: a `.tmp` sibling is written, set to `0600` on Unix, then `File.Move(overwrite: true)`. A missing or unreadable file in `MachineEncrypted`/`PlainFile` reads as an **empty store** — never a crash. A locked `PassphraseEncrypted` vault also reads as empty, so a passphrase the user hasn't typed yet cannot break startup; only a *wrong* passphrase raises.
+- **Lazy migration.** On a `MachineEncrypted` key miss, the store looks in the OS keyring once; if the key is there it is copied into `secrets.enc` and deleted from the keyring. The old keychain items therefore move themselves out of the way as they are used, and the consent sheets stop.
+- **Live switch.** Changing the mode copies every known key into the new store and then wipes the old one, so nothing is left behind in the mode the user just left. The OS keyrings have no portable "list everything", so `OsKeyring` mode maintains a small key-name index (`secrets.index.json`, names only) — and deletes it when the mode is left.
+- **Settings** offers all four modes, with the trade-off spelled out rather than the mechanism, and a passphrase field that appears only for `PassphraseEncrypted`. Unlocking there also restores the saved sync session, which could not be read while the vault was locked.
+- **Tests.** The real OS keyring tests are local-only: a CI runner — and a sandbox — has no unlocked login keychain, so `RealKeychain` probes once and they skip rather than fail. Everything the app does by default is covered against `FileKeyring` on a scratch directory.
 - **Browser client:** browsers can't call provider APIs (CORS) or exchange OAuth codes. Calls go through the backend's **Connected Apps Gateway**, which brokers OAuth and proxies allowlisted requests. Tokens are kept in browser storage, encrypted with a non-extractable Web Crypto key, and sent per request. The gateway **does not store** them.
 - Link previews are device-local cache, never synced.
 
@@ -291,7 +307,7 @@ sequenceDiagram
 | Area                    | Approach                                                                                                                                                                                                                                                     |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Local data              | SQLite in the platform app-data directory. Optional SQLCipher encryption (key in the OS keyring).                                                                                                                                                            |
-| Third-party credentials | OS keyring natively. Browser: Web Crypto non-extractable key + IndexedDB (protects data at rest, not against XSS, so a strict CSP is required). Never synced, never exported, never logged.                                                                  |
+| Third-party credentials | A device-local store, chosen per device (ADR-06). `MachineEncrypted` by default: AES-GCM under an HKDF key from `device.id` + a `0600` keyfile, so the file is useless off the machine and no keychain prompt returns after an update. `PassphraseEncrypted` (PBKDF2, key in RAM only) and `PlainFile` are opt-in; `OsKeyring` delegates to the OS keyring. Browser: Web Crypto non-extractable key + IndexedDB (protects data at rest, not against XSS, so a strict CSP is required). Never synced, never exported, never logged. |
 | Backend auth            | Short-lived JWT access tokens (15 min) + rotating refresh tokens bound to `device_id`. Devices can be revoked.                                                                                                                                               |
 | Gateway                 | Provider-host allowlist per provider. Custom-app and OpenGraph fetches are SSRF-guarded: public IPs only (DNS is resolved and checked, redirects are re-checked), size and time limits. No storage or logging of `Authorization` headers or response bodies. |
 | Self-hosted backend     | Docker image or single binary. Secrets are **required** env vars with no defaults.                                                                                                                                                                           |

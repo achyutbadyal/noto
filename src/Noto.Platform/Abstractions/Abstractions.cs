@@ -100,5 +100,8 @@ public sealed record PlatformServices(
     IKeyring Keyring,
     ICaptureContext CaptureContext,
     INotifications Notifications,
-    IReduceMotion ReduceMotion
+    IReduceMotion ReduceMotion,
+    // The file-backed store behind Keyring when the host has one, so Settings can switch storage modes.
+    // Null on hosts that don't (tests, unsupported platforms).
+    FileKeyring? SecretStore = null
 );

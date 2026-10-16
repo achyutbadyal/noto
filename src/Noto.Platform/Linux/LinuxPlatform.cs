@@ -7,15 +7,16 @@ namespace Noto.Platform.Linux;
 [SupportedOSPlatform("linux")]
 public static class LinuxPlatform
 {
-    public static PlatformServices Create() =>
+    public static PlatformServices Create(FileKeyring store) =>
         new(
             new X11Hotkey(),
-            SecretToolKeyring.Create(),
+            store,
             new UnsupportedCaptureContext(
                 "Capture with context isn't available on Linux: there is no portable way to read the focused app."
             ),
             NotifySendNotifications.Create(),
-            new PolledReduceMotion(AnimationsDisabled, TimeSpan.FromSeconds(30))
+            new PolledReduceMotion(AnimationsDisabled, TimeSpan.FromSeconds(30)),
+            store
         );
 
     // GNOME's "Animations" switch. Other desktops have no equivalent key, so the setting reads as off.

@@ -9,6 +9,7 @@ using Noto.Core.Export;
 using Noto.Core.Import;
 using Noto.Core.Models;
 using Noto.Core.Presets;
+using Noto.Platform;
 using Noto.Platform.Abstractions;
 using Noto.Providers.Ai;
 
@@ -26,6 +27,13 @@ public sealed record SettingsCategory(string Key, string Title);
 // One AI mode in the picker. `Reason` is set when the mode cannot run here, so the pane can say why
 // instead of offering a dead choice (docs/07 §19: degrade visibly).
 public sealed record AiModeChoice(AiMode Mode, string Label, string Description)
+{
+    public override string ToString() => Label;
+}
+
+// One secret-storage mode in the picker, with the trade-off spelled out rather than the mechanism
+// (docs/05 › ADR-06).
+public sealed record SecretModeChoice(SecretStorageMode Mode, string Label, string Description)
 {
     public override string ToString() => Label;
 }
@@ -60,6 +68,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     readonly ExportService _export;
     readonly ActionRunner _runner;
     readonly WorkspaceActions _workspaces;
+    readonly PlatformServices _platform;
     readonly Guid _workspaceId;
     bool _loading;
 
@@ -73,18 +82,21 @@ public sealed partial class SettingsViewModel : ObservableObject
         AppearanceViewModel appearance,
         AccountViewModel? account = null,
         AiOptions? ai = null,
-        UpdatesViewModel? updates = null
+        UpdatesViewModel? updates = null,
+        FileKeyring? secrets = null
     )
     {
         _import = import;
         _export = export;
         _runner = runner;
         _workspaces = workspaces;
+        _platform = platform;
         _workspaceId = workspaceId;
         Appearance = appearance;
         Account = account;
         Ai = ai;
         Updates = updates;
+        Secrets = secrets;
 
         // "Account" only exists when the host has an account service.
         Categories =
@@ -101,30 +113,34 @@ public sealed partial class SettingsViewModel : ObservableObject
             }.OfType<SettingsCategory>(),
         ];
         _category = Categories[0];
-        Capabilities =
+        Capabilities = DescribeCapabilities();
+    }
+
+    // Rebuilt after a storage-mode change: switching to the OS keyring can turn the credential row from
+    // available into unavailable on a machine that has no keychain at all.
+    IReadOnlyList<CapabilityRow> DescribeCapabilities() =>
         [
             new(
                 "Global quick-capture hotkey",
-                platform.Hotkey.Capability.IsSupported,
-                platform.Hotkey.Capability.Reason
+                _platform.Hotkey.Capability.IsSupported,
+                _platform.Hotkey.Capability.Reason
             ),
             new(
                 "Secure credential storage",
-                platform.Keyring.Capability.IsSupported,
-                platform.Keyring.Capability.Reason
+                _platform.Keyring.Capability.IsSupported,
+                _platform.Keyring.Capability.Reason
             ),
             new(
                 "Capture with context",
-                platform.CaptureContext.Capability.IsSupported,
-                platform.CaptureContext.Capability.Reason
+                _platform.CaptureContext.Capability.IsSupported,
+                _platform.CaptureContext.Capability.Reason
             ),
             new(
                 "Notifications",
-                platform.Notifications.Capability.IsSupported,
-                platform.Notifications.Capability.Reason
+                _platform.Notifications.Capability.IsSupported,
+                _platform.Notifications.Capability.Reason
             ),
         ];
-    }
 
     public AppearanceViewModel Appearance { get; }
 
@@ -138,6 +154,11 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     // Null when the host can't check for updates (tests, offline-only builds).
     public UpdatesViewModel? Updates { get; }
+
+    // Null when the host has no file-backed secret store (tests, unsupported platforms); the picker then
+    // doesn't appear at all rather than offering a choice that does nothing.
+    public FileKeyring? Secrets { get; }
+    public bool HasSecrets => Secrets is not null;
 
     // The rail. One pane shows at a time; each Show* flag drives exactly one pane's IsVisible.
     public IReadOnlyList<SettingsCategory> Categories { get; }
@@ -200,7 +221,7 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public Task<string> ExportCsvAsync() => _export.ExportItemsCsvAsync(_workspaceId);
 
-    public IReadOnlyList<CapabilityRow> Capabilities { get; }
+    public IReadOnlyList<CapabilityRow> Capabilities { get; private set; }
     public IReadOnlyList<Preset> Presets => BuiltInPresets.All;
 
     // Friendly labels, not enum names: "PriorityCarry" tells a new user nothing.
@@ -374,6 +395,74 @@ public sealed partial class SettingsViewModel : ObservableObject
         AiStatus = AiModeReason is null && AiChoice?.Mode != AiMode.Off ? "Ready to use." : null;
     }
 
+    // ---- Secret storage ----
+    //
+    // Which store holds the provider tokens and the sync session. Switching copies every key into the new
+    // store and wipes the old one, so the choice is reversible and nothing is left behind (docs/05 ›
+    // ADR-06). The passphrase is only ever held in memory.
+
+    public IReadOnlyList<SecretModeChoice> SecretModes { get; } =
+    [
+        .. Enum.GetValues<SecretStorageMode>()
+            .Select(m => new SecretModeChoice(m, ModeLabels.Of(m), ModeLabels.Describe(m))),
+    ];
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SecretNeedsPassphrase), nameof(SecretActionLabel))]
+    SecretModeChoice? _secretChoice;
+
+    // Write-only: it unlocks the vault, it is never read back into the UI.
+    [ObservableProperty]
+    string _secretPassphrase = "";
+
+    [ObservableProperty]
+    string? _secretStatus;
+
+    public bool SecretNeedsPassphrase =>
+        SecretChoice?.Mode == SecretStorageMode.PassphraseEncrypted;
+
+    // The vault is there but nobody has typed the passphrase yet: secrets read as absent until they do.
+    public bool SecretLocked => Secrets is { IsUnlocked: false };
+
+    public string SecretActionLabel => SecretLocked ? "Unlock" : "Apply";
+
+    public string SecretHint =>
+        SecretLocked
+            ? "Locked. Enter your master passphrase to open it."
+            : "Stored outside the database and never exported or synced.";
+
+    [RelayCommand]
+    public async Task ApplySecretStorageAsync()
+    {
+        if (Secrets is null)
+            return;
+
+        try
+        {
+            await Secrets.SwitchModeAsync(SecretChoice?.Mode ?? Secrets.Mode, SecretPassphrase);
+            SecretPassphrase = "";
+            SecretStatus =
+                $"Secrets are now stored as {ModeLabels.Of(Secrets.Mode).ToLowerInvariant()}.";
+            Capabilities = DescribeCapabilities();
+            OnPropertyChanged(nameof(Capabilities));
+
+            // A vault that was locked at startup has not been read yet, so the saved session is picked up
+            // now that it can be opened.
+            if (Account is not null)
+                await Account.RestoreAsync();
+        }
+        catch (SecretStorageException e)
+        {
+            SecretStatus = e.Message;
+        }
+
+        OnPropertyChanged(nameof(SecretLocked));
+        OnPropertyChanged(nameof(SecretNeedsPassphrase));
+        OnPropertyChanged(nameof(SecretActionLabel));
+        OnPropertyChanged(nameof(SecretHint));
+        _runner.NotifyChanged();
+    }
+
     public async Task LoadAsync()
     {
         var ws =
@@ -414,6 +503,20 @@ public sealed partial class SettingsViewModel : ObservableObject
             // installing the helper would otherwise keep showing the stale "not installed" note.
             OnPropertyChanged(nameof(AiModeReason));
             OnPropertyChanged(nameof(AiKeyHint));
+        }
+
+        if (Secrets is not null)
+        {
+            SecretChoice =
+                SecretModes.FirstOrDefault(c => c.Mode == Secrets.Mode) ?? SecretModes[0];
+            SecretPassphrase = "";
+            SecretStatus = null;
+            // SecretChoice only raises when the value actually changes, and the locked state can change
+            // between visits (the user may have unlocked the vault elsewhere).
+            OnPropertyChanged(nameof(SecretNeedsPassphrase));
+            OnPropertyChanged(nameof(SecretLocked));
+            OnPropertyChanged(nameof(SecretActionLabel));
+            OnPropertyChanged(nameof(SecretHint));
         }
 
         _loading = false;

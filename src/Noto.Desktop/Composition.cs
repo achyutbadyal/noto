@@ -35,7 +35,7 @@ sealed class Composition : IDisposable
         var deviceId = DeviceId(dir);
         var bus = new CommandBus(_db, clock, deviceId);
 
-        Platform = PlatformFactory.Create();
+        Platform = PlatformFactory.Create(dir, deviceId.ToString());
         var ui = new FileUiState(Path.Combine(dir, "ui-state.json"));
 
         // One provider stack, shared by connecting, token handling and link previews.

@@ -63,8 +63,8 @@ public class WindowsPlatformTests
     [Fact]
     public async Task Credential_manager_stores_updates_reads_and_deletes_a_secret()
     {
-        if (!OperatingSystem.IsWindows())
-            return; // verified on Windows only (CI runs this on windows-latest)
+        if (!OperatingSystem.IsWindows() || !RealKeychain.Available)
+            return; // Credential Manager needs a real user profile, which a CI runner doesn't have
 
         var keyring = new WinKeyring();
         var service = $"app.noto.tests.{Guid.NewGuid():N}";

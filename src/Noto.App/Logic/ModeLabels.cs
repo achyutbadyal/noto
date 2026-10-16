@@ -1,4 +1,5 @@
 using Noto.Core.Models;
+using Noto.Platform.Abstractions;
 
 namespace Noto.App.Logic;
 
@@ -42,5 +43,30 @@ public static class ModeLabels
             CapacityUnit.Minutes => "Minutes",
             CapacityUnit.Items => "Items",
             _ => value.ToString(),
+        };
+
+    public static string Of(SecretStorageMode value) =>
+        value switch
+        {
+            SecretStorageMode.MachineEncrypted => "This device only",
+            SecretStorageMode.PassphraseEncrypted => "Master passphrase",
+            SecretStorageMode.PlainFile => "Plain file",
+            SecretStorageMode.OsKeyring => "System keychain",
+            _ => value.ToString(),
+        };
+
+    // The trade-off, not the mechanism: what changes for the person picking it.
+    public static string Describe(SecretStorageMode value) =>
+        value switch
+        {
+            SecretStorageMode.MachineEncrypted =>
+                "Sealed with a key made from this machine. Nothing to remember, and no keychain prompt after an update.",
+            SecretStorageMode.PassphraseEncrypted =>
+                "Sealed with a passphrase you type. Nothing opens without it, and the key is never written down.",
+            SecretStorageMode.PlainFile =>
+                "Unencrypted JSON in the app data folder. Anyone who can read your disk can read your tokens.",
+            SecretStorageMode.OsKeyring =>
+                "The system keychain. Your OS may ask for permission again each time the app is updated.",
+            _ => "",
         };
 }
