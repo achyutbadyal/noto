@@ -325,6 +325,7 @@ public sealed class ScreenshotTests : IDisposable
                 ["Open", "2 approved", "CI passing"],
                 "Fetches link summaries in one GraphQL request per 50 objects.",
                 "priya",
+                true,
                 ""
             ),
             new LinkLine(
@@ -335,6 +336,7 @@ public sealed class ScreenshotTests : IDisposable
                 ["In Review", "@sam", "Priority High"],
                 null,
                 "sam",
+                false,
                 ""
             ),
             new LinkLine(
@@ -345,6 +347,7 @@ public sealed class ScreenshotTests : IDisposable
                 [],
                 null,
                 null,
+                false,
                 "Connect Figma in Settings to see this"
             ),
         ];

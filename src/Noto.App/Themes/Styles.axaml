@@ -302,6 +302,16 @@
   <Style Selector="Ellipse.key.drop">
     <Setter Property="Opacity" Value="0.5" />
   </Style>
+  <!--
+    The change dot on a link chip: the linked page moved since the user last opened the item (docs/07 §6).
+    Accent, never red — red is reserved for a genuine error (docs/07 §2).
+  -->
+  <Style Selector="Ellipse.changed">
+    <Setter Property="Width" Value="6" />
+    <Setter Property="Height" Value="6" />
+    <Setter Property="Fill" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
 
   <!-- ============================================================= -->
   <!--  Surfaces                                                      -->

@@ -112,4 +112,63 @@ public sealed class LinkPreviewsTests
 
         LinkPreviews.IsDue(p, Now.AddMinutes(3)).ShouldBeTrue();
     }
+
+    static LinkLine Line(string url, string stateHash, string viewedHash) =>
+        LinkLine.From(
+            url,
+            new LinkPreview
+            {
+                Url = url,
+                ProviderId = "jira",
+                Title = "Login fails on Safari",
+                Status = PreviewStatus.Loaded,
+                StateHash = stateHash,
+                ViewedStateHash = viewedHash,
+            },
+            "Jira"
+        );
+
+    [Fact]
+    public void A_link_whose_state_moved_since_the_user_looked_is_flagged_as_changed()
+    {
+        Line(Ticket, "In Review", "Open").HasChange.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void A_link_still_at_the_state_the_user_looked_at_is_not_flagged()
+    {
+        Line(Ticket, "In Review", "In Review").HasChange.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void A_link_with_no_preview_has_no_change_to_show()
+    {
+        LinkLine.From(Ticket, null, "Web link").HasChange.ShouldBeFalse();
+    }
+
+    // The dot is invisible to a screen reader, so the chip says it instead.
+    [Fact]
+    public void A_changed_link_says_so_in_its_accessible_name()
+    {
+        Line(Ticket, "In Review", "Open")
+            .AccessibleName.ShouldBe("Login fails on Safari (changed)");
+        Line(Ticket, "In Review", "In Review").AccessibleName.ShouldBe("Login fails on Safari");
+    }
+
+    [Fact]
+    public void Only_the_links_that_moved_are_marked_seen()
+    {
+        var moved = Line(Ticket, "In Review", "Open");
+        var still = Line("https://github.com/noto/noto/pull/1", "open", "open");
+
+        LinkPreviews.Moved([moved, still]).ShouldBe([Ticket]);
+    }
+
+    // Re-stamping every link on every navigation would erase the dot for links nobody looked at.
+    [Fact]
+    public void Nothing_is_marked_seen_when_no_link_moved()
+    {
+        LinkPreviews.Moved([Line(Ticket, "In Review", "In Review")]).ShouldBeEmpty();
+        LinkPreviews.Moved([]).ShouldBeEmpty();
+    }
 }

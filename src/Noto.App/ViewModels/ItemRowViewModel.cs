@@ -60,6 +60,7 @@ public sealed partial class ItemRowViewModel : ObservableObject
         NotifyPropertyChangedFor(
             nameof(LinkText),
             nameof(HasLinks),
+            nameof(HasLinkChange),
             nameof(ShowSimpleLink),
             nameof(ShowLinkChips),
             nameof(HasDetailLines)
@@ -68,6 +69,10 @@ public sealed partial class ItemRowViewModel : ObservableObject
     IReadOnlyList<LinkLine> _links = [];
 
     public bool HasLinks => Links.Count > 0;
+
+    // A linked page moved since the user last opened this item. The compact row has no chips to dot, so
+    // the marker sits on its one link line instead (docs/07 §6).
+    public bool HasLinkChange => Links.Any(l => l.HasChange);
 
     // The first link's summary, and how many more there are.
     public string LinkText =>

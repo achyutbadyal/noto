@@ -114,10 +114,11 @@
                 Classes="linkChip"
                 Tag="{Binding Url}"
                 Click="OnOpenLink"
-                AutomationProperties.Name="{Binding Title, StringFormat='Open {0}'}"
+                AutomationProperties.Name="{Binding AccessibleName, StringFormat='Open {0}'}"
                 ToolTip.Tip="{Binding Url}"
               >
                 <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Ellipse Classes="changed" IsVisible="{Binding HasChange}" />
                   <PathIcon Data="{v:Icon external}" Width="10" Height="10" />
                   <TextBlock
                     Text="{Binding RowText}"
@@ -130,15 +131,27 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <TextBlock
-          Text="{Binding LinkText}"
+        <!--
+          The one-line link summary. A Grid rather than a horizontal StackPanel: a StackPanel measures its
+          children with infinite width, so the TextBlock would stop trimming and a long URL would run past
+          the row (docs/07 §15).
+        -->
+        <Grid
+          ColumnDefinitions="Auto,*"
+          ColumnSpacing="5"
           IsVisible="{Binding ShowSimpleLink}"
-          Classes="hint link"
-          FontSize="12"
-          TextTrimming="CharacterEllipsis"
           Cursor="Hand"
           PointerPressed="OnOpenFirstLink"
-        />
+        >
+          <Ellipse Classes="changed" IsVisible="{Binding HasLinkChange}" />
+          <TextBlock
+            Grid.Column="1"
+            Text="{Binding LinkText}"
+            Classes="hint link"
+            FontSize="12"
+            TextTrimming="CharacterEllipsis"
+          />
+        </Grid>
         <!-- The Timeline layout has no trailing rail, so the due label rides under the title. -->
         <TextBlock
           Text="{Binding ExtraText}"

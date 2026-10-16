@@ -252,7 +252,10 @@
                 <StackPanel Spacing="5" Margin="0,8,0,4">
                   <Border Classes="hairline" Margin="0,0,0,8" />
                   <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <TextBlock Text="{Binding Provider}" Classes="hint" FontSize="11" />
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <Ellipse Classes="changed" IsVisible="{Binding HasChange}" />
+                      <TextBlock Text="{Binding Provider}" Classes="hint" FontSize="11" />
+                    </StackPanel>
                     <Button
                       Grid.Column="1"
                       Content="Open"

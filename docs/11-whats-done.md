@@ -87,7 +87,9 @@ Backlog, inspector, command bar with search, undo toasts, time travel (a day ahe
 Timeline, Habit grid, quick capture, onboarding. VoiceOver label strings, theme tokens in one C# source
 shared with the contrast tests, and a virtualized sectioned list. Platform abstractions with macOS
 implementations (Keychain, Carbon hotkey, notifications, capture context) and Windows/Linux stubs that
-explain what is unavailable.
+explain what is unavailable. Link chips on the rows and in the inspector carry a **change dot** when the
+linked object moved since the user last opened the item — the dot renders on the pass that clears it, so
+it is seen exactly once, and a row the user never opened keeps it.
 
 ## Library choices
 
@@ -154,6 +156,13 @@ Compiled and unit-tested, but never run for real:
 - No hard purge of soft-deleted workspaces after 30 days (only the recovery check). Local tombstones are purged on request only.
 - Server: no EF migrations (`EnsureCreated`), ingest serialized per process (multiple instances need a DB-level lock), conflict log is best-effort (a device whose pushed edit is overwritten gets no entry).
 - Sync wiring is easy to get wrong: one shared `HybridClock` must go to both `SqliteUnitOfWork` and `CommandBus`, otherwise nothing is recorded (documented in `CLAUDE.md`).
+- **Live links are computed but never surfaced.** `RefreshPlanner` (visible → Waiting/Today → rest, plus
+  `ForegroundCycle`'s 15 minutes) and `LinkReactor` / `LiveLinkRules` have no caller in `Noto.App` — only
+  tests reach them. So the promises of [10 › Live Links](10-connected-apps.md#live-links) have no home in
+  the shell yet: there is no 15-minute foreground cycle for Waiting / Planned-today items, and a merged PR
+  neither suggests "Done?" nor pulls a blocked Waiting item back onto Today. What *is* wired is the data
+  those rules read — the previews are fetched cache-first, and the change dot on the row and inspector chip
+  is real — so the missing piece is the clock and the reaction, not the pipeline.
 
 ## Suggested next steps
 

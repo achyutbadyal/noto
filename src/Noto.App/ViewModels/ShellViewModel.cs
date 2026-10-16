@@ -38,6 +38,7 @@ public sealed partial class ShellViewModel : ObservableObject, ICommandBarHost
             services.Previews,
             Inspector,
             () => Content is ItemListViewModel list ? list.FlatRows : [],
+            () => ShowInspector,
             message => Toast.Show(message, canUndo: false)
         );
         Inspector.Decisions.PropertyChanged += (_, e) => ForwardMessage(e, Inspector.Decisions);

@@ -16,6 +16,7 @@ public sealed record LinkLine(
     IReadOnlyList<string> Facts,
     string? Snippet,
     string? Author,
+    bool HasChange,
     string Status
 )
 {
@@ -24,6 +25,9 @@ public sealed record LinkLine(
     public bool HasSnippet => !string.IsNullOrEmpty(Snippet);
     public bool HasAuthor => !string.IsNullOrEmpty(Author);
     public bool HasStatus => Status.Length > 0;
+
+    // The dot is invisible to a screen reader, so the change is said out loud instead (docs/07 §14).
+    public string AccessibleName => HasChange ? $"{Title} (changed)" : Title;
 
     // One line for a row: "PROJ-88 · Login fails on Safari · In Review".
     public string RowText =>
@@ -43,6 +47,7 @@ public sealed record LinkLine(
                 [],
                 null,
                 null,
+                false,
                 "Not fetched yet"
             );
 
@@ -54,6 +59,7 @@ public sealed record LinkLine(
             p.ChipFacts.Select(c => c.Text).Where(t => t.Length > 0).ToList(),
             Excerpt(p.Snippet),
             string.IsNullOrWhiteSpace(p.AuthorName) ? null : p.AuthorName,
+            p.HasChange,
             StatusText(p.Status, p.ErrorMessage, providerName)
         );
     }
@@ -141,6 +147,19 @@ public sealed class LinkPreviews(
             urls.Select(u => new PreviewRequest(u, PreviewPriority.Visible)).ToList(),
             ct
         );
+
+    // The user has just been shown these links, so their dots clear: a dot means "moved since you last
+    // looked", and looking is what this pass is (docs/07 §6). Only the links that actually moved are
+    // re-stamped — re-stamping every link on every navigation would erase the marker for links the user
+    // never saw, and would make `UserLastViewedAt` mean "the last time any screen drew this link".
+    public static IReadOnlyList<string> Moved(IReadOnlyList<LinkLine> shown) =>
+        [.. shown.Where(l => l.HasChange).Select(l => l.Url)];
+
+    public async Task MarkSeenAsync(IReadOnlyList<LinkLine> shown)
+    {
+        foreach (var url in Moved(shown))
+            await previews.MarkViewedAsync(url);
+    }
 
     // Resolve one URL for something that needs to know what it *is* (the AI suggester). Cache first —
     // a link the user already has on a task costs nothing. Only a miss or a stale entry goes to the

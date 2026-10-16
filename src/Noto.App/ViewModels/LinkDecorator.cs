@@ -8,6 +8,7 @@ public sealed class LinkDecorator(
     LinkPreviews? previews,
     InspectorViewModel inspector,
     Func<IReadOnlyList<ItemRowViewModel>> visibleRows,
+    Func<bool> inspectorShown,
     Action<string> report
 )
 {
@@ -43,7 +44,16 @@ public sealed class LinkDecorator(
         var summaries = await previews.ForItemsAsync(IdsOf(rows, focused));
         foreach (var row in rows)
             row.Links = summaries.GetValueOrDefault(row.Id, []);
-        inspector.Links = focused is { } id ? summaries.GetValueOrDefault(id, []) : [];
+        var shown = focused is { } id ? summaries.GetValueOrDefault(id, []) : [];
+        inspector.Links = shown;
+
+        // Clearing the dots happens after the read that produced the fill, and only for the item on
+        // screen. After, because the fill's data was read before the write — so this pass still carries
+        // the dot and the next read is what drops it. Only that item, because a dot means "moved since
+        // you last opened it": a row the user never opened keeps its dot, and a hidden inspector has
+        // looked at nothing (docs/07 §6).
+        if (inspectorShown())
+            await previews.MarkSeenAsync(shown);
     }
 
     async Task FetchAsync(LinkPreviews previews, IReadOnlyList<string> urls)
